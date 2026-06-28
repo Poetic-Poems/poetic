@@ -2,7 +2,7 @@ name: Sync framework from poetic
 
 on:
   schedule:
-    - cron: '0 9 * * 1'   # Every Monday at 09:00 UTC
+    - cron: '0 * * * *'   # Every hour (sync_schedule in .poetic-config determines when to actually run)
   workflow_dispatch:
     inputs:
       ref:
@@ -35,6 +35,26 @@ jobs:
               echo "Scheduled auto-sync is not enabled. Create .poetic-config with 'auto_sync=true' to enable it."
               exit 0
             fi
+            sync_schedule=$(grep '^sync_schedule=' .poetic-config 2>/dev/null | cut -d= -f2)
+            sync_schedule="${sync_schedule:-weekly}"
+            case "$sync_schedule" in
+              hourly)
+                ;;
+              daily)
+                if [ "$(date -u +%H)" != "09" ]; then
+                  echo "skip=true" >> "$GITHUB_OUTPUT"
+                  echo "Daily sync: not 09:00 UTC. Skipping."
+                  exit 0
+                fi
+                ;;
+              weekly|*)
+                if [ "$(date -u +%u)" != "1" ]; then
+                  echo "skip=true" >> "$GITHUB_OUTPUT"
+                  echo "Weekly sync: not Monday. Skipping."
+                  exit 0
+                fi
+                ;;
+            esac
           fi
           echo "skip=false" >> "$GITHUB_OUTPUT"
 
