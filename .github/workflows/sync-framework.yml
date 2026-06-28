@@ -109,18 +109,19 @@ jobs:
           git commit -m "chore: sync framework from poetic $target_ref"
           git push origin "$branch"
 
+          printf '%s\n' \
+            "Automated sync of framework files from [warwickallen/poetic](https://github.com/warwickallen/poetic)." \
+            "" \
+            "| | |" \
+            "|---|---|" \
+            "| **Version** | \`$target_ref\` |" \
+            "| **Commit** | \`${target_commit:0:8}\` |" \
+            "" \
+            "Review the diff and merge when ready. If you have customised any framework files, resolve those changes before merging." \
+            > /tmp/pr-body.md
+
           gh pr create \
             --title "chore: sync framework from poetic $target_ref" \
-            --body "$(cat <<EOF
-Automated sync of framework files from [warwickallen/poetic](https://github.com/warwickallen/poetic).
-
-| | |
-|---|---|
-| **Version** | \`$target_ref\` |
-| **Commit** | \`${target_commit:0:8}\` |
-
-Review the diff and merge when ready. If you have customised any framework files, resolve those changes before merging.
-EOF
-)" \
+            --body-file /tmp/pr-body.md \
             --base main \
             --head "$branch"
