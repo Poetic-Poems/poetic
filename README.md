@@ -10,6 +10,19 @@ A plain-text poem authoring framework. Write poems in a concise `.poem` format, 
 - **Vim syntax highlighting** — filetype detection and highlighting for `.poem` files (see [`editors/vim/`](editors/vim/))
 - **GitHub Pages deployment** — included workflow deploys your published HTML on push to `main`
 
+## Prerequisites
+
+You will need the following before getting started:
+
+- **A GitHub account** — free to create at [github.com](https://github.com/join)
+- **Git** — [download from git-scm.com](https://git-scm.com/downloads)
+- **Node.js 18 or later** — [download from nodejs.org](https://nodejs.org/) (choose the LTS version)
+- **A terminal** — the command-line application on your computer:
+  - macOS: Terminal (built in) or [iTerm2](https://iterm2.com/)
+  - Windows: Git Bash (installed with Git for Windows) or [Windows Terminal](https://apps.microsoft.com/detail/9n0dx20hk701)
+  - Linux: any terminal emulator
+- **A text editor** — any editor works; [Visual Studio Code](https://code.visualstudio.com/) is a popular free choice
+
 ## Quick start
 
 ### 1. Create your own repo
@@ -18,8 +31,8 @@ Pick the approach that suits you:
 
 | | **Template** *(recommended)* | **Clone + rewire** | **Fork** |
 |---|---|---|---|
-| Setup | Click **Use this template** on GitHub, then clone your new repo | Clone poetic, then change `origin` | Fork on GitHub, then clone your fork |
-| After setup | `origin` already points to your repo | Must rewire `origin` before you can push | `origin` points to your fork |
+| Setup | Click **Use this template** on GitHub, then clone your new repo | Clone poetic, then redirect it to your own GitHub repo | Fork on GitHub, then clone your fork |
+| After setup | Ready to push to GitHub immediately | Need one extra command before you can push to GitHub | Ready to push to GitHub immediately |
 | Git history | Clean slate | Inherits poetic's history | Inherits poetic's history |
 | Auto-sync | Yes, once `.poetic-version` is in place | Yes, once `.poetic-version` is in place | Yes, once `.poetic-version` is in place |
 | Best for | Writing poems | Writing poems | Contributing to poetic itself |
@@ -29,19 +42,19 @@ Pick the approach that suits you:
 ```bash
 git clone https://github.com/warwickallen/poetic.git my-poems
 cd my-poems
-git remote set-url origin https://github.com/YOUR-USERNAME/my-poems.git
+git remote set-url origin https://github.com/YOUR-USERNAME/my-poems.git   # point at your own repo
 ```
 
-**Fork caveat:** If you open a pull request against `poetic` from a fork that also contains your personal poems, those poems appear in the diff. A separate repo (template or clone + rewire) keeps your collection and framework contributions cleanly apart.
+**Fork caveat:** If you propose changes to `poetic` from a fork that also contains your personal poems, those poems appear in the change list. A separate repo (template or clone + rewire) keeps your collection and framework contributions cleanly apart.
 
 ### 2. Install and initialise
 
 ```bash
-npm install
+npm install                       # download build tools (takes a minute)
 bash scripts/sync-framework.sh   # creates .poetic-version
 git add .poetic-version
 git commit -m "chore: initialise poetic version tracking"
-git push -u origin main
+git push -u origin main           # push to GitHub (-u only needed the first time)
 ```
 
 `.poetic-version` identifies this repo as a poem collection (as opposed to the framework repo itself) and records which version of the framework you are tracking. It is required for automatic updates to work.
@@ -54,7 +67,7 @@ In your repo settings, set Pages source to **GitHub Actions**.
 
 ```bash
 cp src/poems/poem/_example.poem src/poems/poem/my-poem.poem
-# Edit it, then:
+# Open my-poem.poem in your text editor and edit it, then:
 npm run build
 npm start   # open http://localhost:8080
 ```
@@ -124,6 +137,8 @@ scripts/              # Helper shell scripts
 test/                 # Tests
 ```
 
+For everyday writing, `src/poems/poem/` is the only directory you need to touch.
+
 Files beginning with `_` (e.g. `_example.poem`, `_shared.yaml`) are excluded from the build.
 
 ## GitHub Pages
@@ -134,11 +149,11 @@ The included workflow (`.github/workflows/build-poems.yml`) builds and deploys t
 
 ### Versioning
 
-Poetic uses [semantic versioning](https://semver.org/). Each release is tagged `vMAJOR.MINOR.PATCH` on the `main` branch, and a GitHub Release is created automatically.
+Poetic releases are numbered `vMAJOR.MINOR.PATCH` (for example, `v1.2.0`). Each release is tagged on the `main` branch and listed under [Releases](https://github.com/warwickallen/poetic/releases) on GitHub.
 
 ### Manual sync
 
-After cloning, add poetic as a remote and sync framework files whenever you like:
+Sync framework files at any time by running:
 
 ```bash
 bash scripts/sync-framework.sh            # sync from the ref in .poetic-version
@@ -150,7 +165,7 @@ The script fetches the `poetic` remote, checks out all framework files at the re
 
 ### Automatic sync (GitHub Actions)
 
-The included workflow (`.github/workflows/sync-framework.yml`) checks for updates every hour and opens a pull request if framework files are behind. Scheduled runs are **opt-in**: create a git-ignored `.poetic-config` file in your repo root to enable them:
+The included workflow (`.github/workflows/sync-framework.yml`) checks for updates every hour and opens a pull request (a proposal to merge the changes, which you review and approve on GitHub) if framework files are behind. Scheduled runs are **opt-in**: create a `.poetic-config` file in your repo root to enable them:
 
 ```
 auto_sync=true
@@ -165,14 +180,14 @@ sync_schedule=weekly
 | `daily` | Runs once per day at 09:00 UTC |
 | `hourly` | Runs every hour |
 
-Add `.poetic-config` to your `.gitignore` so it stays local. Manual runs via **Actions → Sync framework from poetic → Run workflow** always work regardless of this setting.
+Add `.poetic-config` to your `.gitignore` so it is not uploaded to GitHub — this keeps your preferences private and off other people's machines. Manual runs via **Actions → Sync framework from poetic → Run workflow** always work regardless of this setting.
 
 `.poetic-version` controls the update channel:
 
 | Setting | Behaviour |
 |---|---|
-| `channel=releases` | Opens a PR when a new semver tag is published *(recommended for most users)* |
-| `channel=main` | Opens a PR whenever `poetic/main` has new commits |
+| `channel=releases` | Opens a PR when a new numbered release (e.g. `v1.2.0`) is published *(recommended for most users)* |
+| `channel=main` | Opens a PR whenever `poetic/main` has new commits (cutting-edge, less stable) |
 
 To switch channels, edit `.poetic-version` and change the `channel` line.
 
@@ -191,3 +206,18 @@ If you improve a framework file (a tool, template, editor integration, or doc), 
 - [`docs/BUILD.md`](docs/BUILD.md) — GitHub Pages deployment details
 - [`docs/VIM-SYNTAX.md`](docs/VIM-SYNTAX.md) — Vim syntax highlighting setup
 - [`docs/QUICKSTART-VIM.md`](docs/QUICKSTART-VIM.md) — quick Vim setup guide
+
+## Further information
+
+### Getting help
+
+If something is not working or you have a question, [open an issue](https://github.com/warwickallen/poetic/issues) on GitHub.
+
+### Learning the tools
+
+If any of the tools used here are new to you:
+
+- **GitHub** — [GitHub's getting started guide](https://docs.github.com/en/get-started) explains repositories, commits, and pull requests
+- **Git** — [Pro Git](https://git-scm.com/book/en/v2) (free online) covers everything from first steps to advanced use
+- **The command line** — search for "command line basics" plus your operating system for a beginner tutorial
+- **Node.js / npm** — for poetic you mostly just need `npm install` (downloads the build tools once) and `npm run build` (generates the HTML); [nodejs.org/en/learn](https://nodejs.org/en/learn) has introductory guides if you want to go deeper
