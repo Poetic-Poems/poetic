@@ -1,6 +1,7 @@
 *.code-workspace
 *.sw[op]
 node_modules
+.poetic-config
 
 src/poems/yaml/*.yaml
 public/*.html
