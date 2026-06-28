@@ -123,7 +123,13 @@ The script fetches the `poetic` remote, checks out all framework files at the re
 
 ### Automatic sync (GitHub Actions)
 
-The included workflow (`.github/workflows/sync-framework.yml`) runs every Monday and opens a pull request if framework files are behind. No configuration is needed — it reads `.poetic-version` to know what to track.
+The included workflow (`.github/workflows/sync-framework.yml`) runs every Monday and opens a pull request if framework files are behind. Scheduled runs are **opt-in**: create a git-ignored `.poetic-config` file in your repo root to enable them:
+
+```
+auto_sync=true
+```
+
+Add `.poetic-config` to your `.gitignore` so it stays local. Manual runs via **Actions → Sync framework from poetic → Run workflow** always work regardless of this setting.
 
 `.poetic-version` controls the update channel:
 

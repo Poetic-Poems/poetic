@@ -24,12 +24,19 @@ jobs:
       - name: Check for .poetic-version
         id: precheck
         run: |
-          if [ -f .poetic-version ]; then
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-          else
+          if [ ! -f .poetic-version ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "No .poetic-version found — this looks like the poetic repo itself. Nothing to do."
+            exit 0
           fi
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ ! -f .poetic-config ] || ! grep -q '^auto_sync=true$' .poetic-config; then
+              echo "skip=true" >> "$GITHUB_OUTPUT"
+              echo "Scheduled auto-sync is not enabled. Create .poetic-config with 'auto_sync=true' to enable it."
+              exit 0
+            fi
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
 
       - name: Read pinned version
         id: pinned
