@@ -12,6 +12,23 @@ const { parseDateForSorting, formatDateForDisplay } = require("./date-utils");
 const beautify = require("js-beautify");
 // Individual poems are already built by the previous step in npm script chain
 
+function readPoeticConfig() {
+  const configPath = path.join(process.cwd(), ".poetic-config");
+  const config = {};
+  if (!fs.existsSync(configPath)) return config;
+  const lines = fs.readFileSync(configPath, "utf8").split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx === -1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const value = trimmed.slice(eqIdx + 1).trim();
+    config[key] = value;
+  }
+  return config;
+}
+
 function extractCustomCSSFromStyles() {
   const publicDir = path.join(process.cwd(), "public");
   let combined = "";
@@ -60,7 +77,7 @@ function hasActiveAudio(audioData) {
   return false;
 }
 
-function concatenateAllHtmlFiles(dirPath) {
+function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg") {
   try {
     // Read YAML files from the poems directory for metadata
     const poemsDir = path.join(process.cwd(), "src", "poems", "yaml");
@@ -158,7 +175,7 @@ function concatenateAllHtmlFiles(dirPath) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fragments &#38; Unity &#8212; Concatenated View</title>
-    <link rel="icon" href="poetic-logo.svg" type="image/svg+xml">
+    <link rel="icon" href="${favicon}" type="image/svg+xml">
     <link rel="stylesheet" href="poetic.css">
     <link rel="stylesheet" href="custom.css">
     <style>
@@ -408,7 +425,7 @@ function concatenateAllHtmlFiles(dirPath) {
   }
 }
 
-function generateIndexHtml(publicDir) {
+function generateIndexHtml(publicDir, favicon = "poetic-logo.svg") {
   try {
     // Read YAML files from the poems directory for metadata
     const poemsDir = path.join(process.cwd(), "src", "poems", "yaml");
@@ -478,6 +495,11 @@ function generateIndexHtml(publicDir) {
         /const allPoems = \[[\s\S]*?\];/,
         `const allPoems = [\n${poemArrayString}\n      ];`
       );
+      // Keep the favicon in sync with config
+      indexContent = indexContent.replace(
+        /<link rel="icon" href="[^"]*"/,
+        `<link rel="icon" href="${favicon}"`
+      );
     } else {
       // Create a default index.html template
       indexContent = `<!DOCTYPE html>
@@ -486,7 +508,7 @@ function generateIndexHtml(publicDir) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fragments &#38; Unity</title>
-    <link rel="icon" href="poetic-logo.svg" type="image/svg+xml">
+    <link rel="icon" href="${favicon}" type="image/svg+xml">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -635,9 +657,15 @@ function main() {
     process.exit(1);
   }
 
+  const config = readPoeticConfig();
+  const favicon = config.favicon || "poetic-logo.svg";
+  if (config.favicon) {
+    console.log(`Using favicon from .poetic-config: ${favicon}`);
+  }
+
   console.log("Step 1: Building all-poems.html...");
 
-  const concatenatedContent = concatenateAllHtmlFiles(publicDir);
+  const concatenatedContent = concatenateAllHtmlFiles(publicDir, favicon);
   const allPoemsOutputPath = path.join(publicDir, "all-poems.html");
 
   const prettifiedContent = beautify.html(concatenatedContent, {
@@ -653,7 +681,7 @@ function main() {
 
   console.log("\nStep 2: Updating index.html...");
 
-  const updatedIndexContent = generateIndexHtml(publicDir);
+  const updatedIndexContent = generateIndexHtml(publicDir, favicon);
   if (updatedIndexContent) {
     const indexPath = path.join(publicDir, "index.html");
     const prettifiedIndexContent = beautify.html(updatedIndexContent, {

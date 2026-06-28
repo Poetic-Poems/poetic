@@ -139,3 +139,19 @@ src/tools/
 ### Customisation
 
 The build script uses the same logic as the development server (`src/tools/serve-static.js`) but generates a static file instead of serving dynamically. You can modify the styling or functionality by editing the build script.
+
+### Favicon
+
+The browser-tab icon defaults to `public/poetic-logo.svg`, which is included with the framework. To use a different icon, place your file in `public/` and set the `favicon` key in `.poetic-config`:
+
+```
+favicon=my-icon.png
+```
+
+The build will then emit `<link rel="icon" href="my-icon.png" ...>` in both `index.html` and `all-poems.html`. Any file format the browser supports works (`svg`, `png`, `ico`, etc.).
+
+To keep the default logo but prevent it being overwritten on the next framework sync, add it to `skip_paths`:
+
+```
+skip_paths=public/poetic-logo.svg
+```

@@ -181,6 +181,7 @@ sync_schedule=weekly
 | `auto_sync` | Set to `true` to enable scheduled auto-sync (default: disabled) |
 | `sync_schedule` | How often the workflow runs: `hourly`, `daily`, or `weekly` (default: `weekly`) |
 | `skip_paths` | Comma-separated list of framework paths to leave untouched during sync (e.g. `public/poetic.css`) |
+| `favicon` | Filename of the favicon shown in browser tabs (default: `poetic-logo.svg`; file must exist in `public/`) |
 
 `sync_schedule` controls how often the workflow actually does anything (default `weekly` if omitted):
 
