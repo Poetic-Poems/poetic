@@ -103,6 +103,43 @@ Files beginning with `_` (e.g. `_example.poem`, `_shared.yaml`) are excluded fro
 
 The included workflow (`.github/workflows/build-poems.yml`) builds and deploys to GitHub Pages on every push to `main`. Enable GitHub Pages in your repo settings (source: GitHub Actions).
 
+## Staying up to date
+
+### Versioning
+
+Poetic uses [semantic versioning](https://semver.org/). Each release is tagged `vMAJOR.MINOR.PATCH` on the `main` branch, and a GitHub Release is created automatically.
+
+### Manual sync
+
+After cloning, add poetic as a remote and sync framework files whenever you like:
+
+```bash
+bash scripts/sync-framework.sh            # sync from the ref in .poetic-version
+bash scripts/sync-framework.sh --ref main           # always take the latest commit
+bash scripts/sync-framework.sh --ref v1.2.0         # pin to a specific release
+```
+
+The script fetches the `poetic` remote, checks out all framework files at the requested ref, and updates `.poetic-version` with the synced commit. Review the staged changes, then commit.
+
+### Automatic sync (GitHub Actions)
+
+The included workflow (`.github/workflows/sync-framework.yml`) runs every Monday and opens a pull request if framework files are behind. No configuration is needed — it reads `.poetic-version` to know what to track.
+
+`.poetic-version` controls the update channel:
+
+| Setting | Behaviour |
+|---|---|
+| `channel=releases` | Opens a PR when a new semver tag is published *(recommended for most users)* |
+| `channel=main` | Opens a PR whenever `poetic/main` has new commits |
+
+To switch channels, edit `.poetic-version` and change the `channel` line.
+
+To trigger a sync immediately (e.g., to pick up a specific release), use **Actions → Sync framework from poetic → Run workflow** and optionally enter a ref.
+
+### Contributing back to poetic
+
+If you improve a framework file (a tool, template, editor integration, or doc), please open a pull request against [warwickallen/poetic](https://github.com/warwickallen/poetic). Personal poems and your `README.md` stay in your own repo.
+
 ## Documentation
 
 - [`docs/POEM-SYNTAX.md`](docs/POEM-SYNTAX.md) — full `.poem` format specification

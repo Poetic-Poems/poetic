@@ -1,0 +1,126 @@
+name: Sync framework from poetic
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # Every Monday at 09:00 UTC
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'poetic ref to sync (tag, "main", or leave blank to use .poetic-version)'
+        required: false
+        default: ''
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for .poetic-version
+        id: precheck
+        run: |
+          if [ -f .poetic-version ]; then
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "No .poetic-version found — this looks like the poetic repo itself. Nothing to do."
+          fi
+
+      - name: Read pinned version
+        id: pinned
+        if: steps.precheck.outputs.skip == 'false'
+        run: |
+          channel=$(grep '^channel=' .poetic-version | cut -d= -f2)
+          ref=$(grep '^ref=' .poetic-version | cut -d= -f2)
+          commit=$(grep '^commit=' .poetic-version | cut -d= -f2)
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+          echo "ref=$ref"         >> "$GITHUB_OUTPUT"
+          echo "commit=$commit"   >> "$GITHUB_OUTPUT"
+
+      - name: Determine target ref and check for updates
+        id: check
+        if: steps.precheck.outputs.skip == 'false'
+        run: |
+          channel="${{ steps.pinned.outputs.channel }}"
+          current_ref="${{ steps.pinned.outputs.ref }}"
+          current_commit="${{ steps.pinned.outputs.commit }}"
+          override_ref="${{ github.event.inputs.ref }}"
+          poetic_url="https://github.com/warwickallen/poetic.git"
+
+          if [ -n "$override_ref" ]; then
+            target_ref="$override_ref"
+          elif [ "$channel" = "releases" ]; then
+            # Find the latest semver tag on poetic
+            latest_tag=$(git ls-remote --tags "$poetic_url" \
+              | grep -oP 'refs/tags/v\K[0-9]+\.[0-9]+\.[0-9]+$' \
+              | sort -V | tail -1)
+            target_ref="${latest_tag:+v$latest_tag}"
+            target_ref="${target_ref:-$current_ref}"
+          else
+            target_ref="$current_ref"
+          fi
+
+          # Resolve target_ref to a commit
+          if [ "$target_ref" = "main" ]; then
+            target_commit=$(git ls-remote "$poetic_url" HEAD | cut -f1)
+          else
+            target_commit=$(git ls-remote "$poetic_url" "refs/tags/$target_ref" | cut -f1)
+          fi
+
+          echo "target_ref=$target_ref"       >> "$GITHUB_OUTPUT"
+          echo "target_commit=$target_commit" >> "$GITHUB_OUTPUT"
+
+          if [ "$target_ref" = "$current_ref" ] && [ "$target_commit" = "$current_commit" ]; then
+            echo "up_to_date=true" >> "$GITHUB_OUTPUT"
+            echo "Already up to date at $target_ref (${target_commit:0:8})."
+          else
+            echo "up_to_date=false" >> "$GITHUB_OUTPUT"
+            echo "Update available: $current_ref (${current_commit:0:8}) → $target_ref (${target_commit:0:8})"
+          fi
+
+      - name: Sync framework files
+        if: steps.precheck.outputs.skip == 'false' && steps.check.outputs.up_to_date == 'false'
+        run: bash scripts/sync-framework.sh --ref "${{ steps.check.outputs.target_ref }}"
+
+      - name: Open pull request
+        if: steps.precheck.outputs.skip == 'false' && steps.check.outputs.up_to_date == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          target_ref="${{ steps.check.outputs.target_ref }}"
+          target_commit="${{ steps.check.outputs.target_commit }}"
+          branch="sync-framework/${target_ref//\//-}-${target_commit:0:8}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "No framework files changed — nothing to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: sync framework from poetic $target_ref"
+          git push origin "$branch"
+
+          gh pr create \
+            --title "chore: sync framework from poetic $target_ref" \
+            --body "$(cat <<EOF
+Automated sync of framework files from [warwickallen/poetic](https://github.com/warwickallen/poetic).
+
+| | |
+|---|---|
+| **Version** | \`$target_ref\` |
+| **Commit** | \`${target_commit:0:8}\` |
+
+Review the diff and merge when ready. If you have customised any framework files, resolve those changes before merging.
+EOF
+)" \
+            --base main \
+            --head "$branch"
