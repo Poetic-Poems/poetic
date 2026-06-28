@@ -164,6 +164,7 @@ function concatenateAllHtmlFiles(dirPath) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fragments &#38; Unity &#8212; Concatenated View</title>
+    <link rel="icon" href="poetic-logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="styles.css">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
@@ -490,6 +491,7 @@ function generateIndexHtml(publicDir) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fragments &#38; Unity</title>
+    <link rel="icon" href="poetic-logo.svg" type="image/svg+xml">
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

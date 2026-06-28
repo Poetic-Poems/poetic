@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Poetic logo mark
+  A fountain-pen nib with vent hole and slit.
+
+  Colour:     #534AB7 (purple)
+  Canvas:     80 x 80 px, square viewBox, nib centred horizontally
+  Background: transparent; suitable for use over any surface
+
+  Construction:
+  The nib body is a filled path. The vent hole (ellipse) and slit
+  (rectangle) are cut out via an SVG mask rather than an even-odd
+  compound path. The mask is a NOT AND operation: it subtracts the
+  vent and slit from the nib wherever they overlap, and any overflow
+  of those shapes beyond the nib boundary is harmless because there
+  is nothing there to unmask.
+
+  The slit rectangle is extended upward to y=30 (well inside the
+  vent ellipse, whose top sits at y=29) so that the two cutouts
+  overlap by 13 px and there is no gap or artefact at their junction.
+  It is also extended to y=74 (2 px past the nib tip at y=72) so
+  there is no edge-case artefact at the very point.
+
+  Favicon use:
+  Modern browsers accept SVG favicons directly. Add to your HTML head:
+    link rel="icon" href="poetic-logo.svg" type="image/svg+xml"
+    link rel="icon" href="poetic-logo.png" (legacy fallback)
+  For the PNG fallback, rasterise at 32 x 32 px and 16 x 16 px.
+-->
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 80 80"
+  role="img"
+  aria-labelledby="poetic-logo-title"
+>
+  <title id="poetic-logo-title">Poetic</title>
+  <desc>
+    A fountain-pen nib, the logo mark for the Poetic plain-text
+    poem-authoring framework. The vent hole and slit are transparent
+    cut-outs that reveal whatever surface the logo is placed upon.
+  </desc>
+
+  <defs>
+    <!--
+      nib-mask: white = keep (visible), black = cut out (transparent).
+      The full-canvas white rect makes the nib body visible everywhere,
+      then the ellipse and rectangle punch the vent and slit through.
+    -->
+    <mask id="nib-mask">
+      <rect x="0" y="0" width="80" height="80" fill="white"/>
+      <ellipse cx="40" cy="36" rx="5" ry="7" fill="black"/>
+      <rect x="39.25" y="30" width="1.5" height="44" fill="black"/>
+    </mask>
+  </defs>
+
+  <!-- Nib body: hexagonal shoulder tapering to a point -->
+  <path
+    d="M28 16 L52 16 L64 34 L44 68 L40 72 L36 68 L16 34 Z"
+    fill="#534AB7"
+    mask="url(#nib-mask)"
+  />
+
+</svg>

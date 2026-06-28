@@ -57,6 +57,7 @@ FRAMEWORK_PATHS=(
   src/poems/yaml/_example.yaml
   src/poems/yaml/_shared.yaml
   public/styles.css
+  public/poetic-logo.svg
   .github/workflows/build-poems.yml
   .github/workflows/sync-framework.yml
   scripts/sync-framework.sh
