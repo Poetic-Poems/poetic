@@ -1,0 +1,332 @@
+/* Poem site CSS */
+
+.poem-info {
+  color: gray;
+  font-size: 90%;
+  padding-bottom: 3ex;
+}
+
+.poem-info .author::before,
+.poem-info #author::before {
+  content: "by ";
+}
+
+.poem-info .title,
+.poem-info #title {
+  display: none;
+}
+
+.song-segment {
+  color: gray;
+  display: block;
+  height: 1ex;
+  font-family: monospace;
+  font-size: 70%;
+  font-style: italic;
+  letter-spacing: 5%;
+  opacity: 70%;
+  overflow: visible;
+  position: relative;
+  text-transform: lowercase;
+  top: -2ex;
+}
+.song-segment + br {
+  display: block;
+  height: 0;
+}
+
+.song-link {
+  color: gray;
+  font-style: italic;
+  padding-top: 4ex;
+}
+
+.postscript {
+  color: gray;
+  font-size: 80%;
+  margin: 4ex 0;
+  padding: 2ex 0;
+  border-width: 1px;
+  border-color: purple;
+  border-style: solid;
+  border-right-style: none;
+  border-left-style: none;
+}
+
+.postscript :first-child {
+  font-weight: bold;
+}
+
+/* Analysis */
+
+.analysis {
+  background-color: #ffeedd;
+  border: 1px solid #eeaa00;
+  border-radius: 5px;
+  color: #333;
+  line-height: 1.6;
+  margin: 2ex auto;
+  max-width: 800px;
+}
+
+button.analysis {
+  display: block;
+  font-size: 90%;
+  font-weight: bold;
+  padding: 1ex 1em;
+}
+
+button.analysis.hide {
+  background-color: #fff8ee;
+}
+
+.full-or-synopsis-selector {
+  display: flex;
+  justify-content: space-around;
+  margin-top: -2ex;
+}
+
+button.analysis.selector {
+  border-radius: 3px;
+  display: inline-block;
+  font-size: 80%;
+  font-weight: normal;
+  line-height: 1.2;
+  margin: 1ex auto;
+}
+
+button.selected {
+  background-color: #fff8ee;
+}
+
+div.analysis {
+  display: none;
+  padding: 2ex 2em;
+}
+
+.analysis h2 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.analysis h3 {
+  color: #34495e;
+  margin: 20px 0 10px;
+}
+
+.analysis h4 {
+  color: #34495e;
+  margin: 15px 0 8px;
+}
+
+.analysis p {
+  margin-bottom: 15px;
+}
+
+.analysis ul,
+.analysis ol {
+  margin: 10px 0 15px 20px;
+}
+
+.analysis li {
+  margin-bottom: 10px;
+}
+
+.analysis em {
+  font-style: italic;
+}
+
+/* Audiomack Lazy Loading */
+
+.load-audiomack-btn {
+  background: #001833;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.load-audiomack-btn:hover {
+  background: #0056CC;
+}
+
+.load-audiomack-btn:active {
+  background: #004499;
+}
+
+.audiomack-container {
+  margin: 10px 0;
+}
+
+.audiomack-player {
+  width: 100%;
+}
+
+/* Dark mode support using .dark-mode class (for Blogger JavaScript workaround) */
+html.dark-mode {
+  color-scheme: dark;
+}
+
+html.dark-mode :root {
+  --bg: #0b0d0f;
+  --surface: #0f1113;
+  --text: #e6eef6;
+  --muted: #9aa6b2;
+  --accent: #7fb3ff;
+  --border: #23303a;
+}
+
+html.dark-mode body {
+  background: #0b0d0f !important;
+  color: #e6eef6;
+}
+
+html.dark-mode .header,
+html.dark-mode .poem-section,
+html.dark-mode .toc,
+html.dark-mode .toc-table th,
+html.dark-mode .toc-table tr,
+html.dark-mode .toc-table td,
+html.dark-mode .content-inner,
+html.dark-mode .content-outer,
+html.dark-mode .main-inner,
+html.dark-mode .post,
+html.dark-mode .main-outer,
+html.dark-mode .sidebar {
+  background: #0f1113 !important;
+  color: #e6eef6 !important;
+  box-shadow: none !important;
+  border-color: #23303a !important;
+}
+
+html.dark-mode h1,
+html.dark-mode .subtitle,
+html.dark-mode .poem-title,
+html.dark-mode .poem-content,
+html.dark-mode .back-link {
+  color: #e6eef6 !important;
+}
+
+html.dark-mode .toc h2 {
+  color: #f0f6fb !important;
+}
+
+html.dark-mode .toc-table th > a,
+html.dark-mode .toc-table th > a:visited {
+  color: #007AFF !important;
+}
+
+html.dark-mode a {
+  color: #7fb3ff;
+}
+
+html.dark-mode .poem-info,
+html.dark-mode .song-segment,
+html.dark-mode .song-link,
+html.dark-mode .postscript {
+  color: #9aa6b2;
+}
+
+html.dark-mode .analysis {
+  background-color: #0e1619;
+  border-color: #23303a;
+  color: #e6eef6;
+}
+
+html.dark-mode button.analysis {
+  background-color: #122026;
+  color: #e6eef6;
+}
+
+html.dark-mode button.analysis.hide,
+html.dark-mode button.selected {
+  background-color: #0c1416;
+}
+
+html.dark-mode .audiomack-container {
+  color: #e6eef6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b0d0f;
+    --surface: #0f1113;
+    --text: #e6eef6;
+    --muted: #9aa6b2;
+    --accent: #7fb3ff;
+    --border: #23303a;
+  }
+
+  body {
+    background: var(--bg) !important;
+    color: var(--text);
+  }
+
+  /* Override inline styles in generated pages (which can set light backgrounds) */
+  .header,
+  .poem-section,
+  .toc,
+  .toc-table th,
+  .toc-table tr,
+  .toc-table td,
+  .content-inner,
+  .content-outer,
+  .main-inner,
+  .post,
+  .main-outer,
+  .sidebar {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    box-shadow: none !important;
+    border-color: var(--border) !important;
+  }
+
+  h1, .subtitle, .poem-title, .poem-content, .back-link {
+    color: var(--text) !important;
+  }
+
+  /* Make the TOC heading slightly lighter in dark mode */
+  .toc h2 {
+    color: #f0f6fb !important;
+  }
+
+  /* Keep the TOC header links the same blue in both themes */
+  .toc-table th > a,
+  .toc-table th > a:visited {
+    color: #007AFF !important;
+  }
+
+  a { color: var(--accent); }
+
+  .poem-info,
+  .song-segment,
+  .song-link,
+  .postscript {
+    color: var(--muted);
+  }
+
+  .analysis {
+    background-color: #0e1619;
+    border-color: var(--border);
+    color: var(--text);
+  }
+
+  button.analysis {
+    background-color: #122026;
+    color: var(--text);
+  }
+
+  button.analysis.hide,
+  button.selected {
+    background-color: #0c1416;
+  }
+
+  .audiomack-container {
+    color: var(--text);
+  }
+}
