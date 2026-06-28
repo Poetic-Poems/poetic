@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-cd ~/poems
+cd $(git rev-parse --show-toplevel)
 re="$1"
 [ "${re:0:1}"     == "^" ] && re="${re:1}"    || re=".*$re"
 [ "${re:${#a}-1}" == "$" ] && re="${re:0:-1}" || re="$re.*"
