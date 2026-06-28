@@ -192,6 +192,7 @@ sync_schedule=weekly
 | `sync_schedule` | How often the workflow runs: `hourly`, `daily`, or `weekly` (default: `weekly`) |
 | `skip_paths` | Comma-separated list of framework paths to leave untouched during sync (e.g. `public/poetic.css`) |
 | `favicon` | Filename of the favicon shown in browser tabs (default: `poetic-logo.svg`; file must exist in `public/`) |
+| `subtitle` | Subtitle shown beneath the site title on the index page |
 
 `sync_schedule` controls how often the workflow actually does anything (default `weekly` if omitted):
 
@@ -201,7 +202,7 @@ sync_schedule=weekly
 | `daily` | Runs once per day at 09:00 UTC |
 | `hourly` | Runs every hour |
 
-Add `.poetic-config` to your `.gitignore` so it is not uploaded to GitHub — this keeps your preferences private and off other people's machines. Manual runs via **Actions → Sync framework from poetic → Run workflow** always work regardless of this setting.
+Commit `.poetic-config` to your repo so that GitHub Actions can read it when building and deploying your site. Settings such as `favicon`, `subtitle`, `auto_sync`, and `sync_schedule` are only applied during CI if the file is present in the repository. Manual runs via **Actions → Sync framework from poetic → Run workflow** always work regardless of this setting.
 
 `.poetic-version` controls the update channel:
 
