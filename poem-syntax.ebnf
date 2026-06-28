@@ -1,0 +1,510 @@
+(* ============================================================================
+   EBNF Grammar for Poem File Format (.poem)
+
+   This grammar defines the structure of poem files used in the poems system.
+
+   Notation:
+   - Non-terminals are written in lowercase with underscores
+   - Terminals are written in double quotes or defined as character patterns
+   - (* ... *) denotes comments
+   - [ ... ] denotes optional elements
+   - { ... } denotes zero or more repetitions
+   - ( ... ) denotes grouping
+   - | denotes alternation
+   - ? denotes any single character
+   ============================================================================ *)
+
+(* ============================================================================
+   TOP-LEVEL STRUCTURE
+   ============================================================================ *)
+
+poem_file = [ preamble ],
+            header,
+            blank_lines,
+            versions_section,
+            [ blank_lines,
+              end_of_poem_marker,
+              [ blank_lines,
+                audio_section,
+                [ blank_lines,
+                  end_of_audio_marker,
+                  [ blank_lines,
+                    postscript_section,
+                    [ blank_lines,
+                      end_of_postscript_marker,
+                      [ blank_lines,
+                        analysis_section,
+                        [ blank_lines,
+                          end_of_file_marker,
+                          blank_lines,
+                          [ ignored_content ] ] ] ] ] ] ] ] ;
+
+(* ============================================================================
+   PREAMBLE SECTION
+   ============================================================================ *)
+
+preamble = preamble_item, { preamble_item } ;
+
+preamble_item = blank_line | variable_definition ;
+
+(* ============================================================================
+   HEADER SECTION
+   ============================================================================ *)
+
+header = title_line,
+         newline,
+         [ author_line, newline ],
+         date_line,
+         newline ;
+
+title_line = text_content ;
+
+author_line = text_content ;
+
+date_line = year, "-", month, "-", day ;
+
+year = digit, digit, digit, digit ;
+
+month = ("0", digit) | ("1", ("0" | "1" | "2")) ;
+
+day = (("0" | "1" | "2"), digit) | ("3", ("0" | "1")) ;
+
+(* ============================================================================
+   VERSIONS SECTION
+   ============================================================================ *)
+
+versions_section = version, { [ blank_lines, version_divider ], blank_lines, version } ;
+
+version = [ blank_lines, version_label, blank_lines ],
+          segments ;
+
+version_label = "{{", whitespace, label_text, whitespace, "}}", { ? any character except newline ? } ;
+
+segments = segment, { blank_lines, segment } ;
+
+segment = [ segment_label, blank_lines ],
+          segment_content ;
+
+segment_label = "{", label_text, "}", { ? any character except newline ? } ;
+
+segment_content = content_line, { newline, content_line } ;
+
+content_line = [ leading_whitespace ], text_with_markup ;
+
+(* ============================================================================
+   AUDIO SECTION
+   ============================================================================ *)
+
+audio_section = { audiomack_line | suno_line, newline } ;
+
+audiomack_line = "Audiomack" ;
+
+suno_line = "Suno:", whitespace, url_path ;
+
+url_path = { url_char } ;
+
+url_char = letter | digit | "/" | "-" | "_" | "." | "~" | ":" | "@" | "!" | "$" | "&" | "'" | "(" | ")" | "*" | "+" | "," | ";" | "=" ;
+
+(* ============================================================================
+   POSTSCRIPT SECTION
+   ============================================================================ *)
+
+postscript_section = [ postscript_note, { [ blank_lines, postscript_divider ], blank_lines, postscript_note } ] ;
+
+postscript_note = [ postscript_label, blank_lines ],
+                  postscript_content,
+                  { blank_lines, literal_block, blank_lines } ;
+
+postscript_label = "{", label_text, "}", { ? any character except newline ? } ;
+
+(* Postscript prose is rendered as GitHub-Flavoured Markdown (see gfm_content). *)
+postscript_content = gfm_content ;
+
+paragraph = text_with_markup, { single_newline, text_with_markup } ;
+
+(* ----------------------------------------------------------------------------
+   BLOCKS: <<< ... >>>
+   A block is opened by "<<<" optionally followed by a tag word. The tag
+   selects processing:
+     - no tag, or any unrecognised tag  -> literal block (raw passthrough,
+       no markup conversion, no variable substitution)
+     - "markdown" or "md"               -> markdown block (variables are
+       substituted, then content is rendered as GitHub-Flavoured Markdown)
+   ---------------------------------------------------------------------------- *)
+
+literal_block = block_start,
+                newline,
+                { block_line },
+                block_end ;
+
+block_start = "<<<", [ block_tag ], { ? any character except newline ? } ;
+
+block_tag = letter, { letter | digit } ;
+
+block_end = ">>>", { ? any character except newline ? } ;
+
+block_line = block_content, newline ;
+
+block_content = { ? any character except newline ? } ;
+
+(* GitHub-Flavoured Markdown content. The exact grammar is delegated to a
+   Markdown processor (markdown-it); it is not specified here. It supports
+   headings (offset +2: # -> h3 ... clamped at h6), ordered/unordered/nested
+   lists, tables, fenced code, blockquotes, strikethrough, inline code, links,
+   emphasis/strong, and raw HTML. Variables are substituted before rendering. *)
+gfm_content = { ? any line that is not a structural token ? } ;
+
+(* ============================================================================
+   ANALYSIS SECTION
+   ============================================================================ *)
+
+analysis_section = [ synopsis_section, blank_lines, full_section ]
+                 | [ full_section ] ;
+
+synopsis_section = synopsis_label,
+                   blank_lines,
+                   analysis_content ;
+
+synopsis_label = "{Synopsis}", { ? any character except newline ? } ;
+
+full_section = full_label,
+               blank_lines,
+               analysis_content ;
+
+full_label = "{Full}", { ? any character except newline ? } ;
+
+(* Analysis content is rendered as GitHub-Flavoured Markdown (see gfm_content). *)
+analysis_content = gfm_content ;
+
+(* Blockquote: in WYSIWYG poem segments, any content_line beginning with optional
+   indentation then '>' (i.e. /^\s*>/) is a blockquote line. Contiguous such lines
+   are grouped into one blockquote; the leading '>' (and one optional following
+   space) is removed and the inner text is processed for inline markup. (In the
+   analysis/postscript Markdown sections, blockquotes are handled by the Markdown
+   processor instead.) *)
+
+blockquote = blockquote_line, { newline, blockquote_line } ;
+
+blockquote_line = [ leading_whitespace ], ">", [ " " ], text_content ;
+
+(* ============================================================================
+   COMMENT BLOCKS
+   ============================================================================ *)
+
+comment_block = comment_start,
+                { comment_line },
+                comment_end ;
+
+comment_start = "<<#", { ? any character except newline ? }, newline ;
+
+comment_end = "#>>", { ? any character except newline ? }, newline ;
+
+comment_line = { ? any character except newline ? }, newline ;
+
+(* Note: Comment blocks can appear anywhere in the file and are completely
+   ignored during parsing. They do not contribute to the output. *)
+
+(* ============================================================================
+   VARIABLES
+   ============================================================================ *)
+
+variable_definition = single_line_variable | multi_line_variable ;
+
+single_line_variable = single_line_var_start,
+                       variable_name,
+                       single_line_var_equals,
+                       variable_value ;
+
+single_line_var_start = "={" ;
+
+single_line_var_equals = "}=" ;
+
+multi_line_variable = multi_line_var_start,
+                      variable_name,
+                      multi_line_var_open,
+                      { ? any character except newline ? },
+                      newline,
+                      multi_line_var_content,
+                      multi_line_var_close,
+                      { ? any character except newline ? },
+                      newline ;
+
+multi_line_var_start = "={" ;
+
+multi_line_var_open = "}<<=" ;
+
+multi_line_var_close = "=>>" ;
+
+multi_line_var_content = { multi_line_var_line } ;
+
+multi_line_var_line = { ? any character except newline ? }, newline ;
+
+variable_name = ( letter | digit ), { variable_name_char } ;
+
+variable_name_char = ? any character except "{", "}", "$", "<", ">" and space at end ? ;
+
+variable_value = { ? any character except newline ? } ;
+
+variable_substitution = "${", variable_name, "}" ;
+
+(* Note: Variable definitions must be anchored to the start of a line.
+   Variables are file-scoped and processed before markup conversion.
+   Variable names must start with a letter or digit and cannot contain
+   {, }, $, <, > characters, and cannot end with a space.
+   See semantic constraints for complete variable behaviour rules. *)
+
+(* ============================================================================
+   MARKUP SYSTEM
+   ============================================================================ *)
+
+text_with_markup = { markup_element } ;
+
+markup_element = escaped_char
+               | strong
+               | emphasis
+               | strikethrough
+               | link
+               | span_element
+               | smart_single_quote
+               | smart_double_quote
+               | em_dash
+               | en_dash
+               | ampersand
+               | apostrophe
+               | variable_substitution
+               | plain_char ;
+
+escaped_char = "\", ( "_" | "*" | "~" | "[" | "`" | '"' | "&" | "'" | "-" | "<" | ">" | "=" | "$" | "/" | "{" | "}" | "\" ) ;
+
+(* Emphasis follows Markdown conventions: single markers = italic, double = bold. *)
+emphasis = ( "*", markup_content, "*" ) | ( "_", markup_content, "_" ) ;
+
+strong = ( "**", markup_content, "**" ) | ( "__", markup_content, "__" ) ;
+
+strikethrough = "~", markup_content, "~" ;
+
+link = "[", link_text, "|", link_url, "]" ;
+
+link_text = markup_content ;
+
+link_url = { url_char } ;
+
+span_element = "/.", span_class_name, "{", span_content, "}" ;
+
+span_class_name = { span_class_char } ;
+
+span_class_char = letter | digit | "." | "-" ;
+
+span_content = { span_content_char } ;
+
+span_content_char = ? any character except "}" ? ;
+
+markup_content = { markup_element } ;
+
+smart_single_quote = "`", text_content, "`" ;
+
+smart_double_quote = '"', text_content, '"' ;
+
+em_dash = "---" ;
+
+en_dash = "--" ;
+
+ampersand = "&" ;
+
+apostrophe = "'" ;
+
+plain_char = ? any character except markup special characters ? ;
+
+(* Note: Markup pairs (emphasis, strong, strikethrough, quotes, span elements)
+   match across lines within a paragraph but not across paragraph boundaries.
+   Unmatched pairs are not converted. Markup can be nested. *)
+
+(* ============================================================================
+   DIVIDERS AND MARKERS
+   ============================================================================ *)
+
+version_divider = "----", { ? any character except newline ? } ;
+
+postscript_divider = "----", { ? any character except newline ? } ;
+
+end_of_poem_marker = "====", { ? any character except newline ? } ;
+
+end_of_audio_marker = "====", { ? any character except newline ? } ;
+
+end_of_postscript_marker = "====", { ? any character except newline ? } ;
+
+end_of_file_marker = "====", { ? any character except newline ? } ;
+
+(* Note: All dividers and markers must be anchored to the start of a line.
+   Any text after the marker on the same line is ignored. *)
+
+(* ============================================================================
+   IGNORED CONTENT
+   ============================================================================ *)
+
+ignored_content = { ignored_line } ;
+
+ignored_line = { ? any character except newline ? }, newline ;
+
+(* Note: Any content after the final end_of_file_marker is ignored *)
+
+(* ============================================================================
+   BASIC ELEMENTS
+   ============================================================================ *)
+
+label_text = text_content ;
+
+text_content = { text_char } ;
+
+text_char = letter | digit | whitespace | punctuation | symbol ;
+
+letter = uppercase | lowercase ;
+
+uppercase = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" |
+            "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" ;
+
+lowercase = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" |
+            "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ;
+
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+punctuation = "." | "," | ";" | ":" | "!" | "?" | "'" | '"' | "(" | ")" | "[" | "]" | "{" | "}" | "-" | "/" ;
+
+symbol = "@" | "#" | "$" | "%" | "^" | "&" | "*" | "+" | "=" | "_" | "|" | "~" | "`" | "<" | ">" ;
+
+whitespace = " " | tab ;
+
+tab = ? horizontal tab character (U+0009) ? ;
+
+newline = ? line feed character (U+000A) or carriage return + line feed (U+000D U+000A) ? ;
+
+single_newline = newline ;
+
+blank_line = [ whitespace ], newline ;
+
+blank_lines = { blank_line } ;
+
+leading_whitespace = ( " " | tab ), { " " | tab } ;
+
+(* ============================================================================
+   SEMANTIC CONSTRAINTS (not expressible in pure EBNF)
+   ============================================================================ *)
+
+(*
+   1. Each version must contain at least one segment
+
+   2. If a synopsis section is present, a full section must also be present
+
+   3. Dividers, markers, labels, and literal block delimiters must appear
+      at the start of a line (column 0)
+
+   4. Any text after a line-anchored token on the same line is ignored.
+      This applies to: dividers (----), end markers (====), version labels
+      ({{ ... }}), segment labels ({ ... }), postscript labels, analysis
+      labels ({Synopsis}, {Full}), literal block markers (<<<, >>>),
+      comment block markers (<<#, #>>), and multi-line variable markers
+      (={...}<<=, =>>). Single-line variable definitions (={...}=) are
+      excluded as everything after }= is the variable value (not ignored)
+
+   5. Version labels and segment labels have leading and trailing whitespace
+      trimmed
+
+   6. Postscript notes and analysis sections are rendered as GitHub-Flavoured
+      Markdown (whitespace follows Markdown rules: single newlines are soft
+      breaks; blank lines separate blocks). The WYSIWYG markup notes below
+      (8-11) apply to poem segments and labels, not to these Markdown sections.
+
+   7. Within poem segments, all newlines and indentation are preserved
+
+   8. Emphasis follows Markdown conventions everywhere: * or _ = italic,
+      ** or __ = bold
+
+   9. Markup special character pairs (*, _, ~, `, ", and span elements)
+      match across lines within a paragraph but not across paragraph boundaries
+
+   10. Unmatched markup pairs are not converted and remain as literal text
+
+   11. Markup can be nested (e.g., `[*_text_*|url]`, `/.c{*text*}`)
+
+   12. Span elements use the syntax `/.classname{content}` where classname
+       must match the pattern /^\w(?:[\w\.-]*\w)?$/ (word char, optional
+       middle section of word chars/dots/hyphens, word char). Multiple classes
+       can be specified (e.g., `class1.class2`). If the class name is empty
+       (`/.{content}`), a warning is emitted and `<span>content</span>` is
+       produced without a class attribute. If the class name is invalid, a
+       warning is emitted and the markup is left unchanged. Empty content
+       (`/.class{}`) is valid and produces `<span class="class"></span>`
+
+   13. Comment blocks (<<# ... #>>) can appear anywhere and are completely
+       removed during parsing
+
+   14. The author line is optional; if omitted, defaults to the value of the ${author} variable
+
+   15. Dividers (both ---- and ====) are only required if there is subsequent
+       non-empty content. If the parser reaches end-of-file, all remaining
+       sections are assumed to be empty.
+
+   16. The end_of_file_marker (====) before comments is optional - only
+       required if followed by ignored content (comments)
+
+   17. Blank lines before and after dividers, markers, labels, and literal
+       block delimiters have no effect on output (they are normalized)
+
+   18. Variables can be defined anywhere in the file, except inside literal
+       blocks or multi-line variable blocks
+
+   19. Variables are file-scoped
+
+   20. If a variable is used before it is defined, no substitution occurs;
+       ${undefined} remains as literal text (parsers should emit a warning)
+
+   21. Variables may be redefined; the old value is clobbered
+
+   22. Variable definition lines do not appear in output and do not count
+       as content lines in their containing section
+
+   23. Variables may be nested: A variable definition may include ${...}
+       references, which are substituted when the outer variable is defined.
+       Nesting may be of any depth. Self-referential definitions are allowed
+       (e.g., ={a}=foo then ={a}=${a}bar expands ${a} to foobar)
+
+   24. Variables are processed for markup after substitution
+
+   25. Variables cannot be used inside literal blocks
+
+   26. Variable whitespace is retained: For single-line variables, everything
+       after the second "=" is included. For multi-line variables, everything
+       after the newline of the start tag up to before the final newline
+       before the close tag is included
+
+   27. Variables may be used inside labels (both {{...}} and {...} labels)
+
+   28. Structural blocks in multi-line variables: Multi-line variables may
+       contain structural elements such as literal blocks (<<<...>>>),
+       comment blocks (<<#...#>>), and other markers. When a standalone
+       variable reference (e.g., ${variable} on its own line) is expanded,
+       these structural elements are properly recognised and parsed
+
+   29. Variable definitions and blank lines may appear before the header
+       (title/author/date). This allows for defining variables at the top
+       of the file that can be used in the header itself
+   
+      30. A line that begins with optional indentation and the character `>`
+         (i.e. matches `/^\s*>/`) is a blockquote line. Contiguous blockquote
+         lines are grouped into a single `blockquote`. The leading `>` and
+         at most one following space are removed from the inner text which is
+         then processed for inline markup. A blockquote line that contains
+         only `>` (optionally surrounded by spaces) is interpreted as an
+         empty quoted line and is preserved inside the blockquote.
+
+      31. Trailing whitespace is significant in poem content: two or more
+         spaces before a newline are converted to a hard line break `<br/>`.
+         This applies in poem segments and analysis content but not inside
+         literal blocks (delimited by `<<<` and `>>>`). Maintenance tools
+         that automatically strip trailing spaces should exclude `.poem`
+         files to avoid removing intentional hard-break markers.
+*)
+
+(* ============================================================================
+   END OF GRAMMAR
+   ============================================================================ *)

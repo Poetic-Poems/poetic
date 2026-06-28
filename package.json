@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "js-beautify": "^1.15.4",
+    "js-yaml": "^4.1.0",
+    "markdown-it": "^14.2.0",
+    "pug": "^3.0.2"
+  },
+  "scripts": {
+    "test": "node --test",
+    "start": "node src/tools/serve-static.js",
+    "stop": "pkill -f 'node src/tools/serve-static.js' || true",
+    "stop:win": "for /f \"tokens=5\" %a in ('netstat -ano ^| findstr :8080') do taskkill /PID %a /F",
+    "build:poems": "node src/tools/build-poems.js",
+    "build:yaml": "node src/tools/poem-to-yaml.js --all",
+    "poem-to-raw": "node src/tools/poem-to-raw.js",
+    "build": "npm run poem-to-raw && npm run build:yaml && npm run build:poems && node src/tools/build-all-poems.js",
+    "build:all": "npm run build && npm run start",
+    "build:blogger": "node src/tools/build-blogger.js"
+  }
+}

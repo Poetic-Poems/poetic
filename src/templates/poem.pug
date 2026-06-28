@@ -1,0 +1,181 @@
+//- Template for individual poem HTML files
+
+//- JavaScript function to slugify text
+- function slugify(text) {
+-   text = text.toLowerCase().trim()
+-   text = text.replace(/[^a-z0-9 -]/g, '')
+-   text = text.replace(/ +/g, '-')
+-   return text;
+- }
+
+//- Function to process analysis text - convert blank lines to paragraph breaks
+- function processAnalysisText(text) {
+-   // Split by blank lines to get paragraphs
+-   const paragraphs = text.split(/\n\s*\n/).map(para => para.trim()).filter(para => para.length > 0);
+-
+-   // Process each paragraph
+-   const processedParagraphs = paragraphs.map(para => {
+-     // Check if the paragraph contains HTML tags
+-     if (para.includes('<') && para.includes('>')) {
+-       // This paragraph contains HTML, return as-is
+-       return para;
+-     } else {
+-       // This is plain text, wrap in p tags
+-       return '<p>' + para + '</p>';
+-     }
+-   });
+-
+-  return processedParagraphs.join('');
+- }
+
+//- Mixin to process lines and add <br /> tags
+mixin processLines(text)
+  if text
+    - const lines = text.split('\n')
+    - let index = 0
+    each line in lines
+      != line
+      if index < lines.length - 1
+        br
+      - index++
+
+div(id=`poem--${slug}`)
+  div.poem-info
+    span(id=`title--${slug}` class="title")= title
+    br
+    span(id=`author--${slug}` class="author")= author
+    br
+    span(id=`date--${slug}` class="date")= date
+    br
+  br
+  div.poem-body
+    if versions && versions.length > 0
+      each version, versionIndex in versions
+        if version.label
+          hr
+          div.poem-info!= version.label
+        if version.segments && version.segments.length > 0
+          each segment in version.segments
+            if segment.label
+              span.song-segment!= `[${segment.label}]`
+              br
+            if segment.parts
+              each part in segment.parts
+                if part.type === 'html'
+                  != part.html
+                else
+                  +processLines(part.lines)
+            else
+              +processLines(segment.lines)
+            if segment !== version.segments[version.segments.length - 1]
+              br
+        if versionIndex < versions.length - 1
+          br
+    else
+      p(style="color: #999; font-style: italic;") No content available
+  //- end poem-body
+
+  if audio
+    div(id=`song--${slug}` class="song-link")
+      if audio.audiomack === true
+        div(id=`audiomack-container--${slug}` class="audiomack-container")
+          button(
+            id=`load-audiomack--${slug}`
+            class="load-audiomack-btn"
+            onclick=`loadAudiomackPlayer('${slug}', '${title}')`
+            type="button"
+          ) 🎵 Load Audio Player
+          div(id=`audiomack-player--${slug}` class="audiomack-player" style="display: none;")
+        br
+      if audio.suno
+        |  (
+        a(href=`https://suno.com/${audio.suno}` target="_blank") recording on Suno
+        | )
+    //- end song
+
+  if postscript && postscript.length > 0
+    each postscriptItem in postscript
+      div(
+        id=`postscript-${postscriptItem.label ? slugify(postscriptItem.label) : 'item'}--${slug}`
+        class="postscript"
+      )
+        if postscriptItem.label
+          div.postscript-label!= postscriptItem.label
+        if postscriptItem.content
+          - const processedContent = postscriptItem.content.replace(/\$\{slug\}/g, slug)
+          != processedContent
+    //- end postscript
+  //- end postscript section
+
+  if analysis
+    //- begin analysis section
+    button.analysis.show(
+      id=`show-analysis--${slug}`
+      type="button"
+      onclick=`document.getElementById('analysis--${slug}').style.display = 'block'; document.getElementById('show-analysis--${slug}').style.display = 'none';`
+    ) Show analysis
+
+    div.analysis(id=`analysis--${slug}`)
+      button.analysis.hide(
+        id=`hide-analysis--${slug}`
+        type="button"
+        onclick=`document.getElementById('analysis--${slug}').style.display = 'none'; document.getElementById('show-analysis--${slug}').style.display = 'block';`
+      ) Hide analysis
+
+      if analysis.synopsis && analysis.full
+        .full-or-synopsis-selector
+          button.analysis.selector.selected(
+            id=`analysis-select-syno--${slug}`
+            type="button"
+            onclick=`el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'none'; el('syno').style.display = 'block'; el('select-full').classList.remove('selected'); el('select-syno').classList.add('selected');`
+          ) Synopsis
+          button.analysis.selector(
+            id=`analysis-select-full--${slug}`
+            type="button"
+            onclick=`el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'block'; el('syno').style.display = 'none'; el('select-full').classList.add('selected'); el('select-syno').classList.remove('selected');`
+          ) Full Analysis
+        //- end full-or-synopsis-selector
+
+        div(id=`analysis-syno--${slug}`)
+          h2 Analysis of <em>#{title}</em> (synopsis)
+          - const processedSynopsis = processAnalysisText(analysis.synopsis)
+          != processedSynopsis
+        //- end analysis-syno
+
+        div(id=`analysis-full--${slug}` style="display: none")
+          h2 Analysis of <em>#{title}</em>
+          - const processedFull = processAnalysisText(analysis.full)
+          != processedFull
+        //- end analysis-full
+      else
+        h2 Analysis of <em>#{title}</em>
+        - const processedFull = processAnalysisText(analysis.full)
+        != processedFull
+    //- end analysis
+    //- end analysis section
+//- end poem
+
+//- Add JavaScript and CSS for lazy loading Audiomack players
+script.
+  function loadAudiomackPlayer(slug, title) {
+    const button = document.getElementById(`load-audiomack--${slug}`);
+    const playerContainer = document.getElementById(`audiomack-player--${slug}`);
+
+    if (button && playerContainer) {
+      // Hide the button
+      button.style.display = 'none';
+
+      // Create and insert the iframe
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://audiomack.com/embed/saltysojourner/song/${slug}`;
+      iframe.scrolling = 'no';
+      iframe.width = '100%';
+      iframe.height = '252';
+      iframe.frameBorder = '0';
+      iframe.title = title;
+
+      // Show the container and append the iframe
+      playerContainer.style.display = 'block';
+      playerContainer.appendChild(iframe);
+    }
+  }

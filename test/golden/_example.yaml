@@ -1,0 +1,124 @@
+title: Example Poem
+author: A Poet
+date: '1970-01-31'
+versions:
+  - label: Version 1
+    segments:
+      - label: Stanza 1
+        lines: |
+          These are the lines
+          &nbsp;&nbsp;&nbsp;with leading indentation preserved
+          of <em>stanza</em> one, with <em>emphasis</em>, <strong>strong</strong>, and <s>struck</s> words.
+          A &#8220;double-quoted&#8221; phrase and a &#8216;single-quoted&#8217; one,
+          an en&#8211;dash, an em&#8212;dash, an ampersand &#38;, an apostrophe&#39;s tail.
+      - label: Stanza 2
+        lines: |
+          A <a href="https://example.com">link</a> and a <span class="highlight">highlighted span</span>,
+          with escaped *asterisks* and a literal --- triple-hyphen.
+          First line, with a hard line break here,<br/>
+          and the line that follows it.
+      - lines: |
+          <blockquote>A block-quoted couplet,<br/>two lines within one quote.</blockquote>
+  - label: Version 2 (song arrangement)
+    segments:
+      - label: Verse 1
+        lines: |
+          Sing it once, sing it twice
+          Sing the words of paradise
+      - label: Verse with embedded table
+        parts:
+          - type: lines
+            lines: |
+              The structural beats are:
+          - type: html
+            html: |
+              <table>
+              <thead>
+              <tr>
+              <th>Section</th>
+              <th>Bars</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+              <td>Verse</td>
+              <td>8</td>
+              </tr>
+              <tr>
+              <td>Chorus</td>
+              <td>4</td>
+              </tr>
+              </tbody>
+              </table>
+          - type: lines
+            lines: |
+              and the verse resumes after the table.
+      - label: Interactive note
+        parts:
+          - type: lines
+            lines: |
+              Raw HTML between bare <<< and >>> passes through untouched:
+          - type: html
+            html: <button type="button" onclick="alert('Hi!')">Press me</button>
+audio:
+  audiomack: true
+  suno: s/SongLink12345678
+postscript:
+  - label: Postscript
+    content: |
+      <p>A postscript may use <strong>bold</strong>, <em>italic</em>, a <code>code span</code>, a
+      <a href="https://example.com">Markdown link</a>, and a bullet list:</p>
+      <ul>
+      <li>first point</li>
+      <li>second point</li>
+      </ul>
+  - $ref: _shared.yaml#/disclaimer
+analysis:
+  synopsis: |
+    <p>A one-paragraph synopsis with <em>emphasis</em> and a smart—dash.</p>
+  full: |
+    <h3>Top-Level Heading</h3>
+    <p>A paragraph beneath the heading, with <strong>bold</strong> and <code>inline code</code>.</p>
+    <h4>Sub-Heading</h4>
+    <p>An unordered list, with nesting:</p>
+    <ul>
+    <li>alpha</li>
+    <li>bravo
+    <ul>
+    <li>bravo-one</li>
+    <li>bravo-two</li>
+    </ul>
+    </li>
+    <li>charlie</li>
+    </ul>
+    <p>An ordered list:</p>
+    <ol>
+    <li>first</li>
+    <li>second</li>
+    </ol>
+    <p>A table:</p>
+    <table>
+    <thead>
+    <tr>
+    <th>Device</th>
+    <th>Effect</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+    <td>Anaphora</td>
+    <td>emphasis</td>
+    </tr>
+    <tr>
+    <td>Chiasmus</td>
+    <td>balance</td>
+    </tr>
+    </tbody>
+    </table>
+    <p>A blockquote containing <s>strikethrough</s>:</p>
+    <blockquote>
+    <p>To strive, to seek, to find.</p>
+    </blockquote>
+    <p>A fenced code block:</p>
+    <pre><code>let answer = 42;
+    </code></pre>

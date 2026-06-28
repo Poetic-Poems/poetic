@@ -1,0 +1,27 @@
+#!/bin/bash -e
+
+cd ~/poems
+re="$1"
+[ "${re:0:1}"     == "^" ] && re="${re:1}"    || re=".*$re"
+[ "${re:${#a}-1}" == "$" ] && re="${re:0:-1}" || re="$re.*"
+re="${re}.poem"
+readarray -t poems < <(find src/poems -type f -iregex "$re")
+count=${#poems[@]}
+case $count in
+  0)  echo "No poems matched /$re/i" >&2
+      rv=-1
+      ;;
+  1)  md5() { md5sum "${poems[$i]}" | cut -d' ' -f1; }
+      md5=$(md5)
+      vi "${poems[$i]}"
+      [ "$(md5)" == "$md5" ] || npm run build
+      rv=0
+      ;;
+  *)  echo "Multiple poems matched /$re/i:" >&2
+      for i in "${!poems[@]}"; do
+        printf '%4d. %s\n' $((i + 1)) "$(head -1 "${poems[$i]}")"
+      done >&2
+      rv=$count
+esac
+exit $rv
+

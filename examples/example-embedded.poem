@@ -1,0 +1,58 @@
+Demo of Embedded Languages
+2025-10-08
+
+This poem demonstrates embedded language syntax highlighting.
+
+<<<html  # HTML example
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hello World</title>
+</head>
+<body>
+    <h1 class="greeting">Welcome!</h1>
+    <p>This is <strong>HTML</strong> with proper highlighting.</p>
+</body>
+</html>
+>>>
+
+<<<python  # Python example
+def fibonacci(n: int) -> int:
+    """Calculate the nth Fibonacci number."""
+    if n <= 1:
+        return n
+    return fibonacci(n - 1) + fibonacci(n - 2)
+
+# Test it
+for i in range(10):
+    print(f"F({i}) = {fibonacci(i)}")
+>>>
+
+<<<yaml  # YAML configuration example
+application:
+  name: my-app
+  version: 1.0.0
+
+server:
+  host: 0.0.0.0
+  port: 8080
+  ssl:
+    enabled: true
+    certificate: /path/to/cert.pem
+>>>
+
+<<<js  # JavaScript (using short form)
+function greet(name) {
+    const message = `Hello, ${name}!`;
+    console.log(message);
+    return message.toUpperCase();
+}
+
+// Usage
+const result = greet('World');
+document.getElementById('output').textContent = result;
+>>>
+
+The end.
+

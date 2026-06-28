@@ -1,0 +1,127 @@
+<<#
+This is the canonical example poem: it exercises every syntax feature and
+doubles as the golden test fixture. This comment block (and the preamble
+variable definitions below) never appear in the output.
+#>>
+
+={author_name}=A Poet
+={v2name}=song arrangement
+={refrain}<<=
+Sing it once, sing it twice
+Sing the words of paradise
+=>>
+
+Example Poem
+${author_name}
+1970-01-31
+
+{{ Version 1 }}  # version label (optional); this trailing comment is ignored
+
+{Stanza 1}  # segment label (optional)
+These are the lines
+   with leading indentation preserved
+of *stanza* one, with _emphasis_, **strong**, and ~struck~ words.
+A "double-quoted" phrase and a `single-quoted` one,
+an en--dash, an em---dash, an ampersand &, an apostrophe's tail.
+
+{Stanza 2}
+A [link|example.com] and a /.highlight{highlighted span},
+with escaped \*asterisks\* and a literal \-\-\- triple-hyphen.
+First line, with a hard line break here,  
+and the line that follows it.
+
+> A block-quoted couplet,
+> two lines within one quote.
+
+----  # divider between versions
+
+{{ Version 2 (${v2name}) }}  # a variable used inside a label
+
+{Verse 1}
+${refrain}
+
+{Verse with embedded table}
+The structural beats are:
+<<<markdown
+| Section | Bars |
+|---------|------|
+| Verse   | 8    |
+| Chorus  | 4    |
+>>>
+and the verse resumes after the table.
+
+{Interactive note}
+Raw HTML between bare <<< and >>> passes through untouched:
+<<<
+<button type="button" onclick="alert('Hi!')">Press me</button>
+>>>
+
+<<# A comment block: everything between the markers is removed.
+This explanatory note never appears in the output.
+#>>
+
+====  # end of versions
+
+Audiomack
+Suno: s/SongLink12345678
+
+====  # end of audio
+
+{Postscript}  # postscript prose is GitHub-Flavoured Markdown
+A postscript may use **bold**, _italic_, a `code span`, a
+[Markdown link](https://example.com), and a bullet list:
+
+- first point
+- second point
+
+----  # divider between postscript notes
+
+<<<
+  - $ref: "_shared.yaml#/disclaimer"
+>>>
+
+====  # end of postscript
+
+{Synopsis}  # the analysis synopsis (optional)
+
+A one-paragraph synopsis with _emphasis_ and a smart---dash.
+
+{Full}  # the full analysis, also GitHub-Flavoured Markdown
+
+# Top-Level Heading
+
+A paragraph beneath the heading, with **bold** and `inline code`.
+
+## Sub-Heading
+
+An unordered list, with nesting:
+
+- alpha
+- bravo
+    - bravo-one
+    - bravo-two
+- charlie
+
+An ordered list:
+
+1. first
+2. second
+
+A table:
+
+| Device   | Effect   |
+|----------|----------|
+| Anaphora | emphasis |
+| Chiasmus | balance  |
+
+A blockquote containing ~~strikethrough~~:
+
+> To strive, to seek, to find.
+
+A fenced code block:
+
+```
+let answer = 42;
+```
+
+====

@@ -1,0 +1,12 @@
+title: Example Blockquote
+author: A Poet
+date: '2026-06-01'
+versions:
+  - segments:
+      - label: Verse
+        lines: |
+          Line with a hard break.<br/>
+          This line follows after a hard break.
+      - label: Quotes
+        lines: |
+          <blockquote>This is an indented blockquote line<br/><br/>This is another quoted line</blockquote>
