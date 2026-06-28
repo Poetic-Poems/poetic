@@ -72,7 +72,7 @@ jobs:
           echo "Public directory contents:"
           ls -la public/
           echo "File sizes:"
-          ls -lh public/index.html public/all-poems.html public/styles.css 2>/dev/null || echo "Files not found"
+          ls -lh public/index.html public/all-poems.html public/poetic.css public/custom.css 2>/dev/null || echo "Files not found"
           if [ ! -f "public/index.html" ]; then
             echo "❌ public/index.html was not generated"
             exit 1
@@ -81,8 +81,8 @@ jobs:
             echo "❌ public/all-poems.html was not generated"
             exit 1
           fi
-          if [ ! -f "public/styles.css" ]; then
-            echo "❌ public/styles.css was not found"
+          if [ ! -f "public/poetic.css" ]; then
+            echo "❌ public/poetic.css was not found"
             exit 1
           fi
           echo "✅ All build artifacts generated successfully"
@@ -105,7 +105,8 @@ jobs:
           # Copy essential files to root for direct access
           cp public/index.html deployment/
           cp public/all-poems.html deployment/
-          cp public/styles.css deployment/
+          cp public/poetic.css deployment/
+          [ -f public/custom.css ] && cp public/custom.css deployment/
           # Copy all individual poem HTML files to root for GitHub Pages access
           find public -maxdepth 1 -name "*.html" -type f -exec cp {} deployment/ \;
           # Raw poem file access

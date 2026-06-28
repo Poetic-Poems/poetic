@@ -58,10 +58,10 @@ These utilities ensure consistent date handling across the build process and sup
 
 The Blogger template script:
 
-1. Reads CSS content from `public/styles.css`
+1. Reads and concatenates CSS from `public/poetic.css` and `public/custom.css`
 2. Locates the Blogger template file `public/fragments-and-unity.template.html`
 3. Finds CSS delimiters `/* ~~ CUSTOM CSS START ~~ */` and `/* ~~ CUSTOM CSS END ~~ */`
-4. Replaces the content between these delimiters with the styles from `styles.css`
+4. Replaces the content between these delimiters with the combined styles
 5. Provides error handling for missing files or malformed delimiters
 6. Updates the template file in place for uploading to Blogger
 
@@ -82,8 +82,8 @@ When you add new poems or update existing ones:
 
 When you need to update the Blogger template with new CSS:
 
-1. Make changes to `public/styles.css`
-2. Run `npm run build:blogger` to inject the CSS into the template
+1. Edit `public/poetic.css` (framework styles, synced) or `public/custom.css` (your styles, never synced)
+2. Run `npm run build:blogger` to inject the combined CSS into the template
 3. Copy the updated `public/fragments-and-unity.template.html` content
 4. Paste it into the Blogger template editor
 5. Save the template in Blogger
@@ -106,7 +106,8 @@ The build system has been updated to use ISO date format (`yyyy-mm-dd`) in YAML 
 public/
 ├── index.html                           # Main landing page
 ├── all-poems.html                       # Generated concatenated view
-├── styles.css                           # CSS styles for Blogger template
+├── poetic.css                           # Framework CSS (synced from poetic)
+├── custom.css                           # User CSS (never overwritten by sync)
 ├── fragments-and-unity.template.html    # Blogger template with injected CSS
 ├── poem1.html                           # Individual poems
 ├── poem2.html

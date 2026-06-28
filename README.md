@@ -120,6 +120,8 @@ node src/tools/yaml-to-poem.js src/poems/yaml/my-poem.yaml
 
 Edit `src/poems/poem/.shared.poem` to set variables available to every poem (e.g. `={author}=Your Name`).
 
+This file is **user-owned** — it is not overwritten by `sync-framework.sh`. Customise it freely.
+
 ## Repository structure
 
 ```
@@ -171,6 +173,14 @@ The included workflow (`.github/workflows/sync-framework.yml`) checks for update
 auto_sync=true
 sync_schedule=weekly
 ```
+
+`.poetic-config` also supports these options:
+
+| Key | Purpose |
+|---|---|
+| `auto_sync` | Set to `true` to enable scheduled auto-sync (default: disabled) |
+| `sync_schedule` | How often the workflow runs: `hourly`, `daily`, or `weekly` (default: `weekly`) |
+| `skip_paths` | Comma-separated list of framework paths to leave untouched during sync (e.g. `public/poetic.css`) |
 
 `sync_schedule` controls how often the workflow actually does anything (default `weekly` if omitted):
 

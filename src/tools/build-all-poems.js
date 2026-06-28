@@ -13,25 +13,19 @@ const beautify = require("js-beautify");
 // Individual poems are already built by the previous step in npm script chain
 
 function extractCustomCSSFromStyles() {
-  try {
-    const stylesPath = path.join(
-      process.cwd(),
-      "public",
-      "styles.css"
-    );
-    if (!fs.existsSync(stylesPath)) {
-      return "";
+  const publicDir = path.join(process.cwd(), "public");
+  let combined = "";
+  for (const file of ["poetic.css", "custom.css"]) {
+    try {
+      const filePath = path.join(publicDir, file);
+      if (!fs.existsSync(filePath)) continue;
+      const content = fs.readFileSync(filePath, "utf8").trim();
+      if (content) combined += (combined ? "\n\n" : "") + content;
+    } catch (err) {
+      console.warn(`Warning: Could not read CSS from ${file}:`, err.message);
     }
-
-    const stylesContent = fs.readFileSync(stylesPath, "utf8");
-    return stylesContent.trim();
-  } catch (err) {
-    console.warn(
-      "Warning: Could not read CSS from styles.css:",
-      err.message
-    );
-    return "";
   }
+  return combined;
 }
 
 /**
@@ -165,7 +159,8 @@ function concatenateAllHtmlFiles(dirPath) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fragments &#38; Unity &#8212; Concatenated View</title>
     <link rel="icon" href="poetic-logo.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="poetic.css">
+    <link rel="stylesheet" href="custom.css">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
         .container { max-width: 1200px; margin: 0 auto; }

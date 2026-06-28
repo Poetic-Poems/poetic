@@ -53,10 +53,9 @@ FRAMEWORK_PATHS=(
   poem-syntax.ebnf
   package.json
   src/poems/poem/_example.poem
-  src/poems/poem/.shared.poem
   src/poems/yaml/_example.yaml
   src/poems/yaml/_shared.yaml
-  public/styles.css
+  public/poetic.css
   public/poetic-logo.svg
   .github/workflows/build-poems.yml
   .github/workflows/sync-framework.yml
@@ -67,8 +66,28 @@ FRAMEWORK_PATHS=(
   scripts/setup-linux.sh
 )
 
+# Paths the user has opted to manage locally (comma-separated in .poetic-config)
+SKIP_PATHS=()
+if [ -f .poetic-config ]; then
+  skip_raw=$(grep '^skip_paths=' .poetic-config 2>/dev/null | cut -d= -f2)
+  if [ -n "$skip_raw" ]; then
+    IFS=',' read -ra SKIP_PATHS <<< "$skip_raw"
+  fi
+fi
+
 echo "Syncing from poetic @ $POETIC_REF (${POETIC_COMMIT:0:8})..."
 for path in "${FRAMEWORK_PATHS[@]}"; do
+  skip=false
+  for skip_path in "${SKIP_PATHS[@]}"; do
+    if [ "$path" = "$skip_path" ]; then
+      skip=true
+      break
+    fi
+  done
+  if $skip; then
+    echo "  skipped $path (local override)"
+    continue
+  fi
   if git checkout "$POETIC_COMMIT" -- "$path" 2>/dev/null; then
     echo "  synced  $path"
   else

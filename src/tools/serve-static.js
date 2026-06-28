@@ -182,25 +182,19 @@ function formatFileSize(bytes) {
 }
 
 function extractCustomCSSFromStyles() {
-  try {
-    const stylesPath = path.join(
-      process.cwd(),
-      "public",
-      "styles.css"
-    );
-    if (!fileExists(stylesPath)) {
-      return "";
+  const publicDir = path.join(process.cwd(), "public");
+  let combined = "";
+  for (const file of ["poetic.css", "custom.css"]) {
+    try {
+      const filePath = path.join(publicDir, file);
+      if (!fileExists(filePath)) continue;
+      const content = fs.readFileSync(filePath, "utf8").trim();
+      if (content) combined += (combined ? "\n\n" : "") + content;
+    } catch (err) {
+      console.warn(`Warning: Could not read CSS from ${file}:`, err.message);
     }
-
-    const stylesContent = fs.readFileSync(stylesPath, "utf8");
-    return stylesContent.trim();
-  } catch (err) {
-    console.warn(
-      "Warning: Could not read CSS from styles.css:",
-      err.message
-    );
-    return "";
   }
+  return combined;
 }
 
 function concatenateAllHtmlFiles(dirPath) {
@@ -297,7 +291,7 @@ function concatenateAllHtmlFiles(dirPath) {
       poem.anchor = `poem-${index}`;
     });
 
-    // Extract custom CSS from styles.css
+    // Load and concatenate poetic.css + custom.css
     const customCSS = extractCustomCSSFromStyles();
 
     let concatenatedContent = `<!DOCTYPE html>
