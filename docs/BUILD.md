@@ -140,9 +140,33 @@ src/tools/
 
 The build script uses the same logic as the development server (`src/tools/serve-static.js`) but generates a static file instead of serving dynamically. You can modify the styling or functionality by editing the build script.
 
-### Favicon
+### `.poetic-config`
 
-The browser-tab icon defaults to `public/poetic-logo.svg`, which is included with the framework. To use a different icon, place your file in `public/` and set the `favicon` key in `.poetic-config`:
+User-specific build settings live in `.poetic-config` at the repo root. This file is yours — it is never overwritten by a framework sync — and should be committed to version control so that CI picks it up when building for GitHub Pages.
+
+Supported keys:
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| `favicon` | `poetic-logo.svg` | Filename (inside `public/`) of the browser-tab icon |
+| `subtitle` | `My Poems` | Subtitle shown below the site title on `index.html` |
+| `skip_paths` | _(none)_ | Comma-separated list of framework paths to skip during sync |
+| `auto_sync` | _(off)_ | Set to `true` to enable the hourly scheduled sync workflow |
+| `sync_schedule` | `weekly` | How often the scheduled sync runs: `hourly`, `daily`, or `weekly` |
+
+Example:
+
+```
+favicon=my-icon.png
+subtitle=Warwick Allen's Poems
+skip_paths=public/poetic-logo.svg
+auto_sync=true
+sync_schedule=hourly
+```
+
+#### Favicon
+
+The browser-tab icon defaults to `public/poetic-logo.svg`, which is included with the framework. To use a different icon, place your file in `public/` and set the `favicon` key:
 
 ```
 favicon=my-icon.png
@@ -154,4 +178,12 @@ To keep the default logo but prevent it being overwritten on the next framework 
 
 ```
 skip_paths=public/poetic-logo.svg
+```
+
+#### Subtitle
+
+The subtitle shown below the site title on `index.html` defaults to `My Poems`. Override it with the `subtitle` key:
+
+```
+subtitle=Warwick Allen's Poems
 ```
