@@ -70,6 +70,19 @@ Full spec: `docs/POEM-SYNTAX.md` and `poem-syntax.ebnf`.
 See `.github/workflows/release.yml`. Releases are tagged; consumer repos can pin to a tag via
 `.poetic-version`.
 
+## Documentation principles
+
+- **`CHANGELOG.md`** is the only place for recording what changed and when.
+  Add an entry under `[Unreleased]` for any notable change (one visible to poem
+  authors or site publishers). Patch-level fixes and routine doc updates do not
+  need entries.
+- **All other docs are as-built.** Write them to describe the current state
+  only — no "previously", "used to be", "now uses", "migration completed", or
+  "old format (deprecated)" phrasing. Git log already records history; docs
+  that repeat it become misleading as the codebase evolves.
+- If you encounter historical language in an existing doc, remove it and move
+  the substance to `CHANGELOG.md` if it is significant.
+
 ## Key docs
 
 | File | Contents |
