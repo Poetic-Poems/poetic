@@ -16,11 +16,12 @@ html(lang="en")
     link(rel="stylesheet" href="../custom.css")
     script(src="../poetic.js" defer)
   body
-    nav.poem-page-nav
-      a(href="../") ← Poems
-      |  ·&nbsp;
-      a(href="../all-poems.html") All Poems
-    div.poem-section(id=`poem-${slug}`)
-      h2.poem-title= title
-      div.poem-content
-        +poemContent
+    div.container
+      nav.poem-page-nav
+        a(href="../") ← Poems
+        |  ·&nbsp;
+        a(href="../all-poems.html") All Poems
+      div.poem-section(id=`poem-${slug}`)
+        h2.poem-title= title
+        div.poem-content
+          +poemContent
