@@ -1,6 +1,28 @@
 # Poetic &nbsp; ![Poetic logo](public/poetic-logo.png)
 
-A plain-text poem authoring framework. Write poems in a concise `.poem` format, build them into HTML, and optionally publish to GitHub Pages.
+***A plain-text poem authoring framework.***
+Write poems in a concise `.poem` format, build them into HTML,
+and optionally publish to GitHub Pages.
+
+> Your poems are more than things to look at—  
+> they want a URL, a stage, a view.  
+> Write them in the `.poem` format,  
+> and *Poetic* does the rest for you.  
+>  
+> Label stanzas, add a song link,  
+> build to HTML and, when you're done,  
+> push to GitHub—faster than you'd think—  
+> then your words reach everyone.  
+>  
+> The pipeline runs from `.poem` to page  
+> with YAML, Pug, and scripts between;  
+> just six lines set a valid stage—  
+> the workflow's tidy, calm, and clean.  
+>  
+> Use the template, start your drafting,  
+> `npm run build` and the deed is done;  
+> the only question worth the asking  
+> is why you haven't yet begun.  
 
 ## What it does
 
