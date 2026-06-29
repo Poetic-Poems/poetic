@@ -19,6 +19,7 @@ cat <<HERE >"$index"
   <h1>Poems</h1>
   <ul>
 HERE
+var_re='[0-9A-Za-z][^{}$<>]*[^{}$<> ]?'
 for poem_file in "$repo_toplevel"/src/poems/poem/*.poem; do
   [[ "$poem_file" =~ /_ ]] && continue;
   title="$(<"$poem_file" head -1)"
@@ -37,6 +38,8 @@ for poem_file in "$repo_toplevel"/src/poems/poem/*.poem; do
                         {print          }
     ' |
     perl -pe 'BEGIN {no warnings utf8; undef $/}
+      /=\{('"$var_re"')\}=(.*)/ and $var{$1} = $2;
+      s: \$\{('"$var_re"')\} :$var{$1}:egx;
       s:/\.\d+\{[^}]*\}/\.\d+\{([^}]*)\}:\1:gx;
       s:  /\.\w+\{([^}]*)\}         :\1:gx;
       s:  \.\.\.                     :…:gx;
@@ -49,7 +52,7 @@ for poem_file in "$repo_toplevel"/src/poems/poem/*.poem; do
       s:  &# (\d+)         :chr     $1:egx;
       s:  &#x(\d+)         :chr hex $1:egx;
       s:  \n*                       $:\n:s;
-    '
+    ' | grep -vP "^=\{$var_re\}="
   ) >"$repo_toplevel/raw/$title"
 done
 echo <<HERE >>"$index"
