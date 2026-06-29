@@ -58,6 +58,7 @@ function buildAllPoems() {
 
   let successCount = 0;
   let errorCount = 0;
+  const builtSlugs = new Set();
 
   // Process each YAML file
   for (const yamlFile of yamlFiles) {
@@ -134,9 +135,21 @@ function buildAllPoems() {
       fs.writeFileSync(redirectFile, redirectHtml, "utf8");
       console.log(`↪  Generated ${slug}.html (redirect)`);
       successCount++;
+      builtSlugs.add(slug);
     } catch (err) {
       console.error(`Error writing ${redirectFile}:`, err.message);
       errorCount++;
+    }
+  }
+
+  // Warn about stale HTML artefacts that have no corresponding YAML source.
+  // Exclude framework-generated aggregates (index, all-poems) and template files.
+  const htmlFiles = fs.readdirSync(PUBLIC_DIR)
+    .filter(f => f.endsWith('.html') && !f.includes('.template.') && f !== 'index.html' && f !== 'all-poems.html');
+  for (const htmlFile of htmlFiles) {
+    const slug = htmlFile.slice(0, -5);
+    if (!builtSlugs.has(slug)) {
+      console.warn(`Warning: stale HTML artefact (no source poem): public/${htmlFile}`);
     }
   }
 
