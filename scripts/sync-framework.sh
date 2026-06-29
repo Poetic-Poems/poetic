@@ -31,7 +31,9 @@ else
 fi
 
 echo "Fetching from poetic..."
-git fetch "$POETIC_REMOTE" --tags --quiet
+# Clear any repo-scoped auth header (e.g. GITHUB_TOKEN from actions/checkout) that
+# would be rejected when fetching from a different GitHub repo.
+git -c "http.$POETIC_URL.extraheader=" fetch "$POETIC_REMOTE" --tags --quiet
 
 # Resolve ref: try remote branch first, then tag
 if POETIC_COMMIT=$(git rev-parse "refs/remotes/$POETIC_REMOTE/$POETIC_REF" 2>/dev/null); then
