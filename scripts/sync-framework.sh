@@ -31,13 +31,14 @@ else
 fi
 
 echo "Fetching from poetic..."
-# In CI, actions/checkout sets a repo-scoped GITHUB_TOKEN as an HTTP extraheader
-# for all github.com requests. That token is rejected by a different GitHub repo
-# (even a public one). Temporarily unset it around the fetch.
-_ci_auth=$(git config --local http.https://github.com/.extraheader 2>/dev/null || true)
-[ -n "$_ci_auth" ] && git config --local --unset http.https://github.com/.extraheader
-git fetch "$POETIC_REMOTE" --tags --quiet
-[ -n "$_ci_auth" ] && git config --local http.https://github.com/.extraheader "$_ci_auth"
+# In CI, actions/checkout injects the repo-scoped GITHUB_TOKEN as an HTTP
+# extraheader on the base key `http.https://github.com/.extraheader`. That key
+# also matches requests to OTHER github.com repos (like poetic, via prefix match)
+# and gets rejected with a 401. Emptying that exact key for this one command
+# resets the accumulated header list, so the fetch goes out unauthenticated
+# (fine for a public repo). Works for single or multiple values, and is a no-op
+# locally where the key isn't set.
+git -c "http.https://github.com/.extraheader=" fetch "$POETIC_REMOTE" --tags --quiet
 
 # Resolve ref: try remote branch first, then tag
 if POETIC_COMMIT=$(git rev-parse "refs/remotes/$POETIC_REMOTE/$POETIC_REF" 2>/dev/null); then
