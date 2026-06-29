@@ -16,6 +16,12 @@
   display: none;
 }
 
+h1.poem-title {
+  border-bottom: 2px solid #f0f0f0;
+  margin: 1ex 0 2ex;
+  padding-bottom: 0.5ex;
+}
+
 .song-segment {
   color: gray;
   display: block;
