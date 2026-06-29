@@ -27,18 +27,18 @@
 shopt -qu dotglob
 
 repo_toplevel=$(git rev-parse --show-toplevel)
-mkdir -p “$repo_toplevel/raw” “$repo_toplevel/public/raw”
-index=”$repo_toplevel/public/raw/index.html”
+mkdir -p "$repo_toplevel/raw" "$repo_toplevel/public/raw"
+index="$repo_toplevel/public/raw/index.html"
 gh_repo=$(git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||')
-gh_raw=”https://raw.githubusercontent.com/$gh_repo/refs/heads/main/raw”
+gh_raw="https://raw.githubusercontent.com/$gh_repo/refs/heads/main/raw"
 
 # Write the opening of the index page; individual poem links are appended below.
-cat <<HERE >”$index”
+cat <<HERE >"$index"
 <!DOCTYPE html>
-<html lang=”en”>
+<html lang="en">
 <head>
-  <meta charset=”UTF-8”>
-  <meta name=”viewport” content=”width=device-width, initial-scale=1.0”>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Poems</title>
 </head>
 <body>
@@ -49,20 +49,20 @@ HERE
 # Regex fragment matching a valid .poem variable name.
 var_re='[0-9A-Za-z][^{}$<>]*[^{}$<> ]?'
 
-for poem_file in “$repo_toplevel”/src/poems/poem/*.poem; do
+for poem_file in "$repo_toplevel"/src/poems/poem/*.poem; do
   # Skip partial/private files (names beginning with '_').
-  [[ “$poem_file” =~ /_ ]] && continue;
+  [[ "$poem_file" =~ /_ ]] && continue;
 
-  title=”$(<”$poem_file” head -1)”
-  href=”$gh_raw/${title//\?/%3F}”
-  echo “    <li><a href=\”$href\”>$title</a></li>” >>”$index”
+  title="$(<"$poem_file" head -1)"
+  href="$gh_raw/${title//\?/%3F}"
+  echo "    <li><a href=\"$href\">$title</a></li>" >>"$index"
 
   (
     # Print the title underlined with dashes (plain-text heading).
-    echo “$title” | tee >(sed s/./-/g)
+    echo "$title" | tee >(sed s/./-/g)
 
     # Extract the poem body using awk, then clean up markup with perl.
-    <”$poem_file” awk '
+    <"$poem_file" awk '
       /^\s*$/           {blank++        }  # count blank lines
       blank<1           {next           }  # skip header (title, author, date)
       /^====\s*(#.*)?$/ {exit           }  # stop at the canonical-form divider
@@ -74,9 +74,9 @@ for poem_file in “$repo_toplevel”/src/poems/poem/*.poem; do
     ' |
     perl -pe 'BEGIN {no warnings utf8; undef $/}
       # Capture variable definitions (=\{name\}=value) for later substitution.
-      /=\{('”$var_re”')\}=(.*)/ and $var{$1} = $2;
+      /=\{('"$var_re"')\}=(.*)/ and $var{$1} = $2;
       # Substitute ${name} references with their captured values.
-      s: \$\{('”$var_re”')\} :$var{$1}:egx;
+      s: \$\{('"$var_re"')\} :$var{$1}:egx;
       # Collapse pronunciation-guide notation (/.\d{alt}/.\d{display}) → display text.
       s:/\.\d+\{[^}]*\}/\.\d+\{([^}]*)\}:\1:gx;
       # Remove remaining inline markup wrappers (/.word{text}) → text.
@@ -84,7 +84,7 @@ for poem_file in “$repo_toplevel”/src/poems/poem/*.poem; do
       # Normalise common HTML entities to Unicode characters.
       s:  \.\.\.                     :…:gx;
       s:( &hellip; | \.\.\.         ):…:gx;
-      s:  &ldquo;                    :”:gx;
+      s:  &ldquo;                    :“:gx;
       s:  &rdquo;                    :”:gx;
       s:( &mdash;  | (?<!-)---(?!-) ):—:gx;
       s:  &mdash;                    :—:gx;
@@ -94,11 +94,11 @@ for poem_file in “$repo_toplevel”/src/poems/poem/*.poem; do
       s:  &#x(\d+)         :chr hex $1:egx;
       # Ensure the file ends with exactly one newline.
       s:  \n*                       $:\n:s;
-    ' | grep -vP “^=\{$var_re\}=”  # strip variable definition lines from output
-  ) >”$repo_toplevel/raw/$title”
+    ' | grep -vP "^=\{$var_re\}="  # strip variable definition lines from output
+  ) >"$repo_toplevel/raw/$title"
 done
 
-echo <<HERE >>”$index”
+echo <<HERE >>"$index"
   </ul>
 </body>
 </html>
