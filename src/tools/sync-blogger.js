@@ -57,6 +57,11 @@ function parseArgs(argv) {
   return { dryRun, only };
 }
 
+// Module-level credential variables, populated by resolveConfig.
+let clientId     = undefined;
+let clientSecret = undefined;
+let refreshToken = undefined;
+
 /**
  * Resolve and validate Blogger config, applying defaults.
  *
@@ -81,11 +86,24 @@ function resolveConfig(config, env) {
   const label = config.blogger_label || 'poem';
   const audiomackArtist = config.audiomack_artist || '';
 
-  const hasCredentials = !!(
-    env.BLOGGER_CLIENT_ID &&
-    env.BLOGGER_CLIENT_SECRET &&
-    env.BLOGGER_REFRESH_TOKEN
-  );
+  // Load fallback values from the credentials file if any env var is absent.
+  let fileCredentials = {};
+  const credentialsPath = path.resolve('.blogger-credentials.json');
+  if (fs.existsSync(credentialsPath)) {
+    try {
+      const raw = fs.readFileSync(credentialsPath, 'utf8');
+      fileCredentials = JSON.parse(raw)?.installed ?? {};
+    } catch {
+      // File exists but is unreadable or malformed; proceed without it.
+    }
+  }
+
+  // Write to the module-level variables.
+  clientId     = env.BLOGGER_CLIENT_ID     || fileCredentials.client_id;
+  clientSecret = env.BLOGGER_CLIENT_SECRET || fileCredentials.client_secret;
+  refreshToken = env.BLOGGER_REFRESH_TOKEN || fileCredentials.refresh_token;
+
+  const hasCredentials = !!(clientId && clientSecret && refreshToken);
 
   return { enabled, blogId, label, removed, content, audiomackArtist, hasCredentials };
 }
@@ -225,9 +243,9 @@ async function assertOk(response, context) {
  */
 async function getAccessToken(env) {
   const body = new URLSearchParams({
-    client_id: env.BLOGGER_CLIENT_ID,
-    client_secret: env.BLOGGER_CLIENT_SECRET,
-    refresh_token: env.BLOGGER_REFRESH_TOKEN,
+    client_id: clientId,
+    client_secret: clientSecret,
+    refresh_token: refreshToken,
     grant_type: 'refresh_token',
   });
   const response = await fetch(TOKEN_URL, {
