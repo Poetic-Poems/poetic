@@ -98,7 +98,7 @@ for poem_file in "$repo_toplevel"/src/poems/poem/*.poem; do
   ) >"$repo_toplevel/raw/$title"
 done
 
-echo <<HERE >>"$index"
+cat <<HERE >>"$index"
   </ul>
 </body>
 </html>
