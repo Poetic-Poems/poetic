@@ -1,0 +1,60 @@
+name: Sync to Blogger
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/poems/**'
+      - '.poetic-config'
+      - 'src/tools/sync-blogger.js'
+      - '.github/workflows/sync-blogger.yml'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview without writing to Blogger'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-blogger
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check feature flag
+        id: precheck
+        run: |
+          if [ ! -f .poetic-config ] || ! grep -q '^blogger_sync=true$' .poetic-config; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Blogger sync disabled. Set blogger_sync=true in .poetic-config to enable."
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        if: steps.precheck.outputs.skip == 'false'
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        if: steps.precheck.outputs.skip == 'false'
+        run: npm install
+
+      - name: Build poems
+        if: steps.precheck.outputs.skip == 'false'
+        run: npm run build
+
+      - name: Publish to Blogger
+        if: steps.precheck.outputs.skip == 'false'
+        env:
+          BLOGGER_CLIENT_ID: ${{ secrets.BLOGGER_CLIENT_ID }}
+          BLOGGER_CLIENT_SECRET: ${{ secrets.BLOGGER_CLIENT_SECRET }}
+          BLOGGER_REFRESH_TOKEN: ${{ secrets.BLOGGER_REFRESH_TOKEN }}
+        run: node src/tools/sync-blogger.js ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}

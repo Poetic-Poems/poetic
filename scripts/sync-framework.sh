@@ -79,6 +79,7 @@ FRAMEWORK_PATHS=(
   public/poetic-logo.svg
   .github/workflows/build-poems.yml
   .github/workflows/sync-framework.yml
+  .github/workflows/sync-blogger.yml
   scripts/sync-framework.sh
   scripts/edit-poem
   scripts/poem-to-raw.sh

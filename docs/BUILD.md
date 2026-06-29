@@ -181,6 +181,12 @@ Supported keys:
 | `skip_paths` | _(none)_ | Comma-separated list of framework paths to skip during sync |
 | `auto_sync` | _(off)_ | Set to `true` to enable the hourly scheduled sync workflow |
 | `sync_schedule` | `weekly` | How often the scheduled sync runs: `hourly`, `daily`, or `weekly` |
+| `blogger_sync` | `false` | Set to `true` to enable automatic Blogger publishing via GitHub Actions |
+| `blogger_blog_id` | _(required when enabled)_ | Numeric Blogger blog ID (visible in the blog URL in Blogger settings) |
+| `blogger_removed` | `draft` | What happens to a post when its source poem is removed: `draft`, `delete`, or `keep` |
+| `blogger_content` | `full` | Content posted to Blogger: `full` (complete styled HTML page) or `poem` (poem fragment only) |
+| `blogger_label` | `poem` | Blogger label applied to all managed posts |
+| `blogger_template` | `public/blogger-template.html` | Path to the Blogger XML theme template file injected by `npm run build:blogger` |
 
 Example:
 
@@ -216,3 +222,7 @@ The subtitle shown below the site title on `index.html` defaults to `My Poems`. 
 ```
 subtitle=Warwick Allen's Poems
 ```
+
+### Publishing to Blogger
+
+Poetic supports optional automatic publishing of poems to a Blogger blog. The feature is off by default and is enabled per-consumer via `.poetic-config`. See [`docs/BLOGGER.md`](BLOGGER.md) for the full setup guide, including one-time Google OAuth authorisation, GitHub secrets, and theme parity steps.

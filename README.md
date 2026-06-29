@@ -31,6 +31,7 @@ and optionally publish to GitHub Pages.
 - **Index & all-poems view** — generates `index.html` and `all-poems.html` for browsing your collection
 - **Vim syntax highlighting** — filetype detection and highlighting for `.poem` files (see [`editors/vim/`](editors/vim/))
 - **GitHub Pages deployment** — included workflow deploys your published HTML on push to `main`
+- **Optional Blogger publishing** — auto-publish poems to a Blogger blog on push to `main` (off by default; see [`docs/BLOGGER.md`](docs/BLOGGER.md))
 
 ## Example site
 
@@ -228,6 +229,7 @@ Commit it to your repo so that GitHub Actions can read it when building and depl
 | `skip_paths` | Comma-separated list of framework paths to leave untouched during sync (e.g. `public/poetic.css`) |
 | `favicon` | Filename of the favicon shown in browser tabs (default: `poetic-logo.svg`; file must exist in `public/`) |
 | `subtitle` | Subtitle shown beneath the site title on the index page |
+| `blogger_sync` | Set to `true` to enable automatic Blogger publishing (default: `false`; see [`docs/BLOGGER.md`](docs/BLOGGER.md)) |
 
 Settings such as `favicon`, `subtitle`, `auto_sync`, and `sync_schedule` are only applied during CI if `.poetic-config` is present in the repository.
 

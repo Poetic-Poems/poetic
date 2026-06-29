@@ -6,3 +6,4 @@ src/poems/yaml/*.yaml
 public/*.html
 
 !src/poems/yaml/_*.yaml
+.blogger-credentials.json
