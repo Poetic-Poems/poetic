@@ -77,7 +77,7 @@ FRAMEWORK_PATHS=(
 # Paths the user has opted to manage locally (comma-separated in .poetic-config)
 SKIP_PATHS=()
 if [ -f .poetic-config ]; then
-  skip_raw=$(grep '^skip_paths=' .poetic-config 2>/dev/null | cut -d= -f2)
+  skip_raw=$(grep '^skip_paths=' .poetic-config 2>/dev/null | cut -d= -f2 || true)
   if [ -n "$skip_raw" ]; then
     IFS=',' read -ra SKIP_PATHS <<< "$skip_raw"
   fi
