@@ -1075,8 +1075,8 @@ function main() {
     const files = fs.readdirSync(poemDir);
 
     for (const file of files) {
-      // Skip .shared.poem (it's included by other files)
-      if (file.endsWith('.poem') && file !== '.shared.poem') {
+      // Skip partial/private files (starting with '_' or '.', e.g. .shared.poem)
+      if (file.endsWith('.poem') && !file.startsWith('_') && !file.startsWith('.')) {
         const poemPath = path.join(poemDir, file);
         const yamlPath = path.join(yamlDir, file.replace('.poem', '.yaml'));
 

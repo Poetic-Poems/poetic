@@ -140,6 +140,10 @@ When a poem source file is deleted:
 - `blogger_removed=delete` — the post is permanently deleted.
 - `blogger_removed=keep` — the post is left exactly as is.
 
+### Draft/private poems
+
+Poem source files whose names begin with `_` or `.` are ignored by the entire build pipeline — they are never converted to YAML, never published to GitHub Pages, and never synced to Blogger. Use an `_` prefix to keep a work-in-progress poem in the repo without publishing it.
+
 ### Dry-run mode
 
 Preview changes without writing to Blogger:
