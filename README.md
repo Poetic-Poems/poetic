@@ -256,6 +256,7 @@ To switch channels, edit `.poetic-version` and change the `channel` line.
 
 ## Documentation
 
+- [`CHANGELOG.md`](CHANGELOG.md) — version history and notable changes
 - [`docs/POEM-SYNTAX.md`](docs/POEM-SYNTAX.md) — full `.poem` format specification
 - [`poem-syntax.ebnf`](poem-syntax.ebnf) — formal EBNF grammar
 - [`docs/YAML-SCHEMA.md`](docs/YAML-SCHEMA.md) — YAML schema for poems

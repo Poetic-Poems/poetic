@@ -1,0 +1,57 @@
+# Changelog
+
+All notable changes to the Poetic framework are recorded here.
+Patch-level fixes and routine documentation updates are omitted unless they
+affect behaviour visible to poem authors or site publishers.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Changed
+
+- `poem-to-raw.js` is now a pure shell wrapper; the outdated pure-JavaScript
+  fallback has been removed.
+
+## [0.2.3] — 2026-06-29
+
+### Fixed
+
+- `sync-framework.sh` no longer prints commit instructions when no files were
+  changed by a sync.
+- `poem-to-raw.sh` now correctly expands variables defined in `.poem` files.
+
+## [0.2.0] — 2026-06-29
+
+### Added
+
+- **Standalone poem pages** — each poem is built as a full styled HTML document
+  at `public/<slug>/index.html`.  The old flat URL `/<slug>.html` is kept as a
+  redirect stub forwarding to the new URL.
+- **Shared Audiomack loader** (`public/poetic.js`) — a single delegated `click`
+  listener replaces per-poem inline `loadAudiomackPlayer` functions; audio
+  buttons now use `data-*` attributes instead of `onclick`.
+
+## [0.1.0] — 2026-06-28
+
+### Added
+
+- Initial public release of the Poetic framework.
+- **`.poem` syntax — trailing text rule**: trailing text on any line-anchored
+  token (dividers `----`, end markers `====`, segment labels `{...}`, block
+  comment markers `<<#` / `#>>`, literal block markers `<<<` / `>>>`, version
+  labels) is explicitly ignored, enabling inline comments
+  (e.g. `----  # end of first version`).
+- **Build pipeline**: `.poem` → YAML → HTML via Pug template (`npm run build`).
+- **`scripts/sync-framework.sh`** — pulls framework-owned files from the
+  upstream `warwickallen/poetic` repo and records the synced ref in
+  `.poetic-version`.
+- **`.poetic-config`** — user-owned settings file supporting `favicon`,
+  `subtitle`, `skip_paths`, `auto_sync`, and `sync_schedule`.
+- **Scheduled auto-sync** via GitHub Actions (opt-in via `auto_sync=true` in
+  `.poetic-config`).
+- YAML `date` field uses ISO format (`yyyy-mm-dd`) for reliable string sorting.
+- Analysis content uses blank-line paragraph separation; the build converts
+  blank lines to `<p>` tags automatically, so `<p>` tags are not needed in the
+  YAML source.

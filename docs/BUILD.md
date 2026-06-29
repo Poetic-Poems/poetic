@@ -52,7 +52,7 @@ The build system includes utility functions for handling date formats:
 - **`formatDateForDisplay(dateStr)`** - Converts ISO date format (`yyyy-mm-dd`) to display format (`DayOfWeek, DD Month YYYY`)
 - **`parseDateForSorting(dateStr)`** - Parses date strings for chronological sorting, handling both ISO and display formats
 
-These utilities ensure consistent date handling across the build process and support migration from the old date format.
+These utilities ensure consistent date handling across the build process.
 
 #### Blogger Template Script (`src/tools/build-blogger.js`)
 
@@ -89,16 +89,6 @@ When you need to update the Blogger template with new CSS:
 5. Save the template in Blogger
 
 The script will automatically handle the CSS injection and provide feedback on success or any errors encountered.
-
-### Date Format Migration
-
-The build system has been updated to use ISO date format (`yyyy-mm-dd`) in YAML files instead of the previous display format (`DayOfWeek, DD Month YYYY`). This change provides:
-
-- **Better sorting**: ISO format sorts correctly as strings
-- **Easier editing**: Standardised format is easier to work with
-- **Backward compatibility**: The date utility functions handle both formats during migration
-
-**Migration completed**: All poem YAML files have been updated to use the new ISO date format.
 
 ### File Structure
 

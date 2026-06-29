@@ -96,41 +96,6 @@ analysis:
     Only plain text paragraphs need blank line separation.
 ```
 
-### Analysis Content Formatting
-
-The analysis system now uses blank lines instead of `<p>` tags for paragraph separation:
-
-**✅ Correct Format:**
-```yaml
-analysis:
-  full: |
-    <h3>Section Title</h3>
-
-    This is paragraph one. No <p> tags needed.
-
-    This is paragraph two. Just use blank lines.
-
-    <h3>Another Section</h3>
-
-    More content here.
-```
-
-**❌ Old Format (deprecated):**
-```yaml
-analysis:
-  full: |
-    <h3>Section Title</h3>
-    <p>This is paragraph one with <p> tags.</p>
-    <p>This is paragraph two with <p> tags.</p>
-```
-
-**Key Points:**
-- Use blank lines (double newlines) to separate paragraphs
-- HTML tags like `<h3>`, `<h4>`, `<h2>` are preserved as-is
-- The build system automatically converts blank lines to `<p>` tags in the final HTML
-- This makes YAML files cleaner and easier to edit
-- No need to manually add `<p>` and `</p>` tags
-
 ## File Naming
 
 YAML files should be named using a URL-friendly version of the title with `.yaml` extension:
