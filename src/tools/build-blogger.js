@@ -144,7 +144,7 @@ function injectCSSIntoTemplate() {
         const JS_END    = "<!-- ~~ CUSTOM JS END ~~ -->";
         const updated   = injectBetween(templateContent, JS_START, JS_END, jsPayload);
         if (updated === templateContent && !templateContent.includes(JS_START)) {
-          // Markers absent — skip silently (older templates)
+          console.warn("Warning: JS markers not found in template — skipping JS injection. Add <!-- ~~ CUSTOM JS START ~~ --> and <!-- ~~ CUSTOM JS END ~~ --> before </body>.");
         } else {
           templateContent = updated;
           console.log("JS injected from public/poetic.js");
