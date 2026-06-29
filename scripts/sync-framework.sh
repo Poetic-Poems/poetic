@@ -107,7 +107,11 @@ current_channel=$(grep '^channel=' "$VERSION_FILE" 2>/dev/null | cut -d= -f2 || 
 printf 'channel=%s\nref=%s\ncommit=%s\n' "$current_channel" "$POETIC_REF" "$POETIC_COMMIT" > "$VERSION_FILE"
 
 echo ""
-echo "Done. Review staged changes with: git diff --staged"
-echo "Commit with: git commit -m 'chore: sync framework from poetic $POETIC_REF'"
-echo ""
-echo "If scripts/sync-framework.sh itself was updated, re-run to pick up the new version."
+if git diff --staged --quiet; then
+  echo "Done. Already up to date — no changes to commit."
+else
+  echo "Done. Review staged changes with: git diff --staged"
+  echo "Commit with: git commit -m 'chore: sync framework from poetic $POETIC_REF'"
+  echo ""
+  echo "If scripts/sync-framework.sh itself was updated, re-run to pick up the new version."
+fi
