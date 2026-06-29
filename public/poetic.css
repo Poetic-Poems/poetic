@@ -188,6 +188,7 @@ html.dark-mode body {
 
 html.dark-mode .header,
 html.dark-mode .poem-section,
+html.dark-mode .poem-card,
 html.dark-mode .toc,
 html.dark-mode .toc-table th,
 html.dark-mode .toc-table tr,
@@ -270,6 +271,7 @@ html.dark-mode .audiomack-container {
   /* Override inline styles in generated pages (which can set light backgrounds) */
   .header,
   .poem-section,
+  .poem-card,
   .toc,
   .toc-table th,
   .toc-table tr,

@@ -482,6 +482,22 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
           `<p class="subtitle">${subtitle}</p>`
         );
       }
+
+      // Ensure CSS/JS links are present (inject after favicon if missing)
+      const needsCss = !indexContent.includes('href="poetic.css"');
+      const needsCustomCss = !indexContent.includes('href="custom.css"');
+      const needsJs = !indexContent.includes('src="poetic.js"');
+      if (needsCss || needsCustomCss || needsJs) {
+        const linksToAdd = [
+          needsCss ? '<link rel="stylesheet" href="poetic.css">' : '',
+          needsCustomCss ? '<link rel="stylesheet" href="custom.css">' : '',
+          needsJs ? '<script src="poetic.js" defer></script>' : '',
+        ].filter(Boolean).join('\n    ');
+        indexContent = indexContent.replace(
+          /(<link rel="icon"[^>]*>)/,
+          `$1\n    ${linksToAdd}`
+        );
+      }
     } else {
       // Create a default index.html template
       indexContent = `<!DOCTYPE html>
@@ -491,6 +507,9 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fragments &#38; Unity</title>
     <link rel="icon" href="${favicon}" type="image/svg+xml">
+    <link rel="stylesheet" href="poetic.css">
+    <link rel="stylesheet" href="custom.css">
+    <script src="poetic.js" defer></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
