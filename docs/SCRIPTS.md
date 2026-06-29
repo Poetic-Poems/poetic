@@ -58,9 +58,10 @@ scripts/edit-poem ^at           # open any poem whose filename starts with "at"
 Extract plain-text versions of all `.poem` files and write a browsable HTML
 index.
 
-> **Prefer the npm command.**  The canonical implementation is
-> `src/tools/poem-to-raw.js`, invoked by `npm run poem-to-raw`.  This shell
-> script is a legacy equivalent kept for reference and fallback use.
+> **This shell script is the authoritative implementation.**
+> `src/tools/poem-to-raw.js` is a thin wrapper that invokes this script so
+> that `npm run poem-to-raw` and the build pipeline work without callers
+> needing to invoke bash directly.
 
 ### Usage
 

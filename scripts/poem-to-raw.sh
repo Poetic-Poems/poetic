@@ -12,10 +12,11 @@
 #
 # Usage:
 #   bash scripts/poem-to-raw.sh
-#   npm run poem-to-raw           # preferred — calls the JS equivalent instead
+#   npm run poem-to-raw           # calls src/tools/poem-to-raw.js, which delegates here
 #
-# Note: The canonical implementation is src/tools/poem-to-raw.js.
-# This shell script is a legacy equivalent kept for reference and fallback use.
+# Note: This shell script is the authoritative implementation.
+# src/tools/poem-to-raw.js is a thin wrapper that invokes this script so the
+# build pipeline can run it without calling bash directly.
 #
 # Outputs:
 #   raw/<title>              — plain-text rendering of each poem
