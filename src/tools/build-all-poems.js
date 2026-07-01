@@ -18,22 +18,6 @@ const { readPoeticConfig } = require("./poetic-config");
 const { loadPoemData, renderFragment } = require("./poem-render");
 const beautify = require("js-beautify");
 
-function extractCustomCSSFromStyles() {
-  const publicDir = path.join(process.cwd(), "public");
-  let combined = "";
-  for (const file of ["poetic.css", "custom.css"]) {
-    try {
-      const filePath = path.join(publicDir, file);
-      if (!fs.existsSync(filePath)) continue;
-      const content = fs.readFileSync(filePath, "utf8").trim();
-      if (content) combined += (combined ? "\n\n" : "") + content;
-    } catch (err) {
-      console.warn(`Warning: Could not read CSS from ${file}:`, err.message);
-    }
-  }
-  return combined;
-}
-
 /**
  * Check if a poem has any active audio files
  */
@@ -79,16 +63,15 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>No Poems Found</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
-        h1 { color: #333; margin-bottom: 20px; }
-    </style>
+    <link rel="stylesheet" href="poetic.css">
+    <link rel="stylesheet" href="custom.css">
 </head>
 <body>
     <div class="container">
-        <h1>No Poems Found</h1>
-        <p>No YAML files were found in the poems directory.</p>
+        <div class="poem-section text-center">
+            <h1>No Poems Found</h1>
+            <p>No YAML files were found in the poems directory.</p>
+        </div>
     </div>
 </body>
 </html>`;
@@ -157,65 +140,6 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
     <link rel="stylesheet" href="poetic.css">
     <link rel="stylesheet" href="custom.css">
     <script src="poetic.js" defer></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; text-align: center; }
-        h1 { color: #333; margin: 0 0 10px 0; font-weight: 300; }
-        .subtitle { color: #666; margin: 0; }
-        .poem-section { background: white; margin-bottom: 30px; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .poem-title { color: #333; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; font-size: 1.5em; }
-        .poem-title a { color: inherit; text-decoration: none; }
-        .poem-title a:hover { text-decoration: underline; }
-        .poem-content { line-height: 1.6; color: #444; }
-        .toc { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .toc h2 { color: #333; margin: 0 0 20px 0; }
-        .toc-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .toc-table th, .toc-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-        .toc-table th { background: #f8f9fa; font-weight: 600; color: #333; cursor: pointer; user-select: none; }
-        .toc-table th:hover { background: #e9ecef; }
-        .toc-table th.sortable::after { content: " ↕"; opacity: 0.5; }
-        .toc-table th.sort-asc::after { content: " ↑"; opacity: 1; }
-        .toc-table th.sort-desc::after { content: " ↓"; opacity: 1; }
-        .toc-table tr:hover { background: #f8f9fa; }
-        .toc-table a { color: #007AFF; text-decoration: none; }
-        .toc-table a:hover { text-decoration: underline; }
-        .audio-cell { text-align: center; font-size: 1.2em; }
-        .audio-cell:empty::after { content: "—"; color: #ccc; }
-        .back-link { display: inline-block; margin-bottom: 20px; color: #007AFF; text-decoration: none; }
-        .back-link:hover { text-decoration: underline; }
-        /* Back to Top Button */
-        .back-to-top {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: #007AFF;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 20px;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-        .back-to-top:hover {
-            background: #0056CC;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
-        .back-to-top:active {
-            transform: translateY(0);
-        }
-        .back-to-top.visible {
-            display: flex;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
@@ -485,6 +409,9 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
         );
       }
 
+      // Strip the legacy inline <style> block now that its rules live in poetic.css
+      indexContent = indexContent.replace(/\n?\s*<style>[\s\S]*?<\/style>/, "");
+
       // Ensure CSS/JS links are present (inject after favicon if missing)
       const needsCss = !indexContent.includes('href="poetic.css"');
       const needsCustomCss = !indexContent.includes('href="custom.css"');
@@ -512,87 +439,6 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
     <link rel="stylesheet" href="poetic.css">
     <link rel="stylesheet" href="custom.css">
     <script src="poetic.js" defer></script>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background: #f5f5f5;
-            line-height: 1.6;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        .header {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        h1 {
-            color: #333;
-            margin: 0 0 10px 0;
-            font-weight: 300;
-        }
-        .subtitle {
-            color: #666;
-            margin: 0 0 20px 0;
-        }
-        .poem-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        .poem-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease;
-            cursor: pointer;
-        }
-        .poem-card:hover {
-            transform: translateY(-2px);
-        }
-        .poem-title {
-            color: #333;
-            margin: 0 0 10px 0;
-            font-size: 1.2em;
-            font-weight: 600;
-        }
-        .poem-title a {
-            color: inherit;
-            text-decoration: none;
-        }
-        .poem-title a:hover {
-            text-decoration: underline;
-        }
-        .audio-indicator {
-            color: #007AFF;
-            font-size: 1.2em;
-        }
-        .links {
-            text-align: center;
-            margin-top: 30px;
-        }
-        .links a {
-            color: #007AFF;
-            text-decoration: none;
-            margin: 0 15px;
-            padding: 10px 20px;
-            border: 1px solid #007AFF;
-            border-radius: 5px;
-            display: inline-block;
-        }
-        .links a:hover {
-            background: #007AFF;
-            color: white;
-        }
-    </style>
 </head>
 <body>
     <div class="container">
@@ -721,6 +567,5 @@ if (require.main === module) {
 
 module.exports = {
   concatenateAllHtmlFiles,
-  extractCustomCSSFromStyles,
   generateIndexHtml,
 };

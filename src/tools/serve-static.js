@@ -184,22 +184,6 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
 
-function extractCustomCSSFromStyles() {
-  const publicDir = path.join(process.cwd(), "public");
-  let combined = "";
-  for (const file of ["poetic.css", "custom.css"]) {
-    try {
-      const filePath = path.join(publicDir, file);
-      if (!fileExists(filePath)) continue;
-      const content = fs.readFileSync(filePath, "utf8").trim();
-      if (content) combined += (combined ? "\n\n" : "") + content;
-    } catch (err) {
-      console.warn(`Warning: Could not read CSS from ${file}:`, err.message);
-    }
-  }
-  return combined;
-}
-
 function hasActiveAudio(audioData) {
   if (!audioData || typeof audioData !== 'object') return false;
   for (const platform in audioData) {
@@ -240,16 +224,15 @@ function concatenateAllHtmlFiles(dirPath) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>No HTML Files Found</title>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; background: #f5f5f5; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
-        h1 { color: #333; margin-bottom: 20px; }
-    </style>
+    <link rel="stylesheet" href="/poetic.css">
+    <link rel="stylesheet" href="/custom.css">
 </head>
 <body>
     <div class="container">
-        <h1>No HTML Files Found</h1>
-        <p>No HTML files were found in the directory.</p>
+        <div class="poem-section text-center">
+            <h1>No HTML Files Found</h1>
+            <p>No HTML files were found in the directory.</p>
+        </div>
     </div>
 </body>
 </html>`;
@@ -278,47 +261,15 @@ function concatenateAllHtmlFiles(dirPath) {
     poemData.sort((a, b) => parseDateForSorting(a.date) - parseDateForSorting(b.date));
     poemData.forEach((poem) => { poem.anchor = `poem-${poem.slug}`; });
 
-    // Load and concatenate poetic.css + custom.css
-    const customCSS = extractCustomCSSFromStyles();
-
     let concatenatedContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Poems - Concatenated View</title>
+    <link rel="stylesheet" href="/poetic.css">
+    <link rel="stylesheet" href="/custom.css">
     <script src="/poetic.js" defer></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; text-align: center; }
-        h1 { color: #333; margin: 0 0 10px 0; font-weight: 300; }
-        .subtitle { color: #666; margin: 0; }
-        .poem-section { background: white; margin-bottom: 30px; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .poem-title { color: #333; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; font-size: 1.5em; }
-        .poem-title a { color: inherit; text-decoration: none; }
-        .poem-title a:hover { text-decoration: underline; }
-        .poem-content { line-height: 1.6; color: #444; }
-        .toc { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .toc h2 { color: #333; margin: 0 0 20px 0; }
-        .toc-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-        .toc-table th, .toc-table td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-        .toc-table th { background: #f8f9fa; font-weight: 600; color: #333; cursor: pointer; user-select: none; }
-        .toc-table th:hover { background: #e9ecef; }
-        .toc-table th.sortable::after { content: " ↕"; opacity: 0.5; }
-        .toc-table th.sort-asc::after { content: " ↑"; opacity: 1; }
-        .toc-table th.sort-desc::after { content: " ↓"; opacity: 1; }
-        .toc-table tr:hover { background: #f8f9fa; }
-        .toc-table a { color: #007AFF; text-decoration: none; }
-        .toc-table a:hover { text-decoration: underline; }
-        .audio-cell { text-align: center; font-size: 1.2em; }
-        .audio-cell:empty::after { content: "—"; color: #ccc; }
-        .back-link { display: inline-block; margin-bottom: 20px; color: #007AFF; text-decoration: none; }
-        .back-link:hover { text-decoration: underline; }
-
-        /* Custom CSS from template */
-        ${customCSS}
-    </style>
 </head>
 <body>
     <div class="container">
