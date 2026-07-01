@@ -296,6 +296,8 @@ function concatenateAllHtmlFiles(dirPath) {
         .subtitle { color: #666; margin: 0; }
         .poem-section { background: white; margin-bottom: 30px; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .poem-title { color: #333; margin: 0 0 20px 0; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; font-size: 1.5em; }
+        .poem-title a { color: inherit; text-decoration: none; }
+        .poem-title a:hover { text-decoration: underline; }
         .poem-content { line-height: 1.6; color: #444; }
         .toc { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; }
         .toc h2 { color: #333; margin: 0 0 20px 0; }
@@ -360,13 +362,13 @@ function concatenateAllHtmlFiles(dirPath) {
 
         concatenatedContent += `
         <div class="poem-section" id="${poem.anchor}">
-            <h2 class="poem-title">${poem.title}</h2>
+            <h2 class="poem-title"><a href="/${poem.slug}/">${poem.title}</a></h2>
             <div class="poem-content">${poemContent}</div>
         </div>`;
       } catch (err) {
         concatenatedContent += `
         <div class="poem-section" id="${poem.anchor}">
-            <h2 class="poem-title">${poem.title}</h2>
+            <h2 class="poem-title"><a href="/${poem.slug}/">${poem.title}</a></h2>
             <div class="poem-content"><p style="color: #999; font-style: italic;">Error rendering poem: ${err.message}</p></div>
         </div>`;
       }
