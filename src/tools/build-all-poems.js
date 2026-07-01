@@ -507,7 +507,11 @@ function main() {
   }
 
   const config = readPoeticConfig();
-  const favicon = config.favicon || "poetic-logo.svg";
+  // Strip a leading "public/" so the href resolves correctly when public/ is
+  // served as the web root (both locally and once GitHub Pages deploys its
+  // contents to the site root) — see build-poems.js for the same rule.
+  const rawFavicon = config.favicon || "poetic-logo.svg";
+  const favicon = rawFavicon.replace(/^public\//, '');
   if (config.favicon) {
     console.log(`Using favicon from .poetic-config: ${favicon}`);
   }

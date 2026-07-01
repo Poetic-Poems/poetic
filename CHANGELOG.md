@@ -19,6 +19,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `poem-to-raw.js` is now a pure shell wrapper; the outdated pure-JavaScript
   fallback has been removed.
 
+### Fixed
+
+- `build-all-poems.js` no longer leaves a `public/`-prefixed favicon href in
+  the generated `index.html`/`all-poems.html` when `.poetic-config` sets
+  `favicon=public/<file>`. The prefix is now stripped the same way
+  `build-poems.js` already strips it for individual poem pages, so the
+  favicon resolves both under `npm start` (which serves `public/` as the web
+  root) and on GitHub Pages.
+
 ## [0.2.3] — 2026-06-29
 
 ### Fixed
