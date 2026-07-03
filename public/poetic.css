@@ -307,7 +307,7 @@ h2.poem-title {
   border-left-style: none;
 }
 
-.postscript :first-child {
+.postscript-label {
   font-weight: bold;
 }
 
