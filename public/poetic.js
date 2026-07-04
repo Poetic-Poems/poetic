@@ -22,9 +22,20 @@ function evaluatePostscriptPreview(el) {
   const style = getComputedStyle(el);
   let lineHeightPx = parseFloat(style.lineHeight);
   if (isNaN(lineHeightPx)) lineHeightPx = 1.2 * parseFloat(style.fontSize);
-  const collapsedPx = previewLines * lineHeightPx;
+  const budgetPx = previewLines * lineHeightPx;
   const toggle = el.parentElement && el.parentElement.querySelector('.postscript-toggle');
-  const hiddenPx = el.scrollHeight - collapsedPx;
+
+  // Measure the true bottom of rendered content, excluding the trailing margin of
+  // the last child. scrollHeight includes that margin, which would count empty
+  // space as "hidden" and show a pointless toggle. Layout positions are unaffected
+  // by the collapsed overflow:hidden clamp, so the child rect is the full position.
+  const last = el.lastElementChild;
+  const contentPx = last
+    ? last.getBoundingClientRect().bottom - el.getBoundingClientRect().top
+    : el.scrollHeight;
+  const hiddenPx = contentPx - budgetPx;
+
+  // Only offer the toggle when it would reveal at least a full line of real text.
   if (hiddenPx <= lineHeightPx) {
     el.classList.add('postscript-no-preview');
     if (toggle) toggle.classList.add('hidden');

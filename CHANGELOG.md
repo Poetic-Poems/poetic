@@ -9,6 +9,19 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-07-04
+
+### Fixed
+
+- The postscript "See more" preview toggle no longer appears for notes whose
+  content is only a fraction of a line longer than the preview budget. The
+  runtime gate (`evaluatePostscriptPreview` in `public/poetic.js`) previously
+  measured hidden content with `scrollHeight`, which includes the trailing
+  bottom margin of the note's last child; that margin could push the
+  measured "hidden" amount past the one-line threshold even though almost no
+  real text was clipped. It now measures the true content bottom from the
+  last child's bounding rect, excluding that trailing margin.
+
 ## [1.1.0] — 2026-07-04
 
 ### Changed
