@@ -72,7 +72,11 @@ FRAMEWORK_PATHS=(
   poem-syntax.ebnf
   package.json
   src/poems/poem/_example.poem
+  src/poems/poem/_params-example.poem
+  src/poems/poem/_minimal.poem
   src/poems/yaml/_example.yaml
+  src/poems/yaml/_params-example.yaml
+  src/poems/yaml/_minimal.yaml
   src/poems/yaml/_shared.yaml
   public/poetic.css
   public/poetic.js
