@@ -78,18 +78,54 @@ versions_section = version, { [ blank_lines, version_divider ], blank_lines, ver
 version = [ blank_lines, version_label, blank_lines ],
           segments ;
 
-version_label = "{{", whitespace, label_text, whitespace, "}}", { ? any character except newline ? } ;
+version_label = "{{", whitespace, label_text, whitespace, "}}", [ parameter_list ], { ? any character except newline ? } ;
 
 segments = segment, { blank_lines, segment } ;
 
 segment = [ segment_label, blank_lines ],
           segment_content ;
 
-segment_label = "{", label_text, "}", { ? any character except newline ? } ;
+segment_label = "{", label_text, "}", [ parameter_list ], { ? any character except newline ? } ;
 
 segment_content = content_line, { newline, content_line } ;
 
 content_line = [ leading_whitespace ], text_with_markup ;
+
+(* ============================================================================
+   BLOCK PARAMETERS
+   A label-bearing block-start token (version_label, segment_label, or
+   postscript_label) may be followed by an optional parenthesised parameter
+   list, immediately after the closing brace(s), with optional whitespace
+   in between. Whitespace is also optional and ignored around "(", ")", "=",
+   ",", and around keys and unquoted values. If the trailing "(...)" is not a
+   well-formed parameter_list, it is not consumed here; the existing
+   ignored-trailing-text rule applies instead (see semantic constraint 4).
+   ============================================================================ *)
+
+parameter_list = "(", whitespace_or_blank,
+                  [ parameter, { whitespace_or_blank, ",", whitespace_or_blank, parameter } ],
+                  whitespace_or_blank, ")" ;
+
+parameter = parameter_key, whitespace_or_blank, "=", whitespace_or_blank, parameter_value ;
+
+parameter_key = letter, { letter | digit | "-" | "_" } ;
+
+parameter_value = quoted_parameter_value | unquoted_parameter_value ;
+
+(* A value is "quoted" when its first non-whitespace character is "'" or '"'.
+   Everything between the matching quotes is taken verbatim, including
+   whitespace and the characters ",", ")", and the OTHER quote character; the
+   delimiting quote character cannot appear inside (there is no escaping - use
+   the other quote style, or an unquoted value, if it is needed literally). *)
+quoted_parameter_value = ( "'", { ? any character except "'" and newline ? }, "'" )
+                       | ( '"', { ? any character except '"' and newline ? }, '"' ) ;
+
+(* An unquoted value runs to the next top-level "," or ")"; surrounding
+   whitespace is trimmed. It may not itself contain ",", ")", a quote
+   character, or a newline. *)
+unquoted_parameter_value = { ? any character except ",", ")", "'", '"' and newline ? } ;
+
+whitespace_or_blank = { whitespace } ;
 
 (* ============================================================================
    AUDIO SECTION
@@ -115,7 +151,7 @@ postscript_note = [ postscript_label, blank_lines ],
                   postscript_content,
                   { blank_lines, literal_block, blank_lines } ;
 
-postscript_label = "{", label_text, "}", { ? any character except newline ? } ;
+postscript_label = "{", label_text, "}", [ parameter_list ], { ? any character except newline ? } ;
 
 (* Postscript prose is rendered as GitHub-Flavoured Markdown (see gfm_content). *)
 postscript_content = gfm_content ;
@@ -404,7 +440,17 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
       labels ({Synopsis}, {Full}), literal block markers (<<<, >>>),
       comment block markers (<<#, #>>), and multi-line variable markers
       (={...}<<=, =>>). Single-line variable definitions (={...}=) are
-      excluded as everything after }= is the variable value (not ignored)
+      excluded as everything after }= is the variable value (not ignored).
+
+      Exception: for version labels, segment labels, and postscript labels,
+      if the text immediately following the closing brace(s) (after optional
+      whitespace) is a well-formed parameter_list, i.e. "(key=value, ...)",
+      it is consumed as parameters rather than ignored (see BLOCK PARAMETERS).
+      Any text after that parameter list is still ignored. If the trailing
+      "(...)" is NOT a well-formed parameter_list (e.g. it has no "=", or a
+      quote is unterminated), it is left untouched by this exception and is
+      ignored in full, exactly as for any other trailing text - this keeps a
+      parenthetical remark such as "{Label} (see below)" backward compatible.
 
    5. Version labels and segment labels have leading and trailing whitespace
       trimmed
@@ -503,6 +549,15 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
          literal blocks (delimited by `<<<` and `>>>`). Maintenance tools
          that automatically strip trailing spaces should exclude `.poem`
          files to avoid removing intentional hard-break markers.
+
+      32. Parameter values follow shell-style variable substitution: `${...}`
+         is expanded (per the usual variable rules) in unquoted and
+         double-quoted parameter values, but is left literal in single-quoted
+         parameter values. Substitution is applied to a value AFTER it has
+         been scanned from the source line, so any `,`, `)`, or quote
+         character introduced by the expansion is never re-scanned as part of
+         the parameter_list syntax (e.g. an expanded value containing a literal
+         `)` does not end the list early).
 *)
 
 (* ============================================================================

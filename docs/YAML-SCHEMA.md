@@ -57,8 +57,26 @@ audio:
 ```yaml
 postscript:
   - label: "Disclaimer"
+    params:
+      preview: "false"
     content: |
       <p>HTML content.</p>
+```
+
+The optional `params` field is a map of string keys and string values, representing the parameter list from the `.poem` source. For postscript notes, the common parameters are:
+
+- `preview` (default `"true"`): whether to enable preview truncation for long notes
+- `preview-lines` (default `"5"`): the number of lines to show in the preview before truncation
+
+Example with all parameters:
+```yaml
+postscript:
+  - label: "Origin"
+    params:
+      preview: "true"
+      preview-lines: "8"
+    content: |
+      <p>Long note content...</p>
 ```
 
 ### Analysis (3 scenarios)

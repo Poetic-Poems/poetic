@@ -1,0 +1,40 @@
+<<#
+This is the golden test fixture for block parameters: `{Label}(key=value, ...)`
+and `{{Label}}(key=value, ...)`. It exercises version/segment/postscript
+parameter lists, variable substitution in parameter values, and the
+quote-aware scanner (a value containing the other quote character, a comma,
+and a closing parenthesis). This comment block never appears in the output.
+#>>
+
+={want preview}=false
+
+Params Example
+1970-02-01
+
+{{ Version 1 }}(color=blue, icon=star)
+
+{Verse}(preview-lines=8)
+A single segment to keep this fixture minimal.
+
+====
+
+====
+
+{My Postscript Label}(preview=${want preview})
+This postscript's preview parameter is expanded from a variable that was
+defined above as "false".
+
+----
+
+{Quoting Stress}( tricky-1   = " )' "  , tricky-2=  '(")'    )
+This postscript exercises the exact quoting worked example: tricky-1 is the
+four characters space, close-paren, single-quote, space; tricky-2 is the
+three characters open-paren, double-quote, close-paren.
+
+----
+
+{Malformed Parenthetical} (see below)
+A trailing parenthetical that is not a well-formed parameter list is ignored,
+exactly as before: this label is just "Malformed Parenthetical" with no params.
+
+====

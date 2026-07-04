@@ -95,22 +95,28 @@ syn match poemVariableRef "\${[^}]\+}"
 " Multi-line variables
 syn region poemMultiLineVarDef start="^={\w\+}<<=" end="^=>>" keepend
 
+" Parameters list after labels
+syn match poemParams "(.\{-})" contains=poemParamsDelim,poemParamKey,poemParamValue,poemParamEquals
+syn match poemParamsDelim "[(),=]" contained
+syn match poemParamKey "[a-zA-Z][a-zA-Z0-9_-]*" contained
+syn match poemParamValue "['\"].\{-}['\"]" contained
+
 " Version labels MUST come before segment labels to have priority
 " Version labels with trailing text - entire line is Comment, but label part is Identifier
-syn match poemVersionLabelLineTrailing "^{{.\{-}}}\s\+.*$" contains=poemVersionLabelPart
+syn match poemVersionLabelLineTrailing "^{{.\{-}}}\s*(\?.*$" contains=poemVersionLabelPart,poemParams
 syn match poemVersionLabelPart "^{{.\{-}}}" contained contains=poemVersionLabelDelim,poemVariableRef
 syn match poemVersionLabelDelim "{{" contained
 syn match poemVersionLabelDelim "}}" contained
-" Version labels without trailing text
-syn match poemVersionLabelLineOnly "^{{.\{-}}}$" contains=poemVersionLabelDelim,poemVariableRef
+" Version labels without trailing text (may have params)
+syn match poemVersionLabelLineOnly "^{{.\{-}}}\s*(\?.*$" contains=poemVersionLabelDelim,poemVariableRef,poemParams
 
 " Segment labels with trailing text - must NOT start with {{
-syn match poemSegmentLabelLineTrailing "^{[^{}]\+}\s\+.*$" contains=poemSegmentLabelPart
+syn match poemSegmentLabelLineTrailing "^{[^{}]\+}\s*(\?.*$" contains=poemSegmentLabelPart,poemParams
 syn match poemSegmentLabelPart "^{[^{}]\+}" contained contains=poemSegmentLabelDelim,poemVariableRef
 syn match poemSegmentLabelDelim "{" contained
 syn match poemSegmentLabelDelim "}" contained
-" Segment labels without trailing text
-syn match poemSegmentLabelLineOnly "^{[^{}]\+}$" contains=poemSegmentLabelDelim,poemVariableRef
+" Segment labels without trailing text (may have params)
+syn match poemSegmentLabelLineOnly "^{[^{}]\+}\s*(\?.*$" contains=poemSegmentLabelDelim,poemVariableRef,poemParams
 
 " Dividers without trailing text (must come before trailing version for priority)
 syn match poemDividerLineOnly "^----$"
@@ -207,6 +213,11 @@ hi def link poemSegmentLabelLineTrailing Comment
 hi def link poemSegmentLabelPart Type
 hi def link poemSegmentLabelLineOnly Type
 hi def link poemSegmentLabelDelim Delimiter
+
+hi def link poemParams String
+hi def link poemParamsDelim Delimiter
+hi def link poemParamKey Macro
+hi def link poemParamValue String
 
 hi def link poemVariableDef Macro
 hi def link poemVariableValue String

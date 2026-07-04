@@ -1,0 +1,33 @@
+title: Params Example
+author: A Poet
+date: '1970-02-01'
+versions:
+  - label: Version 1
+    params:
+      color: blue
+      icon: star
+    segments:
+      - label: Verse
+        params:
+          preview-lines: '8'
+        lines: |
+          A single segment to keep this fixture minimal.
+postscript:
+  - label: My Postscript Label
+    params:
+      preview: 'false'
+    content: |
+      <p>This postscript’s preview parameter is expanded from a variable that was
+      defined above as “false”.</p>
+  - label: Quoting Stress
+    params:
+      tricky-1: ' )'' '
+      tricky-2: (")
+    content: |
+      <p>This postscript exercises the exact quoting worked example: tricky-1 is the
+      four characters space, close-paren, single-quote, space; tricky-2 is the
+      three characters open-paren, double-quote, close-paren.</p>
+  - label: Malformed Parenthetical
+    content: |
+      <p>A trailing parenthetical that is not a well-formed parameter list is ignored,
+      exactly as before: this label is just “Malformed Parenthetical” with no params.</p>

@@ -98,16 +98,148 @@ class PoemParser {
    * 10: "Any text after a line-anchored token on the same line is ignored").
    * Applies to dividers/end markers and version/segment/analysis labels; leaves
    * everything else (including single-line variable values) untouched.
+   *
+   * A label token (`{...}` or `{{...}}`) may be followed by optional whitespace
+   * then `(` — an optional parameter list. In that case the rest of the line is
+   * kept as-is (not stripped): the closing `)` cannot be located here with a
+   * regex because it may be hidden inside a quoted value, so the true end is
+   * found later by the quote-aware scanner in parseParamList(). If the token is
+   * NOT followed by `(` (after optional whitespace), trailing text is stripped
+   * as before.
    */
   stripTrailingAfterToken(line) {
     let m;
     if ((m = line.match(/^(={4})(?!=)/))) return m[1];      // end marker ====
     if ((m = line.match(/^(-{4})(?!-)/))) return m[1];      // divider ----
+    if ((m = line.match(/^(\{\{.*?\}\})(\s*)\(/))) return m[1] + line.slice(m[1].length); // version label with param list
     if ((m = line.match(/^(\{\{.*?\}\})/))) return m[1];    // version label {{...}}
-    if (/^\{(?!\{)/.test(line) && (m = line.match(/^(\{.*?\})/))) {
-      return m[1];                                          // segment/analysis label {...}
+    if (/^\{(?!\{)/.test(line)) {
+      if ((m = line.match(/^(\{.*?\})(\s*)\(/))) return m[1] + line.slice(m[1].length); // segment/analysis label with param list
+      if ((m = line.match(/^(\{.*?\})/))) return m[1];      // segment/analysis label {...}
     }
     return line;
+  }
+
+  /**
+   * Split a label-bearing line into its label text and an optional trailing
+   * parameter list: `{Label}(key=value, ...)` or `{{Label}}(key=value, ...)`.
+   * `type` is '{{' for version labels (2 braces) or '{' for segment/postscript/
+   * analysis labels (1 brace). Returns `{ label, params }` where `label` is the
+   * raw (unsubstituted, unconverted) text between the braces, trimmed, and
+   * `params` is the object returned by parseParamList(), or null when no
+   * parameter list is present or it is malformed (existing "trailing text
+   * ignored" behaviour then applies to whatever follows the closing brace(s)).
+   */
+  parseLabelWithParams(line, type) {
+    const trimmed = line.trim();
+    const braceLen = type === '{{' ? 2 : 1;
+    const closeBrace = type === '{{' ? '}}' : '}';
+    const closeIdx = trimmed.indexOf(closeBrace, braceLen);
+    if (closeIdx === -1) {
+      return { label: trimmed.slice(braceLen).trim(), params: null };
+    }
+
+    const label = trimmed.slice(braceLen, closeIdx).trim();
+    const rest = trimmed.slice(closeIdx + closeBrace.length);
+    const afterWs = rest.match(/^\s*(\(.*)$/s);
+    const params = afterWs ? this.parseParamList(afterWs[1]) : null;
+
+    return { label, params };
+  }
+
+  /**
+   * Quote-aware parser for a `(key=value, ...)` parameter list. `str` must
+   * start with `(`; the matching top-level `)` is located by scanning (quoted
+   * content is opaque to comma/paren detection, since a quoted value may
+   * contain literal `,`/`)`/the other quote char). Returns an object mapping
+   * keys (as authored, hyphens preserved) to string values, or null if `str`
+   * does not start with a well-formed `(...)` list (unterminated quote, no
+   * matching `)`, a key that isn't `[A-Za-z][A-Za-z0-9_-]*`, or a missing `=`).
+   * An empty list `()` returns `{}`.
+   *
+   * Value scanning:
+   *   - Quoted: a value is "quoted" when its first non-whitespace character is
+   *     `'` or `"`. The content between the matching quotes is taken verbatim
+   *     (including whitespace, `,`, `)`, and the other quote character); the
+   *     delimiting quote character cannot appear inside (no escaping).
+   *   - Unquoted: runs to the next top-level `,` or `)`, with surrounding
+   *     whitespace trimmed.
+   *   - Substitution: this.substituteVariables() is applied to the scanned
+   *     value AFTER scanning (so a `,`/`)` introduced by an expansion is never
+   *     re-scanned), and only for UNQUOTED or DOUBLE-quoted values; SINGLE-
+   *     quoted values are left as literal text.
+   */
+  parseParamList(str) {
+    if (str[0] !== '(') return null;
+
+    // Locate the matching top-level ')', treating quoted spans as opaque.
+    let end = -1;
+    {
+      let i = 1;
+      while (i < str.length) {
+        const c = str[i];
+        if (c === "'" || c === '"') {
+          const quote = c;
+          i++;
+          while (i < str.length && str[i] !== quote) i++;
+          if (i >= str.length) return null; // unterminated quote
+          i++; // consume closing quote
+          continue;
+        }
+        if (c === ')') { end = i; break; }
+        if (c === '\n') return null; // no newlines inside a param list
+        i++;
+      }
+    }
+    if (end === -1) return null;
+
+    const inner = str.slice(1, end);
+    const params = {};
+    const keyRe = /^[A-Za-z][A-Za-z0-9_-]*/;
+    let i = 0;
+    const n = inner.length;
+    const skipWs = () => { while (i < n && /\s/.test(inner[i])) i++; };
+
+    skipWs();
+    if (i >= n) return params; // "()" -> no parameters
+
+    while (true) {
+      skipWs();
+      const keyMatch = keyRe.exec(inner.slice(i));
+      if (!keyMatch) return null;
+      const key = keyMatch[0];
+      i += key.length;
+
+      skipWs();
+      if (inner[i] !== '=') return null;
+      i++; // consume '='
+      skipWs();
+
+      let value;
+      if (inner[i] === "'" || inner[i] === '"') {
+        const quote = inner[i];
+        i++; // consume opening quote
+        const start = i;
+        while (i < n && inner[i] !== quote) i++;
+        if (i >= n) return null; // unterminated quote
+        value = inner.slice(start, i);
+        i++; // consume closing quote
+        if (quote === '"') value = this.substituteVariables(value);
+      } else {
+        const start = i;
+        while (i < n && inner[i] !== ',' && inner[i] !== ')') i++;
+        value = this.substituteVariables(inner.slice(start, i).trim());
+      }
+
+      params[key] = value;
+      skipWs();
+
+      if (i >= n) break;
+      if (inner[i] === ',') { i++; continue; }
+      return null; // unexpected character before the end of the list
+    }
+
+    return params;
   }
 
   /**
@@ -466,10 +598,13 @@ class PoemParser {
     const version = {};
 
     // Check for version label
-    if (firstLine.trim().startsWith('{{') && firstLine.trim().endsWith('}}')) {
-      const label = firstLine.trim().slice(2, -2).trim();
+    if (firstLine.trim().startsWith('{{') && firstLine.trim().includes('}}')) {
+      const { label, params } = this.parseLabelWithParams(firstLine, '{{');
       if (label) {
         version.label = this.convertMarkup(this.substituteVariables(label));
+      }
+      if (params) {
+        version.params = params;
       }
       this.next();
       this.skipBlankLines();
@@ -532,10 +667,13 @@ class PoemParser {
     const segment = {};
 
     // Check for segment label
-    if (line.trim().startsWith('{') && line.trim().endsWith('}') && !line.trim().startsWith('{{')) {
-      const label = line.trim().slice(1, -1).trim();
+    if (line.trim().startsWith('{') && line.trim().includes('}') && !line.trim().startsWith('{{')) {
+      const { label, params } = this.parseLabelWithParams(line, '{');
       if (label && label !== 'Synopsis' && label !== 'Full') {
         segment.label = this.convertMarkup(this.substituteVariables(label));
+        if (params) {
+          segment.params = params;
+        }
         this.next();
         this.skipBlankLines();
       }
@@ -566,9 +704,9 @@ class PoemParser {
       }
 
       // Check if this is the start of a new segment (has a label)
-      if (contentLine.trim().startsWith('{') && contentLine.trim().endsWith('}') &&
+      if (contentLine.trim().startsWith('{') && contentLine.trim().includes('}') &&
           !contentLine.trim().startsWith('{{')) {
-        const possibleLabel = contentLine.trim().slice(1, -1).trim();
+        const { label: possibleLabel } = this.parseLabelWithParams(contentLine, '{');
         if (possibleLabel && possibleLabel !== 'Synopsis' && possibleLabel !== 'Full') {
           // This is a new segment, stop here
           break;
@@ -778,10 +916,13 @@ class PoemParser {
     const postscript = {};
 
     // Check for label
-    if (line.trim().startsWith('{') && line.trim().endsWith('}')) {
-      const label = line.trim().slice(1, -1).trim();
+    if (line.trim().startsWith('{') && line.trim().includes('}')) {
+      const { label, params } = this.parseLabelWithParams(line, '{');
       if (label && label !== 'Synopsis' && label !== 'Full') {
         postscript.label = this.convertMarkup(this.substituteVariables(label));
+        if (params) {
+          postscript.params = params;
+        }
         this.next();
         this.skipBlankLines();
       }
@@ -905,20 +1046,29 @@ class PoemParser {
 
     const analysis = {};
 
-    // Check for Synopsis
-    if (line.trim() === '{Synopsis}') {
-      this.next();
-      this.skipBlankLines();
-      analysis.synopsis = this.parseAnalysisContent();
-      this.skipBlankLines();
+    // Check for Synopsis. Analysis labels don't take a documented parameter
+    // list, but parseLabelWithParams is still used to recognise the label
+    // when one is (erroneously) present, so a trailing `(...)` can't corrupt
+    // the `{Synopsis}` match; any params found are discarded.
+    if (line.trim().startsWith('{') && line.trim().includes('}')) {
+      const { label } = this.parseLabelWithParams(line, '{');
+      if (label === 'Synopsis') {
+        this.next();
+        this.skipBlankLines();
+        analysis.synopsis = this.parseAnalysisContent();
+        this.skipBlankLines();
+      }
     }
 
     // Check for Full
     const fullLine = this.peek();
-    if (fullLine && fullLine.trim() === '{Full}') {
-      this.next();
-      this.skipBlankLines();
-      analysis.full = this.parseAnalysisContent();
+    if (fullLine && fullLine.trim().startsWith('{') && fullLine.trim().includes('}')) {
+      const { label } = this.parseLabelWithParams(fullLine, '{');
+      if (label === 'Full') {
+        this.next();
+        this.skipBlankLines();
+        analysis.full = this.parseAnalysisContent();
+      }
     }
 
     if (Object.keys(analysis).length > 0) {

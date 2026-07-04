@@ -4,6 +4,18 @@
   display: none;
 }
 
+.sr-only {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .no-content {
   color: #999;
   font-style: italic;
@@ -309,6 +321,40 @@ h2.poem-title {
 
 .postscript-label {
   font-weight: bold;
+}
+
+/* Postscript "See more" preview toggle (pure-CSS checkbox hack; poetic.js
+   layers on top to suppress the control when truncation would hide <= 1 line). */
+
+.postscript-content {
+  max-height: calc(var(--preview-lines, 5) * 1lh);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent);
+  mask-image: linear-gradient(to bottom, #000 60%, transparent);
+}
+
+.postscript-toggle-cb:checked ~ .postscript-content,
+.postscript-content.postscript-no-preview {
+  max-height: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.postscript-toggle {
+  color: inherit;
+  cursor: pointer;
+  display: inline-block;
+  font-weight: bold;
+  margin-top: 0.5ex;
+  text-decoration: underline;
+}
+
+.postscript-toggle::after {
+  content: "See more \2B9F";
+}
+
+.postscript-toggle-cb:checked ~ .postscript-toggle::after {
+  content: "See less \2B9D";
 }
 
 /* Analysis */

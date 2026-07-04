@@ -9,6 +9,16 @@
 -   return text;
 - }
 
+//- Compute effective postscript preview settings from a postscript item's params.
+//- preview defaults to true unless params.preview is the string "false".
+//- previewLines defaults to 5 unless params['preview-lines'] parses as an integer >= 1.
+- function postscriptPreviewSettings(params) {
+-   const preview = !(params && params.preview === 'false');
+-   let previewLines = parseInt(params && params['preview-lines'], 10);
+-   if (isNaN(previewLines) || previewLines < 1) previewLines = 5;
+-   return { preview, previewLines };
+- }
+
 //- Function to process analysis text - convert blank lines to paragraph breaks
 - function processAnalysisText(text) {
 -   const paragraphs = text.split(/\n\s*\n/).map(para => para.trim()).filter(para => para.length > 0);
@@ -93,15 +103,24 @@ mixin poemContent
 
     if postscript && postscript.length > 0
       each postscriptItem in postscript
+        - const postscriptId = `postscript-${postscriptItem.label ? slugify(postscriptItem.label) : 'item'}--${slug}`
+        - const { preview, previewLines } = postscriptPreviewSettings(postscriptItem.params)
         div(
-          id=`postscript-${postscriptItem.label ? slugify(postscriptItem.label) : 'item'}--${slug}`
+          id=postscriptId
           class="postscript"
         )
           if postscriptItem.label
             div.postscript-label!= postscriptItem.label
           if postscriptItem.content
             - const processedContent = postscriptItem.content.replace(/\$\{slug\}/g, slug)
-            != processedContent
+            if preview
+              - const toggleId = `${postscriptId}--more`
+              input.postscript-toggle-cb.hidden(id=toggleId type="checkbox")
+              div.postscript-content(style=`--preview-lines: ${previewLines}` data-preview-lines=previewLines)!= processedContent
+              label.postscript-toggle(for=toggleId)
+                span.sr-only See more
+            else
+              != processedContent
       //- end postscript
     //- end postscript section
 
