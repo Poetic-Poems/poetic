@@ -148,98 +148,209 @@ class PoemParser {
   }
 
   /**
-   * Quote-aware parser for a `(key=value, ...)` parameter list. `str` must
-   * start with `(`; the matching top-level `)` is located by scanning (quoted
-   * content is opaque to comma/paren detection, since a quoted value may
-   * contain literal `,`/`)`/the other quote char). Returns an object mapping
-   * keys (as authored, hyphens preserved) to string values, or null if `str`
-   * does not start with a well-formed `(...)` list (unterminated quote, no
-   * matching `)`, a key that isn't `[A-Za-z][A-Za-z0-9_-]*`, or a missing `=`).
-   * An empty list `()` returns `{}`.
+   * Expand a `${name}` reference found at `str[at]` (where `str[at] === '$'`
+   * and `str[at + 1] === '{'`). Looks for the next `}` anywhere later in
+   * `str` (variable names cannot contain `{`, `}`, `$`, `<`, `>`, so this
+   * mirrors the substituteVariables() regex, which needs no nesting/escaping
+   * support). Returns `{ text, nextIndex }` with the substituted (or, if
+   * undefined, literal) text and the index just past the closing `}`, or
+   * null if there is no `}` later in the string (in which case `$` is not
+   * treated as starting a `${...}` token, and is instead ordinary literal
+   * text - this matches substituteVariables()'s regex, which simply does not
+   * match an unterminated `${`).
+   */
+  expandVarAt(str, at) {
+    const closeIdx = str.indexOf('}', at + 2);
+    if (closeIdx === -1) return null;
+    const token = str.slice(at, closeIdx + 1); // "${name}"
+    return { text: this.substituteVariables(token), nextIndex: closeIdx + 1 };
+  }
+
+  /**
+   * Scan one shell-style "word" (a parameter_value, or a parameter key/list
+   * terminator context) starting at `str[i]`, stopping at the first
+   * UNquoted, UNescaped `,`, `)`, or whitespace (or end of string). Returns
+   * `{ value, nextIndex }` with the fully decoded/substituted text and the
+   * index of the first character not consumed, or null if a quote is left
+   * unterminated (the whole list is then malformed).
    *
-   * Value scanning:
-   *   - Quoted: a value is "quoted" when its first non-whitespace character is
-   *     `'` or `"`. The content between the matching quotes is taken verbatim
-   *     (including whitespace, `,`, `)`, and the other quote character); the
-   *     delimiting quote character cannot appear inside (no escaping).
-   *   - Unquoted: runs to the next top-level `,` or `)`, with surrounding
-   *     whitespace trimmed.
-   *   - Substitution: this.substituteVariables() is applied to the scanned
-   *     value AFTER scanning (so a `,`/`)` introduced by an expansion is never
-   *     re-scanned), and only for UNQUOTED or DOUBLE-quoted values; SINGLE-
-   *     quoted values are left as literal text.
+   * The word is built by concatenating adjacent segments with no separator:
+   *   - Single-quoted `'...'`: copied verbatim to the next `'`. No escapes,
+   *     no substitution.
+   *   - Double-quoted `"..."`: copied to the next UNescaped `"`. Inside:
+   *     `\"`, `\\`, `\$`, and `` \` `` decode to the escaped character
+   *     (literal - `\$` never triggers substitution); a backslash before any
+   *     other character is kept literally (e.g. `\n` stays `\n`). An
+   *     unescaped `${name}` is expanded. Everything else is literal.
+   *   - Unquoted run: `\<char>` decodes to a literal `<char>` for ANY char
+   *     (including space, `,`, `)`, the quote characters, `\`, and `$`); an
+   *     unescaped `${name}` is expanded (spaces inside the braces do not end
+   *     the value); an unescaped `'` or `"` opens a quoted segment
+   *     (concatenated onto the value, scanning continues after it); an
+   *     unescaped whitespace, `,`, or `)` ends the word; any other character
+   *     is literal.
+   *
+   * Substitution happens inline, once per `${name}` occurrence (via
+   * expandVarAt(), itself backed by substituteVariables()), in unquoted runs
+   * and double-quoted segments - never for single-quoted segments or an
+   * escaped `\$`. The expanded text is appended to the value directly and is
+   * not itself re-scanned for further `${...}` or list syntax (`,`/`)`), so
+   * neither a fresh substitution opportunity nor a premature list terminator
+   * can be manufactured by what an expansion's value happens to contain.
+   */
+  scanShellWord(str, i) {
+    const n = str.length;
+    let value = '';
+
+    outer: while (true) {
+      const c = str[i];
+
+      if (c === undefined || c === ',' || c === ')' || /\s/.test(c)) {
+        break; // unquoted, unescaped terminator (or end of string)
+      }
+
+      if (c === "'") {
+        // Single-quoted: verbatim to the next "'". No escapes, no substitution.
+        i++; // consume opening quote
+        const start = i;
+        while (i < n && str[i] !== "'") i++;
+        if (i >= n) return null; // unterminated quote
+        value += str.slice(start, i);
+        i++; // consume closing quote
+        continue;
+      }
+
+      if (c === '"') {
+        // Double-quoted: to the next UNescaped '"'. Each unescaped "${name}"
+        // is expanded inline (via expandVarAt(), which itself calls
+        // substituteVariables() exactly once on the isolated "${...}" token);
+        // decoded literal text (including a literal '$' from "\$") is
+        // appended directly and is NEVER handed to substituteVariables()
+        // itself, so a literal "${...}"-shaped run produced by unescaping
+        // (e.g. `\$` followed by literal `{name}`) is not mistaken for a
+        // fresh substitution and re-expanded.
+        i++; // consume opening quote
+        while (true) {
+          if (i >= n) return null; // unterminated quote
+          const dc = str[i];
+          if (dc === '"') { i++; break; } // closing quote
+          if (dc === '\\' && i + 1 < n && '"\\$`'.includes(str[i + 1])) {
+            value += str[i + 1];
+            i += 2;
+            continue;
+          }
+          if (dc === '$' && str[i + 1] === '{') {
+            const expanded = this.expandVarAt(str, i);
+            if (expanded) {
+              value += expanded.text;
+              i = expanded.nextIndex;
+              continue;
+            }
+          }
+          value += dc; // backslash before any other char, or any other char, is literal
+          i++;
+        }
+        continue;
+      }
+
+      if (c === '\\') {
+        // Unquoted backslash-escape: literal next character, whatever it is.
+        if (i + 1 < n) {
+          value += str[i + 1];
+          i += 2;
+          continue;
+        }
+        // Trailing lone backslash at end of string: keep it literally.
+        value += c;
+        i++;
+        break;
+      }
+
+      if (c === '$' && str[i + 1] === '{') {
+        // Expanded inline (see the double-quoted branch above for why the
+        // result is appended directly rather than substituted again).
+        const expanded = this.expandVarAt(str, i);
+        if (expanded) {
+          value += expanded.text;
+          i = expanded.nextIndex;
+          continue;
+        }
+        // No matching '}' later in the string: '$' is ordinary literal text
+        // (matches substituteVariables()'s regex, which likewise leaves an
+        // unterminated '${' untouched). Consume just the '$' and re-loop, so
+        // the literal-run accumulator below never has to special-case it.
+        value += c;
+        i++;
+        continue;
+      }
+
+      // Accumulate a run of plain literal characters (avoids substituting
+      // one char at a time, though correctness does not depend on this).
+      let start = i;
+      while (i < n) {
+        const pc = str[i];
+        if (pc === ',' || pc === ')' || pc === "'" || pc === '"' || pc === '\\' ||
+            /\s/.test(pc) || (pc === '$' && str[i + 1] === '{')) {
+          break;
+        }
+        i++;
+      }
+      value += str.slice(start, i);
+    }
+
+    return { value, nextIndex: i };
+  }
+
+  /**
+   * Shell-word-aware parser for a `(key=value, ...)` parameter list. `str`
+   * must start with `(`. Returns an object mapping keys (as authored,
+   * hyphens preserved) to string values, or null if `str` does not start
+   * with a well-formed `(...)` list (unterminated quote, no matching `)`, a
+   * key that isn't `[A-Za-z][A-Za-z0-9_-]*`, or a missing `=`). An empty
+   * list `()` returns `{}`.
+   *
+   * There is no separate pre-scan to find the matching top-level `)`: the
+   * single pass below both locates it and decodes values, via
+   * scanShellWord() (see its docstring for the value/substitution rules),
+   * so a `,`/`)` that is quoted or backslash-escaped in an unquoted context
+   * is correctly treated as literal rather than as list syntax in either
+   * role.
    */
   parseParamList(str) {
     if (str[0] !== '(') return null;
 
-    // Locate the matching top-level ')', treating quoted spans as opaque.
-    let end = -1;
-    {
-      let i = 1;
-      while (i < str.length) {
-        const c = str[i];
-        if (c === "'" || c === '"') {
-          const quote = c;
-          i++;
-          while (i < str.length && str[i] !== quote) i++;
-          if (i >= str.length) return null; // unterminated quote
-          i++; // consume closing quote
-          continue;
-        }
-        if (c === ')') { end = i; break; }
-        if (c === '\n') return null; // no newlines inside a param list
-        i++;
-      }
-    }
-    if (end === -1) return null;
-
-    const inner = str.slice(1, end);
     const params = {};
     const keyRe = /^[A-Za-z][A-Za-z0-9_-]*/;
-    let i = 0;
-    const n = inner.length;
-    const skipWs = () => { while (i < n && /\s/.test(inner[i])) i++; };
+    let i = 1; // past the opening '('
+    const n = str.length;
+    const skipWs = () => { while (i < n && /[^\S\n]/.test(str[i])) i++; };
 
     skipWs();
-    if (i >= n) return params; // "()" -> no parameters
+    if (str[i] === ')') return params; // "()" -> no parameters
 
     while (true) {
       skipWs();
-      const keyMatch = keyRe.exec(inner.slice(i));
+      const keyMatch = keyRe.exec(str.slice(i));
       if (!keyMatch) return null;
       const key = keyMatch[0];
       i += key.length;
 
       skipWs();
-      if (inner[i] !== '=') return null;
+      if (str[i] !== '=') return null;
       i++; // consume '='
       skipWs();
 
-      let value;
-      if (inner[i] === "'" || inner[i] === '"') {
-        const quote = inner[i];
-        i++; // consume opening quote
-        const start = i;
-        while (i < n && inner[i] !== quote) i++;
-        if (i >= n) return null; // unterminated quote
-        value = inner.slice(start, i);
-        i++; // consume closing quote
-        if (quote === '"') value = this.substituteVariables(value);
-      } else {
-        const start = i;
-        while (i < n && inner[i] !== ',' && inner[i] !== ')') i++;
-        value = this.substituteVariables(inner.slice(start, i).trim());
-      }
+      const scanned = this.scanShellWord(str, i);
+      if (!scanned) return null; // unterminated quote
+      params[key] = scanned.value;
+      i = scanned.nextIndex;
 
-      params[key] = value;
       skipWs();
 
-      if (i >= n) break;
-      if (inner[i] === ',') { i++; continue; }
-      return null; // unexpected character before the end of the list
+      if (str[i] === ',') { i++; continue; }
+      if (str[i] === ')') return params;
+      return null; // unexpected character (or end of string) before ')'
     }
-
-    return params;
   }
 
   /**

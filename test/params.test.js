@@ -145,6 +145,76 @@ test('exact worked example: mixed whitespace, quoting, and embedded special char
   );
 });
 
+// ── POSIX shell-like value semantics ────────────────────────────────────────
+// A value is one shell-style "word": adjacent unquoted / single-quoted /
+// double-quoted segments concatenate with no separator, scanning left to
+// right until an unquoted, unescaped ",", ")", or whitespace ends the word.
+
+test('oracle: mixed adjacent quoting and backslash escapes across all three contexts', () => {
+  // Source: START" \" \\ "unquoted\ space' \'END
+  //   = START (unquoted)
+  //   + " \" \\ " (double-quoted: decodes to space,",space,\,space)
+  //   + unquoted\ space (unquoted, \<space> -> literal space)
+  //   + ' \'' (single-quoted, verbatim: decodes to space,\)
+  //   + END (unquoted)
+  // Concatenated: START + ' " \ ' + 'unquoted space' + ' \' + END
+  const segments = parseSegments([
+    '{L}(k=START" \\" \\\\ "unquoted\\ space\' \\\'END)',
+    'line',
+  ]);
+  assert.strictEqual(segments[0].params.k, 'START " \\ unquoted space \\END');
+});
+
+test('unquoted unescaped whitespace ends the value (shell word-splitting)', () => {
+  // "hello" is a complete value ending at the space; "world" has no "=" so
+  // the list is malformed.
+  const segments = parseSegments(['{Verse}(a=hello world)', 'line']);
+  assert.strictEqual(segments[0].params, undefined);
+});
+
+test('unquoted backslash-escaped space is preserved inside the value', () => {
+  const segments = parseSegments(['{Verse}(a=hello\\ world)', 'line']);
+  assert.deepStrictEqual(segments[0].params, { a: 'hello world' });
+});
+
+test('unquoted backslash escapes an arbitrary character, including "," and ")"', () => {
+  const segments = parseSegments(['{Verse}(a=x\\,y\\)z)', 'line']);
+  assert.deepStrictEqual(segments[0].params, { a: 'x,y)z' });
+});
+
+test('unquoted backslash-escaped quote characters do not open a quoted segment', () => {
+  const segments = parseSegments(["{Verse}(a=x\\'y\\\"z)", 'line']);
+  assert.deepStrictEqual(segments[0].params, { a: 'x\'y"z' });
+});
+
+test('unquoted backslash-backslash decodes to a single literal backslash', () => {
+  const segments = parseSegments(['{Verse}(a=x\\\\y)', 'line']);
+  assert.deepStrictEqual(segments[0].params, { a: 'x\\y' });
+});
+
+test('adjacent quoted segments of different styles concatenate onto one value', () => {
+  const segments = parseSegments(["{Verse}(a='foo'\"bar\"baz)", 'line']);
+  assert.deepStrictEqual(segments[0].params, { a: 'foobarbaz' });
+});
+
+test('double-quoted \\" \\\\ \\$ \\` decode to their literal escaped character', () => {
+  const segments = parseSegments(['{Verse}(a="\\"\\\\\\$\\`")', 'line']);
+  assert.deepStrictEqual(segments[0].params, { a: '"\\$`' });
+});
+
+test('double-quoted backslash before any other character is kept literally (e.g. \\n stays \\n)', () => {
+  const segments = parseSegments(['{Verse}(a="x\\ny")', 'line']);
+  assert.deepStrictEqual(segments[0].params, { a: 'x\\ny' });
+});
+
+test('an escaped "," or ")" in an unquoted value is not treated as list syntax by the outer scan', () => {
+  // The outer scan (which locates the matching top-level ")" and the ","
+  // separators) must itself respect unquoted backslash-escaping, not just
+  // quoting - this is the value's escaped ")" that must not end the list.
+  const segments = parseSegments(['{Verse}(a=x\\)y, b=z)', 'line']);
+  assert.deepStrictEqual(segments[0].params, { a: 'x)y', b: 'z' });
+});
+
 // ── Variable substitution ────────────────────────────────────────────────────
 
 test('${var} substitution end-to-end: postscript preview param from a variable', () => {
@@ -176,6 +246,33 @@ test('an expansion containing "," or ")" is not re-scanned as list syntax', () =
     ['={weird}=a,b)c', '']
   );
   assert.deepStrictEqual(segments[0].params, { x: 'a,b)c', y: 'z' });
+});
+
+test('a "${name}" containing spaces is expanded whole in an unquoted value (spaces do not end the value)', () => {
+  const segments = parseSegments(
+    ['{Verse}(preview=${want preview})', 'line'],
+    ['={want preview}=false', '']
+  );
+  assert.deepStrictEqual(segments[0].params, { preview: 'false' });
+});
+
+test('\\$ escapes a literal "$" in an unquoted value and never triggers substitution', () => {
+  const segments = parseSegments(['{Verse}(a=\\${x})', 'line'], ['={x}=hello', '']);
+  assert.deepStrictEqual(segments[0].params, { a: '${x}' });
+});
+
+test('\\$ escapes a literal "$" in a double-quoted value and never triggers substitution', () => {
+  const segments = parseSegments(['{Verse}(a="\\${x}")', 'line'], ['={x}=hello', '']);
+  assert.deepStrictEqual(segments[0].params, { a: '${x}' });
+});
+
+test('substitution is applied per segment: unquoted "${a}" adjacent to a single-quoted literal "${b}"', () => {
+  const segments = parseSegments(
+    ["{Verse}(k=${a}'${b}')", 'line'],
+    ['={a}=A', '={b}=B', '']
+  );
+  // ${a} expands (unquoted); '${b}' stays literal (single-quoted).
+  assert.deepStrictEqual(segments[0].params, { k: 'A${b}' });
 });
 
 // ── Backward compatibility ──────────────────────────────────────────────────

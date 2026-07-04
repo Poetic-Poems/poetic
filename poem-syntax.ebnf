@@ -97,9 +97,15 @@ content_line = [ leading_whitespace ], text_with_markup ;
    postscript_label) may be followed by an optional parenthesised parameter
    list, immediately after the closing brace(s), with optional whitespace
    in between. Whitespace is also optional and ignored around "(", ")", "=",
-   ",", and around keys and unquoted values. If the trailing "(...)" is not a
-   well-formed parameter_list, it is not consumed here; the existing
-   ignored-trailing-text rule applies instead (see semantic constraint 4).
+   ",", and around keys and parameter_value tokens (as a whole - a
+   parameter_value's OWN internal whitespace-handling is governed by shell
+   word rules; see parameter_value and semantic constraint 33 below, not
+   simple trimming). If the trailing "(...)" is not a well-formed
+   parameter_list, it is not consumed here; the existing ignored-trailing-
+   text rule applies instead (see semantic constraint 4). Recognising the
+   matching top-level ")" (i.e. determining whether the trailing "(...)" is
+   well-formed at all) is itself governed by the same quoting and unquoted
+   backslash-escaping rules as parameter_value scanning (constraint 33).
    ============================================================================ *)
 
 parameter_list = "(", whitespace_or_blank,
@@ -110,20 +116,72 @@ parameter = parameter_key, whitespace_or_blank, "=", whitespace_or_blank, parame
 
 parameter_key = letter, { letter | digit | "-" | "_" } ;
 
-parameter_value = quoted_parameter_value | unquoted_parameter_value ;
+(* A parameter_value is a single POSIX-shell-style "word": one or more
+   adjacent segments concatenated with NO separator between them, scanned
+   left to right until an UNquoted, UNescaped ",", ")", or whitespace is
+   reached (or the parameter_list's content ends). Each segment is scanned
+   under its own quoting/escaping rules (see below); the decoded text of
+   each segment is appended directly to the value, in order - there is no
+   whitespace-trimming step separate from this scan (an unquoted segment
+   simply ends where an unescaped separator is found). *)
+parameter_value = parameter_value_segment, { parameter_value_segment } ;
 
-(* A value is "quoted" when its first non-whitespace character is "'" or '"'.
-   Everything between the matching quotes is taken verbatim, including
-   whitespace and the characters ",", ")", and the OTHER quote character; the
-   delimiting quote character cannot appear inside (there is no escaping - use
-   the other quote style, or an unquoted value, if it is needed literally). *)
-quoted_parameter_value = ( "'", { ? any character except "'" and newline ? }, "'" )
-                       | ( '"', { ? any character except '"' and newline ? }, '"' ) ;
+parameter_value_segment = single_quoted_segment
+                        | double_quoted_segment
+                        | unquoted_run ;
 
-(* An unquoted value runs to the next top-level "," or ")"; surrounding
-   whitespace is trimmed. It may not itself contain ",", ")", a quote
-   character, or a newline. *)
-unquoted_parameter_value = { ? any character except ",", ")", "'", '"' and newline ? } ;
+(* Single-quoted: everything between the matching quotes is taken verbatim -
+   no backslash escapes, no "${...}" substitution. The delimiting "'" cannot
+   appear inside (there is no escaping within single quotes - use a
+   double-quoted or unquoted segment, concatenated adjacently, if a literal
+   "'" is needed next to this segment). *)
+single_quoted_segment = "'", { ? any character except "'" and newline ? }, "'" ;
+
+(* Double-quoted: scanned to the next UNescaped '"'. Within the segment:
+     - `\"`, `\\`, `\$`, and `` \` `` decode to the literal escaped character
+       (a literal "\$" is never substituted, even though an unescaped
+       "${...}" is - see variable_substitution / semantic constraint 32);
+     - a backslash before any OTHER character is kept literally (e.g. `\n`
+       decodes to the two characters "\" and "n", not a newline);
+     - an unescaped "${name}" is expanded (see variable_substitution);
+     - every other character (including whitespace, ",", ")", and "'") is
+       literal. *)
+double_quoted_segment = '"', { double_quoted_char }, '"' ;
+
+double_quoted_char = ( "\", ( '"' | "\" | "$" | "`" ) )
+                   | ( "\", ? any character except newline ? )
+                   | variable_substitution
+                   | ? any character except '"', "\", "$" and newline ? ;
+
+(* Unquoted: a maximal run of the following, stopping (without consuming)
+   at the first UNescaped whitespace, ",", or ")":
+     - `\<char>` decodes to a literal <char>, for ANY character at all
+       (including whitespace, ",", ")", "'", '"', "\", and "$" - escaping
+       any of these prevents it from playing its usual special role, e.g.
+       `\ ` is a literal space that does NOT end the value, and `\)` is a
+       literal ")" that does NOT close the parameter_list);
+     - an unescaped "${name}" is expanded (see variable_substitution); note
+       that whitespace inside the braces does not end the value, since the
+       whole "${...}" is consumed as one unit;
+     - an unescaped "'" or '"' ends the unquoted_run and starts an adjacent
+       single_quoted_segment or double_quoted_segment (concatenated onto the
+       same parameter_value, per the parameter_value production above);
+     - every other character is literal. *)
+unquoted_run = unquoted_char, { unquoted_char } ;
+
+unquoted_char = ( "\", ? any character except newline ? )
+              | variable_substitution
+              | ? any character except ",", ")", "'", '"', "\", whitespace,
+                  newline, and the start of a variable_substitution ? ;
+
+(* Substitution is applied once, inline, at each "${name}" occurrence
+   decoded within an unquoted_run or a double_quoted_segment (never within a
+   single_quoted_segment, and never for a backslash-escaped "$"). The
+   substituted text is appended to the value as literal, already-decoded
+   text: it is not itself re-scanned for further "${...}" occurrences, nor
+   for the "," / ")" that terminate a parameter_value or parameter_list, nor
+   for the whitespace that terminates an unquoted_run (see semantic
+   constraint 32). *)
 
 whitespace_or_blank = { whitespace } ;
 
@@ -446,9 +504,13 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
       if the text immediately following the closing brace(s) (after optional
       whitespace) is a well-formed parameter_list, i.e. "(key=value, ...)",
       it is consumed as parameters rather than ignored (see BLOCK PARAMETERS).
-      Any text after that parameter list is still ignored. If the trailing
-      "(...)" is NOT a well-formed parameter_list (e.g. it has no "=", or a
-      quote is unterminated), it is left untouched by this exception and is
+      Any text after that parameter list is still ignored. Locating the
+      parameter_list's matching top-level ")" - and so determining whether it
+      is well-formed at all - follows the quoting and unquoted backslash-
+      escaping rules in semantic constraint 33 (e.g. an escaped "\)" inside
+      an unquoted value does not close the list). If the trailing "(...)" is
+      NOT a well-formed parameter_list (e.g. it has no "=", or a quote is
+      unterminated), it is left untouched by this exception and is
       ignored in full, exactly as for any other trailing text - this keeps a
       parenthetical remark such as "{Label} (see below)" backward compatible.
 
@@ -557,7 +619,41 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
          been scanned from the source line, so any `,`, `)`, or quote
          character introduced by the expansion is never re-scanned as part of
          the parameter_list syntax (e.g. an expanded value containing a literal
-         `)` does not end the list early).
+         `)` does not end the list early). Substitution happens inline, once
+         per `${name}` occurrence, at the point that occurrence is decoded
+         (see constraint 33); the resulting text is appended to the value as
+         final, literal text and is never itself re-scanned for a further
+         `${...}` occurrence, even if it happens to contain that shape of
+         text (e.g. because the substituted variable's own value contains a
+         literal `$` and `{`).
+
+      33. A parameter_value is a single POSIX-shell-style "word" (see the
+         parameter_value production and its comments): adjacent unquoted /
+         single-quoted / double-quoted segments concatenate with no
+         separator, scanned left to right until an UNquoted, UNescaped `,`,
+         `)`, or whitespace ends the value (or the parameter_list's content
+         ends). In particular:
+           - In an unquoted segment, `\<char>` decodes to a literal `<char>`
+             for ANY character, including whitespace, `,`, `)`, `'`, `"`,
+             `\`, and `$` - so, for example, `\ ` is a literal space that
+             does not end the value, and `\)` is a literal `)` that does not
+             close the parameter_list. An unescaped `'` or `"` opens an
+             adjacent quoted segment rather than ending the value.
+           - In a double-quoted segment, `\"`, `\\`, `\$`, and `` \` ``
+             decode to the escaped character (literally - an escaped `\$`
+             is never substituted); a backslash before any other character
+             is kept literally (e.g. `\n` decodes to the two characters `\`
+             and `n`, not a newline).
+           - In a single-quoted segment, there is no escaping at all (as
+             constraint 32 and the single_quoted_segment comment already
+             state): the content is copied verbatim to the next `'`.
+         This backslash-awareness applies equally to the OUTER scan that
+         locates the parameter_list's matching top-level `)` and the `,`
+         separators between parameters: a `,` or `)` that is inside a quoted
+         segment, OR that is backslash-escaped within an unquoted segment,
+         is literal value text and does not delimit the list or separate
+         parameters (e.g. in `(k=a\)b, m=n)`, the escaped `)` is part of
+         `k`'s value, and the list is only closed by the final `)`).
 *)
 
 (* ============================================================================

@@ -2,8 +2,9 @@
 This is the golden test fixture for block parameters: `{Label}(key=value, ...)`
 and `{{Label}}(key=value, ...)`. It exercises version/segment/postscript
 parameter lists, variable substitution in parameter values, and the
-quote-aware scanner (a value containing the other quote character, a comma,
-and a closing parenthesis). This comment block never appears in the output.
+shell-word-style value scanner (adjacent quoted/unquoted segments, backslash
+escaping, a value containing the other quote character, a comma, and a
+closing parenthesis). This comment block never appears in the output.
 #>>
 
 ={want preview}=false
@@ -30,6 +31,14 @@ defined above as "false".
 This postscript exercises the exact quoting worked example: tricky-1 is the
 four characters space, close-paren, single-quote, space; tricky-2 is the
 three characters open-paren, double-quote, close-paren.
+
+----
+
+{Shell Escaping}(path=/usr\ local"/bin", note=a\"quote\"here)
+This postscript exercises shell-word value scanning: path concatenates an
+unquoted run containing a backslash-escaped space with an adjacent
+double-quoted segment, decoding to "/usr local/bin"; note uses an unquoted
+backslash-escaped double-quote character, decoding to a\"quote\"here.
 
 ----
 

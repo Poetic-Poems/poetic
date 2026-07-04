@@ -204,13 +204,40 @@ Block-labelled lines — version labels ({% raw %}`{{ ... }}`{% endraw %}), segm
 - Parameters appear immediately after the closing brace(s), with optional whitespace between them: `}(...)`, `}}(...)`
 - Whitespace is allowed around `(`, `)`, `=`, `,`, and around keys and values — these are all stripped
 - Keys consist of a letter followed by any number of letters, digits, hyphens, or underscores (e.g., `preview`, `preview-lines`, `my_key`)
-- Values may be quoted (`'...'` or `"..."`) or unquoted
-  - Quoted values run to the matching closing quote and may contain the other quote character, commas, and closing parentheses verbatim; the delimiting quote character cannot appear inside
-  - Unquoted values run to the next `,` or `)` and are trimmed of leading/trailing whitespace
-- Variable substitution follows shell-style quoting rules:
-  - In unquoted values and double-quoted values, `${variable_name}` is expanded
-  - In single-quoted values, `${variable_name}` remains literal
-- If the trailing `(...)` is not a valid parameter list, it is ignored (allowing `(parenthetical remarks)` after a label to pass through)
+- A value is a single **POSIX-shell-style word**: one or more adjacent quoted/unquoted segments, concatenated with no separator, scanned left to right until an unquoted, unescaped `,`, `)`, or whitespace character ends it (see [Value Scanning: Quotes and Backslashes](#value-scanning-quotes-and-backslashes) below)
+- If the trailing `(...)` is not a valid parameter list, it is ignored (allowing `(parenthetical remarks)` after a label to pass through). Recognising the parameter list's closing `)` — and so deciding whether it is valid at all — follows the same quoting and backslash-escaping rules as value scanning, so a `)` that is quoted or backslash-escaped in an unquoted value does not close the list early
+
+### Value Scanning: Quotes and Backslashes
+
+Each parameter value is built by concatenating one or more adjacent segments — unquoted runs, `'single-quoted'` segments, and `"double-quoted"` segments — with no separator between them. Scanning is left to right and stops as soon as an unquoted, unescaped `,`, `)`, or whitespace character is reached (or the parameter list's content ends).
+
+- **Single-quoted** (`'...'`): copied verbatim to the next `'`. There is no escaping and no variable substitution inside single quotes — the delimiting `'` cannot appear inside (use an adjacent double-quoted or unquoted segment for a literal `'`)
+- **Double-quoted** (`"..."`): copied to the next *unescaped* `"`. Inside:
+  - `\"`, `\\`, `\$`, and `` \` `` decode to the literal escaped character (`"`, `\`, `$`, or `` ` ``); a literal `\$` is never expanded, even though an unescaped `${...}` is
+  - a backslash before any *other* character is kept literally (e.g. `\n` decodes to the two characters `\` and `n`, not a newline)
+  - an unescaped `${variable_name}` is expanded
+  - everything else — including whitespace, `,`, `)`, and `'` — is literal
+- **Unquoted**: `\<char>` decodes to a literal `<char>` for *any* character at all, including a space, `,`, `)`, `'`, `"`, `\`, or `$` — escaping any of these strips its usual special meaning (so `\ ` is a literal space that does not end the value, and `\)` is a literal `)` that does not close the parameter list). An unescaped `${variable_name}` is expanded (whitespace inside the braces does not end the value, since the whole `${...}` is consumed as one unit). An unescaped `'` or `"` starts an adjacent quoted segment rather than ending the value. Any other character is literal; an unescaped whitespace, `,`, or `)` ends the value.
+
+Variable substitution follows shell-style quoting rules, applied inline, once per `${variable_name}` occurrence, as each occurrence is decoded:
+
+- In unquoted and double-quoted segments, `${variable_name}` is expanded
+- In single-quoted segments, `${variable_name}` remains literal
+- The expanded text is inserted as final, literal text and is never itself re-scanned — neither for a further `${...}` occurrence, nor for the `,`/`)` that would otherwise end the parameter or the list (e.g. a variable whose value contains a literal `)` does not end the list early)
+
+#### Worked example: mixed adjacent quoting and backslashes
+
+The value `START" \" \\ "unquoted\ space' \'END` decodes to `START " \ unquoted space \END`, built from five adjacent segments:
+
+| Segment | Source | Decodes to |
+|---|---|---|
+| unquoted | `START` | `START` |
+| double-quoted | `" \" \\ "` | ` " \ ` (space, `"`, space, `\`, space) |
+| unquoted | `unquoted\ space` | `unquoted space` (the `\ ` is a literal, non-ending space) |
+| single-quoted | `' \'` | ` \` (space, `\` — copied verbatim, no escaping) |
+| unquoted | `END` | `END` |
+
+Concatenated: `START` + ` " \ ` + `unquoted space` + ` \` + `END` = `START " \ unquoted space \END`.
 
 ### Example
 
