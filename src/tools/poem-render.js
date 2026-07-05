@@ -160,7 +160,7 @@ function loadPoemData(yamlPath) {
 function renderFragment(poemData, opts = {}) {
   const { audiomackArtist = '' } = opts;
   const compiledFn = pug.compileFile(FRAGMENT_TEMPLATE, { pretty: false, cache: false });
-  return compiledFn({ ...poemData, audiomackArtist });
+  return compiledFn({ ...poemData, audiomackArtist, labelBase: '' });
 }
 
 /**
@@ -178,7 +178,7 @@ function renderPage(poemData, opts = {}) {
     audiomackArtist = '',
   } = opts;
   const compiledFn = pug.compileFile(PAGE_TEMPLATE, { pretty: false, cache: false });
-  return compiledFn({ ...poemData, favicon, subtitle, audiomackArtist });
+  return compiledFn({ ...poemData, favicon, subtitle, audiomackArtist, labelBase: '../' });
 }
 
 module.exports = { resolveRefs, readPoemFile, clearRefCache, loadPoemData, renderFragment, renderPage };

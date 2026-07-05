@@ -118,6 +118,13 @@ function injectCSSIntoTemplate() {
       if (content) stylesContent += (stylesContent ? "\n\n" : "") + content;
     }
 
+    // Blogger's own theme scaffolding already lists each post's labels, so hide
+    // the in-content poem-labels list here to avoid showing them twice. This is
+    // Blogger-only: GitHub Pages links poetic.css directly and is unaffected.
+    if (stylesContent) {
+      stylesContent += "\n\n.poem-labels { display: none !important; }";
+    }
+
     if (stylesContent) {
       const CSS_START = "/* ~~ CUSTOM CSS START ~~ */";
       const CSS_END   = "/* ~~ CUSTOM CSS END ~~ */";

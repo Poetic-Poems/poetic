@@ -7,6 +7,23 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] — 2026-07-06
+
+### Added
+
+- **Labels search scope** on the all-poems page — the text filter can now match
+  poem labels, toggled alongside Titles and Lyrics (on by default).
+- **Clickable labels** — a label shown anywhere on the site links through to the
+  all-poems page pre-filtered to that label.
+- **URL-driven filters** — the all-poems filter reads its state (query text,
+  active scopes, date range) from URL parameters on load and keeps the address
+  bar in sync as it changes, so a filtered view is shareable and bookmarkable.
+
+### Changed
+
+- On the Blogger site, the in-content poem-labels list is now hidden, since
+  Blogger shows each post's labels through its own theme scaffolding.
+
 ## [2.3.0] — 2026-07-06
 
 ### Added

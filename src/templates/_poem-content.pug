@@ -44,7 +44,7 @@ mixin processLines(text)
       - index++
 
 //- Main poem-content mixin.
-//- Locals used: title, author, date, slug, versions, audio, postscript, analysis, audiomackArtist, labels
+//- Locals used: title, author, date, slug, versions, audio, postscript, analysis, audiomackArtist, labels, labelBase
 mixin poemContent
   div(id=`poem--${slug}`)
     div.poem-info
@@ -85,7 +85,7 @@ mixin poemContent
     if labels && labels.length > 0
       ul.poem-labels
         each label in labels
-          li.poem-label= label
+          li: a.poem-label(href=`${labelBase || ''}all-poems.html?scope=labels&q=${encodeURIComponent(label)}`)= label
 
     if audio
       div(id=`song--${slug}` class="song-link")

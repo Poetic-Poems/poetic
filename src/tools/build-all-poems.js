@@ -168,6 +168,7 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
             <div class="scope-toggle" role="group" aria-label="Search scope">
                 <button type="button" class="scope-led is-on" id="scopeTitles" aria-pressed="true"><span class="led" aria-hidden="true"></span>Titles</button>
                 <button type="button" class="scope-led is-on" id="scopeLyrics" aria-pressed="true"><span class="led" aria-hidden="true"></span>Lyrics</button>
+                <button type="button" class="scope-led is-on" id="scopeLabels" aria-pressed="true"><span class="led" aria-hidden="true"></span>Labels</button>
             </div>
             <div class="date-range">
                 <label class="date-field">From <input type="date" id="dateFrom" class="filter-date"${dateBoundsAttrs}></label>
@@ -351,11 +352,12 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
             const dateTo = document.getElementById('dateTo');
             const scopeTitlesBtn = document.getElementById('scopeTitles');
             const scopeLyricsBtn = document.getElementById('scopeLyrics');
+            const scopeLabelsBtn = document.getElementById('scopeLabels');
             const resetBtn = document.getElementById('filterReset');
             const countEl = document.getElementById('filterCount');
 
             const sections = Array.from(document.querySelectorAll('.poem-section'));
-            const scope = { titles: true, lyrics: true };
+            const scope = { titles: true, lyrics: true, labels: true };
 
             // textContent ignores <br> entirely (unlike innerText, it inserts no
             // whitespace), so adjacent lines can fuse into one word at a <br>
@@ -377,6 +379,7 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
                     section: section,
                     title: textOf(titleEl).toLowerCase(),
                     body: textOf(bodyEl).toLowerCase(),
+                    labels: Array.from(section.querySelectorAll('.poem-label')).map((el) => textOf(el).toLowerCase()),
                     date: section.getAttribute('data-date') || '',
                     row: link ? link.closest('tr') : null
                 };
@@ -395,8 +398,8 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
             function toggleScope(key, btn) {
                 const next = !scope[key];
                 if (!next) {
-                    const otherKey = key === 'titles' ? 'lyrics' : 'titles';
-                    if (!scope[otherKey]) {
+                    const othersOn = ['titles', 'lyrics', 'labels'].some((k) => k !== key && scope[k]);
+                    if (!othersOn) {
                         // Refuse to turn off the last remaining active scope
                         return;
                     }
@@ -415,7 +418,8 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
                 index.forEach((entry) => {
                     const textMatch = q === ''
                         || (scope.titles && entry.title.includes(q))
-                        || (scope.lyrics && entry.body.includes(q));
+                        || (scope.lyrics && entry.body.includes(q))
+                        || (scope.labels && entry.labels.some((l) => l.includes(q)));
                     const dateMatch = (!from || entry.date === '' || entry.date >= from)
                         && (!to || entry.date === '' || entry.date <= to);
                     const visible = textMatch && dateMatch;
@@ -431,11 +435,47 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
                 });
 
                 if (countEl) {
-                    const filterActive = q !== '' || !!from || !!to || !scope.titles || !scope.lyrics;
+                    const filterActive = q !== '' || !!from || !!to || !scope.titles || !scope.lyrics || !scope.labels;
                     countEl.textContent = filterActive
                         ? ('Showing ' + visibleCount + ' of ' + index.length)
                         : '';
                 }
+                syncUrl();
+            }
+
+            function syncUrl() {
+                const params = new URLSearchParams();
+                const q = filterInput ? filterInput.value.trim() : '';
+                if (q) params.set('q', q);
+                const activeScopes = ['titles', 'lyrics', 'labels'].filter((k) => scope[k]);
+                if (activeScopes.length < 3) params.set('scope', activeScopes.join(','));
+                if (dateFrom && dateFrom.value) params.set('from', dateFrom.value);
+                if (dateTo && dateTo.value) params.set('to', dateTo.value);
+                const qs = params.toString();
+                history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+            }
+
+            function readUrl() {
+                const params = new URLSearchParams(location.search);
+                if (filterInput && params.has('q')) filterInput.value = params.get('q');
+                if (params.has('scope')) {
+                    const wanted = params.get('scope').split(',').map((s) => s.trim().toLowerCase());
+                    const next = {
+                        titles: wanted.includes('titles'),
+                        lyrics: wanted.includes('lyrics'),
+                        labels: wanted.includes('labels')
+                    };
+                    if (next.titles || next.lyrics || next.labels) {
+                        scope.titles = next.titles;
+                        scope.lyrics = next.lyrics;
+                        scope.labels = next.labels;
+                    }
+                }
+                if (dateFrom && params.has('from')) dateFrom.value = params.get('from');
+                if (dateTo && params.has('to')) dateTo.value = params.get('to');
+                updateScopeButton(scopeTitlesBtn, scope.titles);
+                updateScopeButton(scopeLyricsBtn, scope.lyrics);
+                updateScopeButton(scopeLabelsBtn, scope.labels);
             }
 
             if (scopeTitlesBtn) {
@@ -443,6 +483,9 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
             }
             if (scopeLyricsBtn) {
                 scopeLyricsBtn.addEventListener('click', () => toggleScope('lyrics', scopeLyricsBtn));
+            }
+            if (scopeLabelsBtn) {
+                scopeLabelsBtn.addEventListener('click', () => toggleScope('labels', scopeLabelsBtn));
             }
             if (filterInput) filterInput.addEventListener('input', applyFilters);
             if (dateFrom) dateFrom.addEventListener('change', applyFilters);
@@ -455,11 +498,16 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
                     if (dateTo) dateTo.value = '';
                     scope.titles = true;
                     scope.lyrics = true;
+                    scope.labels = true;
                     updateScopeButton(scopeTitlesBtn, true);
                     updateScopeButton(scopeLyricsBtn, true);
+                    updateScopeButton(scopeLabelsBtn, true);
                     applyFilters();
                 });
             }
+
+            readUrl();
+            applyFilters();
         }
 
         initFilterBar();
@@ -528,7 +576,7 @@ const RENDER_POEMS_SCRIPT = `        function formatPoemDate(dateStr) {
                         \${poem.hasAudio ? '<span class="audio-indicator">🎵</span>' : ''}
                     </div>
                     \${poem.date ? \`<div class="poem-date">\${formatPoemDate(poem.date)}</div>\` : ''}
-                    \${poem.labels && poem.labels.length ? '<div class="poem-card-labels">' + poem.labels.map(function (label) { return '<span class="poem-card-label">' + label + '</span>'; }).join('') + '</div>' : ''}
+                    \${poem.labels && poem.labels.length ? '<div class="poem-card-labels">' + poem.labels.map(function (label) { return '<a class="poem-card-label" href="all-poems.html?scope=labels&q=' + encodeURIComponent(label) + '" onclick="event.stopPropagation()">' + label + '</a>'; }).join('') + '</div>' : ''}
                 \`;
 
                 card.addEventListener('click', () => {
