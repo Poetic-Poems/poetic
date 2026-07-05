@@ -8,11 +8,12 @@
  * Exports (pure, no network/fs):
  *   parseArgs(argv)                                  - parse CLI flags
  *   resolveConfig(config, env)                       - apply defaults + validate
- *   mapByTitle(posts)                                - Map<title, post>
+ *   extractSlug(post)                                - recover a poem's slug from post content
+ *   mapBySlug(posts)                                 - Map<slug, post>
  *   composePost({ title, bodyHtml, isoDate, label }) - build Blogger post body
  *   normalizeHtml(s)                                 - collapse whitespace for comparison
  *   postNeedsUpdate(existingPost, desiredPost)       - check if a post needs updating
- *   selectRemoved(posts, currentTitles, label)       - posts to draft/delete
+ *   selectRemoved(posts, currentSlugs, label)        - posts to draft/delete
  *   extractContent(fragmentHtml, mode)               - strip audio/analysis for 'poem' mode
  *
  * Network (require an access token):
@@ -109,15 +110,31 @@ function resolveConfig(config, env) {
 }
 
 /**
- * Build a Map from post title to post object.
+ * Extract a poem's slug from a Blogger post, via the `id="poem--<slug>"`
+ * marker embedded in the post content by the poem template.
+ *
+ * @param {object} post
+ * @returns {string|null} the slug, or null if no marker is present
+ */
+function extractSlug(post) {
+  const match = /id="poem--([^"]+)"/.exec(post.content || '');
+  return match ? match[1] : null;
+}
+
+/**
+ * Build a Map from poem slug to post object.
+ *
+ * Posts with no extractable slug marker (legacy/unmanaged posts) are skipped.
  *
  * @param {object[]} posts
  * @returns {Map<string, object>}
  */
-function mapByTitle(posts) {
+function mapBySlug(posts) {
   const map = new Map();
   for (const post of posts) {
-    map.set(post.title, post);
+    const slug = extractSlug(post);
+    if (slug === null) continue;
+    map.set(slug, post);
   }
   return map;
 }
@@ -134,7 +151,7 @@ function composePost({ title, bodyHtml, isoDate, label }) {
     title,
     content: bodyHtml,
     labels: [label],
-    published: `${isoDate}T12:00:00Z`,
+    published: `${isoDate}T00:00:00Z`,
   };
 }
 
@@ -152,6 +169,9 @@ function normalizeHtml(s) {
 /**
  * Determine if an existing Blogger post needs to be updated.
  *
+ * `published` is compared by instant (not string), since Blogger may echo
+ * back a timestamp in a different timezone offset than the one we sent.
+ *
  * @param {object} existingPost - current post from the API
  * @param {object} desiredPost  - post as we want it to be
  * @returns {boolean}
@@ -163,24 +183,39 @@ function postNeedsUpdate(existingPost, desiredPost) {
   for (const label of desiredPost.labels || []) {
     if (!existingLabels.includes(label)) return true;
   }
+  if (existingPost.published !== undefined && desiredPost.published !== undefined) {
+    const existingInstant = new Date(existingPost.published).getTime();
+    const desiredInstant = new Date(desiredPost.published).getTime();
+    if (existingInstant !== desiredInstant) return true;
+  }
   return false;
 }
 
 /**
- * Find posts that are LIVE, carry the given label, but whose title is no longer
- * in the current set of poem titles (i.e. removed from the collection).
+ * Find posts that are LIVE, carry the given label, but whose slug (recovered
+ * from the `id="poem--<slug>"` content marker) is no longer in the current
+ * set of poem slugs (i.e. removed from the collection).
  *
- * @param {object[]} posts         - all posts fetched from Blogger
- * @param {Set<string>} currentTitles - titles of current poems
- * @param {string} label           - the label that marks managed posts
+ * A labelled LIVE post with no extractable slug marker is legacy/unmanaged —
+ * it is left alone (not reported as removed) rather than risk draft/deleting
+ * something hand-made or created before the marker existed.
+ *
+ * @param {object[]} posts          - all posts fetched from Blogger
+ * @param {Set<string>} currentSlugs - slugs of current poems
+ * @param {string} label            - the label that marks managed posts
  * @returns {object[]}
  */
-function selectRemoved(posts, currentTitles, label) {
+function selectRemoved(posts, currentSlugs, label) {
   return posts.filter(post => {
     if ((post.status || '').toUpperCase() !== 'LIVE') return false;
     const labels = post.labels || [];
     if (!labels.includes(label)) return false;
-    return !currentTitles.has(post.title);
+    const slug = extractSlug(post);
+    if (slug === null) {
+      console.warn(`Blogger sync: labelled post "${post.title}" has no poem--<slug> marker; treating as legacy/unmanaged and skipping.`);
+      return false;
+    }
+    return !currentSlugs.has(slug);
   });
 }
 
@@ -396,14 +431,14 @@ async function main() {
 
     const token = await getAccessToken(process.env);
     const posts = await listAllPosts(opts.blogId, token);
-    const byTitle = mapByTitle(posts);
+    const bySlug = mapBySlug(posts);
 
     let created = 0;
     let updated = 0;
     let unchanged = 0;
     let handled = 0; // drafted or deleted
 
-    const currentTitles = new Set();
+    const currentSlugs = new Set();
 
     // Read all YAML files, skipping _* basenames
     const yamlFiles = fs.readdirSync(YAML_DIR)
@@ -439,25 +474,38 @@ async function main() {
         label: opts.label,
       });
 
-      currentTitles.add(data.title);
+      currentSlugs.add(data.slug);
 
-      const existing = byTitle.get(data.title);
+      const existing = bySlug.get(data.slug);
 
       if (!existing) {
+        // Blogger derives a new post's permalink from its title + publish date,
+        // and that permalink is sticky. Prepend the zero-padded day to the title
+        // just for creation (so the permalink bakes in the date), then rename
+        // the post back to its plain title immediately afterwards.
+        const day = isoDate.slice(8, 10);
+        const datedTitle = `${day} ${desired.title}`;
         if (args.dryRun) {
-          console.log(`[create] ${data.title}`);
+          console.log(`[create] "${datedTitle}" → rename to "${desired.title}"`);
         } else {
-          await createPost(opts.blogId, token, desired);
-          console.log(`Created: ${data.title}`);
+          const createdPost = await createPost(opts.blogId, token, { ...desired, title: datedTitle });
+          await updatePost(opts.blogId, token, createdPost.id, {
+            kind: desired.kind,
+            title: desired.title,
+            content: desired.content,
+            labels: desired.labels,
+            published: desired.published,
+          });
+          console.log(`Created: ${desired.title}`);
         }
         created++;
       } else if (postNeedsUpdate(existing, desired)) {
-        // On UPDATE, do not send 'published' to avoid reordering
         const updateBody = {
           kind: desired.kind,
           title: desired.title,
           content: desired.content,
           labels: desired.labels,
+          published: desired.published,
         };
         if (args.dryRun) {
           console.log(`[update] ${data.title}`);
@@ -475,7 +523,7 @@ async function main() {
     }
 
     // Handle removed poems
-    const removed = selectRemoved(posts, currentTitles, opts.label);
+    const removed = selectRemoved(posts, currentSlugs, opts.label);
     for (const post of removed) {
       if (opts.removed === 'draft') {
         if (args.dryRun) {
@@ -516,7 +564,8 @@ module.exports = {
   // Pure helpers
   parseArgs,
   resolveConfig,
-  mapByTitle,
+  extractSlug,
+  mapBySlug,
   composePost,
   normalizeHtml,
   postNeedsUpdate,

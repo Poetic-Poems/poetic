@@ -213,6 +213,27 @@ test('postscript with an invalid preview-lines value falls back to the default o
   assert.ok(html.includes('data-preview-lines="5"'), 'non-numeric preview-lines must fall back to 5');
 });
 
+// ── slug derivation ──────────────────────────────────────────────────────────
+
+test('loadPoemData: slug is derived from the filename stem, not the title', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-test-'));
+  const yamlPath = path.join(dir, 'psalm-23-1998.yaml');
+  fs.writeFileSync(yamlPath, `
+title: My Shepherd
+author: Test Author
+date: 1998-01-31
+versions:
+  - segments:
+      - lines: "The Lord is my shepherd\\n"
+`, 'utf8');
+
+  const poemData = loadPoemData(yamlPath);
+  assert.ok(poemData, 'loadPoemData should return data');
+  assert.strictEqual(poemData.slug, 'psalm-23-1998', 'slug must come from the filename stem, not slugify(title)');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
 // ── redirect stub format ──────────────────────────────────────────────────────
 
 test('redirect stub is a meta-refresh pointing to ./<slug>/', () => {

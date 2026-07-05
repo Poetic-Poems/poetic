@@ -139,7 +139,8 @@ Each poem is built as a **full, styled HTML document** at `public/<slug>/index.h
 visiting `/<slug>/` shows a properly styled page linking `poetic.css`, `custom.css`, and
 `poetic.js`. The old flat URL `/<slug>.html` remains as a redirect stub that immediately
 forwards the browser to `./<slug>/` via `<meta http-equiv="refresh">` plus a
-`<link rel="canonical">`.
+`<link rel="canonical">`. The `<slug>` is the poem's source filename stem (e.g. `my-poem.poem`
+→ `/my-poem/`), not derived from the title, so identically-titled poems stay distinct.
 
 ### Shared Audiomack loader (`public/poetic.js`)
 

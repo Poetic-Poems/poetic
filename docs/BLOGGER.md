@@ -119,9 +119,28 @@ You only need to repeat this step when you change the CSS or when the framework 
 
 ## How it behaves
 
-### Title matching
+### Post identity
 
-The publisher looks for an existing Blogger post whose title matches the poem title exactly. If found, it updates that post in place. If not found, it creates a new post. This means renaming a poem creates a new post rather than updating the old one — remove the old post manually if needed.
+Each poem maps to its own Blogger post, identified by its slug rather than its title. The
+publisher recovers a post's slug from the `id="poem--<slug>"` marker embedded in the post
+content, and matches it against the current poem's slug (its filename stem). This means
+poems that share a title are managed as separate posts. A labelled post with no such
+marker is treated as legacy or unmanaged and is left untouched.
+
+### Permalinks
+
+Posts are published at **00:00 GMT** of the poem's date. Each poem is identified by its
+slug rather than its title, so poems that share a title are published as separate posts
+instead of colliding.
+
+New posts receive a **date-stamped permalink**. Blogger derives a post's permalink slug
+from its title and publish date at creation time, and that slug is sticky once assigned.
+To guarantee a distinct, clean permalink for every poem — even when titles repeat — the
+publisher prepends the zero-padded day of the month to the title just before creating the
+post, then renames the title back to the poem's actual title immediately afterwards. The
+permalink itself still bakes in the day, so it reads as a full date plus title: a poem
+titled "My Shepherd" dated `1998-01-18` gets the permalink `/1998/01/18-my-shepherd.html`.
+Posts created before this scheme keep their original permalinks.
 
 ### Post content
 

@@ -75,7 +75,7 @@ npm run poem-to-raw
 
 | Path | Description |
 |---|---|
-| `raw/<title>` | Plain-text rendering of each poem |
+| `raw/<stem>` | Plain-text rendering of each poem (named by source filename stem) |
 | `public/raw/index.html` | HTML index linking to raw files on GitHub |
 
 The raw files are also linked from the GitHub repository's `raw/` directory at

@@ -7,7 +7,20 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] — 2026-07-05
+
+### Changed
+
+- The URL slug is now taken from the source filename stem (the `.poem` basename) instead of
+  the `title`. Two poems sharing a title no longer overwrite each other — each gets its own
+  `public/<stem>/` page, `public/<stem>.html` redirect, index/all-poems links, and
+  `raw/<stem>` file. The build now fails if two sources resolve to the same slug. Collections
+  whose filenames already match `slugify(title)` see no URL change; where a filename differs
+  from `slugify(title)`, that poem's URL and `raw/` filename change to match the filename.
+- Blogger posts are now published at 00:00 GMT of the poem's date (was 12:00) and are
+  identified by slug, so same-titled poems become separate posts. New Blogger posts receive
+  a date-stamped permalink (the day is prepended to the title at creation, then removed) —
+  e.g. `/1998/01/18-my-shepherd.html`; existing posts keep their permalinks.
 
 ## [1.1.2] — 2026-07-04
 

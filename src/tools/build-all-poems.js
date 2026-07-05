@@ -12,7 +12,7 @@
 const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
-const { slugify } = require("./slugify");
+const { slugFromFile } = require("./slugify");
 const { parseDateForSorting, formatDateForDisplay } = require("./date-utils");
 const { readPoeticConfig } = require("./poetic-config");
 const { loadPoemData, renderFragment } = require("./poem-render");
@@ -92,7 +92,7 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
           return;
         }
 
-        const slug = slugify(title);
+        const slug = slugFromFile(file);
         const fileName = slug;
 
         // Skip index.html and all-poems.html
@@ -351,7 +351,7 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
           return;
         }
 
-        const slug = slugify(title);
+        const slug = slugFromFile(yamlFile);
 
         // Skip index and all-poems
         if (slug === "index" || slug === "all-poems") {

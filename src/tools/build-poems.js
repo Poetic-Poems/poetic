@@ -9,7 +9,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { slugify } = require("./slugify");
+const { slugFromFile } = require("./slugify");
 const { formatDateForDisplay } = require("./date-utils");
 const { readPoeticConfig } = require("./poetic-config");
 const { resolveRefs, readPoemFile, clearRefCache, renderPage } = require("./poem-render");
@@ -59,6 +59,7 @@ function buildAllPoems() {
   let successCount = 0;
   let errorCount = 0;
   const builtSlugs = new Set();
+  const slugToSource = new Map();
 
   // Process each YAML file
   for (const yamlFile of yamlFiles) {
@@ -83,8 +84,8 @@ function buildAllPoems() {
       continue;
     }
 
-    // Calculate slug from title
-    poemData.slug = slugify(poemData.title);
+    // Calculate slug from the source filename stem
+    poemData.slug = slugFromFile(yamlFile);
 
     // Format date for display
     if (poemData.date) {
@@ -97,6 +98,20 @@ function buildAllPoems() {
     }
 
     const slug = poemData.slug;
+
+    // Guard: an empty slug would clobber public/index.html.
+    if (!slug) {
+      console.error(`Error: ${yamlFile} yields an empty slug from its filename stem; rename the source file to contain URL-safe characters.`);
+      errorCount++;
+      continue;
+    }
+    // Guard: two source files must never resolve to the same slug.
+    if (slugToSource.has(slug)) {
+      console.error(`Error: slug collision — "${yamlFile}" and "${slugToSource.get(slug)}" both resolve to "${slug}". Rename one .poem source so the filename stems differ.`);
+      errorCount++;
+      continue;
+    }
+    slugToSource.set(slug, yamlFile);
 
     // ── 1. Full standalone page: public/<slug>/index.html ──────────────────
     let pageHtml;

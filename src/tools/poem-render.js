@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 const pug = require('pug');
-const { slugify } = require('./slugify');
+const { slugFromFile } = require('./slugify');
 const { formatDateForDisplay } = require('./date-utils');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
@@ -143,7 +143,7 @@ function clearRefCache() {
 function loadPoemData(yamlPath) {
   const poemData = readPoemFile(yamlPath);
   if (!poemData) return null;
-  poemData.slug = slugify(poemData.title);
+  poemData.slug = slugFromFile(yamlPath);
   if (poemData.date) {
     poemData.date = formatDateForDisplay(poemData.date);
   }

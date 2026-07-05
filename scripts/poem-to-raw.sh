@@ -3,7 +3,7 @@
 # poem-to-raw.sh — extract plain-text versions of all .poem files.
 #
 # For each non-partial .poem source file (i.e. files not beginning with '_'),
-# this script writes a plain-text rendering to raw/<title> and appends a link
+# this script writes a plain-text rendering to raw/<stem> and appends a link
 # to public/raw/index.html so the raw files are browsable via GitHub Pages.
 #
 # The plain text strips .poem markup and normalises common HTML entities to
@@ -19,7 +19,7 @@
 # build pipeline can run it without calling bash directly.
 #
 # Outputs:
-#   raw/<title>              — plain-text rendering of each poem
+#   raw/<stem>               — plain-text rendering of each poem
 #   public/raw/index.html   — HTML index linking to raw files on GitHub
 #
 # Dependencies: git, awk, perl, sed
@@ -54,7 +54,8 @@ for poem_file in "$repo_toplevel"/src/poems/poem/*.poem; do
   [[ "$poem_file" =~ /_ ]] && continue;
 
   title="$(<"$poem_file" head -1)"
-  href="$gh_raw/${title//\?/%3F}"
+  stem="$(basename "$poem_file" .poem)"
+  href="$gh_raw/$stem"
   echo "    <li><a href=\"$href\">$title</a></li>" >>"$index"
 
   (
@@ -95,7 +96,7 @@ for poem_file in "$repo_toplevel"/src/poems/poem/*.poem; do
       # Ensure the file ends with exactly one newline.
       s:  \n*                       $:\n:s;
     ' | grep -vP "^=\{$var_re\}="  # strip variable definition lines from output
-  ) >"$repo_toplevel/raw/$title"
+  ) >"$repo_toplevel/raw/$stem"
 done
 
 cat <<HERE >>"$index"

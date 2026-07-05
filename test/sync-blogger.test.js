@@ -3,8 +3,8 @@
 /**
  * Tests for sync-blogger.js pure helpers.
  *
- * Covers: parseArgs, resolveConfig, mapByTitle, composePost, normalizeHtml,
- * postNeedsUpdate, selectRemoved, extractContent.
+ * Covers: parseArgs, resolveConfig, extractSlug, mapBySlug, composePost,
+ * normalizeHtml, postNeedsUpdate, selectRemoved, extractContent.
  */
 
 const { test } = require('node:test');
@@ -13,7 +13,8 @@ const assert = require('node:assert');
 const {
   parseArgs,
   resolveConfig,
-  mapByTitle,
+  extractSlug,
+  mapBySlug,
   composePost,
   normalizeHtml,
   postNeedsUpdate,
@@ -134,33 +135,59 @@ test('resolveConfig: audiomackArtist from audiomack_artist config key', () => {
   assert.strictEqual(opts.audiomackArtist, 'myband');
 });
 
-// ── mapByTitle ────────────────────────────────────────────────────────────────
+// ── extractSlug ───────────────────────────────────────────────────────────────
 
-test('mapByTitle: returns a Map keyed by title', () => {
-  const posts = [
-    { id: '1', title: 'Poem One', content: '<p>a</p>', labels: ['poem'], status: 'LIVE' },
-    { id: '2', title: 'Poem Two', content: '<p>b</p>', labels: ['poem'], status: 'LIVE' },
-  ];
-  const map = mapByTitle(posts);
-  assert.ok(map instanceof Map);
-  assert.strictEqual(map.size, 2);
-  assert.strictEqual(map.get('Poem One').id, '1');
-  assert.strictEqual(map.get('Poem Two').id, '2');
+test('extractSlug: returns the slug from a poem content marker', () => {
+  const post = { content: '<div id="poem--my-shepherd-1998"><p>x</p></div>' };
+  assert.strictEqual(extractSlug(post), 'my-shepherd-1998');
 });
 
-test('mapByTitle: returns an empty Map for empty input', () => {
-  const map = mapByTitle([]);
+test('extractSlug: returns null when no marker is present', () => {
+  const post = { content: '<p>Just some text.</p>' };
+  assert.strictEqual(extractSlug(post), null);
+});
+
+test('extractSlug: returns null when content is missing', () => {
+  assert.strictEqual(extractSlug({}), null);
+});
+
+// ── mapBySlug ─────────────────────────────────────────────────────────────────
+
+test('mapBySlug: returns a Map keyed by slug extracted from content', () => {
+  const posts = [
+    { id: '1', title: 'Poem One', content: '<div id="poem--poem-one">a</div>', labels: ['poem'], status: 'LIVE' },
+    { id: '2', title: 'Poem Two', content: '<div id="poem--poem-two">b</div>', labels: ['poem'], status: 'LIVE' },
+  ];
+  const map = mapBySlug(posts);
+  assert.ok(map instanceof Map);
+  assert.strictEqual(map.size, 2);
+  assert.strictEqual(map.get('poem-one').id, '1');
+  assert.strictEqual(map.get('poem-two').id, '2');
+});
+
+test('mapBySlug: returns an empty Map for empty input', () => {
+  const map = mapBySlug([]);
   assert.ok(map instanceof Map);
   assert.strictEqual(map.size, 0);
 });
 
-test('mapByTitle: last entry wins for duplicate titles', () => {
+test('mapBySlug: last entry wins for duplicate slugs', () => {
   const posts = [
-    { id: '1', title: 'Dup', content: 'a' },
-    { id: '2', title: 'Dup', content: 'b' },
+    { id: '1', content: '<div id="poem--dup">a</div>' },
+    { id: '2', content: '<div id="poem--dup">b</div>' },
   ];
-  const map = mapByTitle(posts);
-  assert.strictEqual(map.get('Dup').id, '2');
+  const map = mapBySlug(posts);
+  assert.strictEqual(map.get('dup').id, '2');
+});
+
+test('mapBySlug: skips posts with no extractable slug marker', () => {
+  const posts = [
+    { id: '1', content: '<p>no marker here</p>' },
+    { id: '2', content: '<div id="poem--has-slug">x</div>' },
+  ];
+  const map = mapBySlug(posts);
+  assert.strictEqual(map.size, 1);
+  assert.strictEqual(map.get('has-slug').id, '2');
 });
 
 // ── composePost ───────────────────────────────────────────────────────────────
@@ -176,12 +203,12 @@ test('composePost: returns correct shape', () => {
   assert.strictEqual(post.title, 'My Poem');
   assert.strictEqual(post.content, '<p>verse</p>');
   assert.deepStrictEqual(post.labels, ['poem']);
-  assert.strictEqual(post.published, '2024-03-15T12:00:00Z');
+  assert.strictEqual(post.published, '2024-03-15T00:00:00Z');
 });
 
-test('composePost: uses noon UTC for published to avoid date shift', () => {
+test('composePost: uses midnight GMT for published', () => {
   const post = composePost({ title: 'T', bodyHtml: '', isoDate: '2000-01-01', label: 'poem' });
-  assert.ok(post.published.endsWith('T12:00:00Z'), `Expected noon UTC, got: ${post.published}`);
+  assert.ok(post.published.endsWith('T00:00:00Z'), `Expected midnight GMT, got: ${post.published}`);
 });
 
 test('composePost: label is wrapped in an array', () => {
@@ -256,14 +283,33 @@ test('postNeedsUpdate: treats missing labels property as empty array', () => {
   assert.strictEqual(postNeedsUpdate(existing, desired), true);
 });
 
+test('postNeedsUpdate: returns false when published differs only by timezone offset for the same instant', () => {
+  // 2024-03-14T13:00:00-11:00 is the same instant as 2024-03-15T00:00:00Z
+  const existing = { title: 'P', content: '<p>a</p>', labels: ['poem'], published: '2024-03-14T13:00:00-11:00' };
+  const desired  = { title: 'P', content: '<p>a</p>', labels: ['poem'], published: '2024-03-15T00:00:00Z' };
+  assert.strictEqual(postNeedsUpdate(existing, desired), false);
+});
+
+test('postNeedsUpdate: returns true when published instants differ', () => {
+  const existing = { title: 'P', content: '<p>a</p>', labels: ['poem'], published: '2024-03-15T12:00:00Z' };
+  const desired  = { title: 'P', content: '<p>a</p>', labels: ['poem'], published: '2024-03-15T00:00:00Z' };
+  assert.strictEqual(postNeedsUpdate(existing, desired), true);
+});
+
+test('postNeedsUpdate: ignores published when either side omits it', () => {
+  const existing = { title: 'P', content: '<p>a</p>', labels: ['poem'] };
+  const desired  = { title: 'P', content: '<p>a</p>', labels: ['poem'], published: '2024-03-15T00:00:00Z' };
+  assert.strictEqual(postNeedsUpdate(existing, desired), false);
+});
+
 // ── selectRemoved ─────────────────────────────────────────────────────────────
 
-test('selectRemoved: returns live labelled posts not in currentTitles', () => {
+test('selectRemoved: returns live labelled posts not in currentSlugs', () => {
   const posts = [
-    { id: '1', title: 'Gone',    labels: ['poem'], status: 'LIVE' },
-    { id: '2', title: 'Present', labels: ['poem'], status: 'LIVE' },
+    { id: '1', title: 'Gone',    content: '<div id="poem--gone">x</div>',    labels: ['poem'], status: 'LIVE' },
+    { id: '2', title: 'Present', content: '<div id="poem--present">x</div>', labels: ['poem'], status: 'LIVE' },
   ];
-  const current = new Set(['Present']);
+  const current = new Set(['present']);
   const removed = selectRemoved(posts, current, 'poem');
   assert.strictEqual(removed.length, 1);
   assert.strictEqual(removed[0].id, '1');
@@ -287,18 +333,18 @@ test('selectRemoved: ignores draft posts even if labelled and absent', () => {
   assert.strictEqual(removed.length, 0);
 });
 
-test('selectRemoved: returns empty array when all labelled live posts are in currentTitles', () => {
+test('selectRemoved: returns empty array when all labelled live posts are in currentSlugs', () => {
   const posts = [
-    { id: '1', title: 'A', labels: ['poem'], status: 'LIVE' },
-    { id: '2', title: 'B', labels: ['poem'], status: 'LIVE' },
+    { id: '1', title: 'A', content: '<div id="poem--a">x</div>', labels: ['poem'], status: 'LIVE' },
+    { id: '2', title: 'B', content: '<div id="poem--b">x</div>', labels: ['poem'], status: 'LIVE' },
   ];
-  const current = new Set(['A', 'B']);
+  const current = new Set(['a', 'b']);
   const removed = selectRemoved(posts, current, 'poem');
   assert.strictEqual(removed.length, 0);
 });
 
 test('selectRemoved: returns empty array for empty posts list', () => {
-  const removed = selectRemoved([], new Set(['Poem']), 'poem');
+  const removed = selectRemoved([], new Set(['some-slug']), 'poem');
   assert.strictEqual(removed.length, 0);
 });
 
@@ -308,6 +354,23 @@ test('selectRemoved: posts with missing labels property are ignored', () => {
   ];
   const removed = selectRemoved(posts, new Set(), 'poem');
   assert.strictEqual(removed.length, 0);
+});
+
+test('selectRemoved: skips labelled live posts with no slug marker (legacy/unmanaged) and warns', () => {
+  const posts = [
+    { id: '1', title: 'Hand-made post', content: '<p>No marker here.</p>', labels: ['poem'], status: 'LIVE' },
+  ];
+  const originalWarn = console.warn;
+  let warned = false;
+  console.warn = () => { warned = true; };
+  let removed;
+  try {
+    removed = selectRemoved(posts, new Set(), 'poem');
+  } finally {
+    console.warn = originalWarn;
+  }
+  assert.strictEqual(removed.length, 0);
+  assert.ok(warned, 'expected console.warn to be called for a legacy/unmanaged post');
 });
 
 // ── extractContent ────────────────────────────────────────────────────────────

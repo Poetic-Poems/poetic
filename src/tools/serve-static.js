@@ -11,7 +11,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const { parseDateForSorting, formatDateForDisplay } = require("./date-utils");
-const { slugify } = require("./slugify");
+const { slugFromFile } = require("./slugify");
 const { readPoeticConfig } = require("./poetic-config");
 const { loadPoemData, renderFragment } = require("./poem-render");
 
@@ -249,7 +249,7 @@ function concatenateAllHtmlFiles(dirPath) {
         const data = yaml.load(yamlContent);
         const title = data.title;
         if (!title) return;
-        const slug = slugify(title);
+        const slug = slugFromFile(file);
         if (slug === "index" || slug === "all-poems") return;
         const date = data.date ? formatDateForDisplay(data.date) : "Unknown Date";
         const hasSongLink = hasActiveAudio(data.audio);

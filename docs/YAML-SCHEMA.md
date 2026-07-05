@@ -116,15 +116,24 @@ analysis:
 
 ## File Naming
 
-YAML files should be named using a URL-friendly version of the title with `.yaml` extension:
-- `title: "My Poem"` → `my-poem.yaml`
+Each poem's URL slug is its **source filename stem** — the basename of the `.poem` file
+(and its generated `.yaml` counterpart), without the extension. The stem is normalised
+using the same `slugify` rules applied throughout the build:
 
-The build script will automatically generate a slug from the title and create:
-- `public/my-poem.html`
-
-**Note:** The slug is automatically calculated from the title using the same logic as the `slugify` function in the Pug template:
 1. Convert to lowercase and trim whitespace
 2. Remove all characters except letters, numbers, spaces, and hyphens
 3. Replace one or more consecutive spaces with a single hyphen
+
+To keep this normalisation a no-op, name source files in already-lowercase, hyphenated
+form, e.g. `my-poem.poem` → `my-poem.yaml`.
+
+The stem determines the poem's output paths:
+- `public/my-poem/` — the standalone styled page
+- `public/my-poem.html` — the redirect stub
+
+The `title` field is display text only — it has no bearing on the slug or output paths.
+Because filenames are unique on disk, two poems may share the same `title` without their
+URLs colliding: each keeps its own filename stem and therefore its own page. The build
+fails with an error if two source files normalise to the same slug.
 
 
