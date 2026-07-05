@@ -476,17 +476,26 @@ const RENDER_POEMS_SCRIPT = `        function formatPoemDate(dateStr) {
         }
 
         function setupHomeFilter() {
-            if (document.getElementById('filterBar')) return;
             const grid = document.getElementById('poemGrid');
             if (!grid || !grid.parentNode) return;
-            const bar = document.createElement('div');
-            bar.className = 'filter-bar';
-            bar.id = 'filterBar';
-            bar.innerHTML = '<label class="filter-field"><span class="filter-icon" aria-hidden="true">🔍</span>'
-                + '<input type="search" id="poemFilter" class="filter-input" placeholder="Filter by title…" aria-label="Filter poems by title" autocomplete="off"></label>'
-                + '<span class="filter-count" id="filterCount" aria-live="polite"></span>';
-            grid.parentNode.insertBefore(bar, grid);
-            document.getElementById('poemFilter').addEventListener('input', renderPoems);
+            // Create the filter bar if it isn't already in the page (a
+            // previously-built index.html may already carry static markup).
+            if (!document.getElementById('filterBar')) {
+                const bar = document.createElement('div');
+                bar.className = 'filter-bar';
+                bar.id = 'filterBar';
+                bar.innerHTML = '<label class="filter-field"><span class="filter-icon" aria-hidden="true">🔍</span>'
+                    + '<input type="search" id="poemFilter" class="filter-input" placeholder="Filter by title…" aria-label="Filter poems by title" autocomplete="off"></label>'
+                    + '<span class="filter-count" id="filterCount" aria-live="polite"></span>';
+                grid.parentNode.insertBefore(bar, grid);
+            }
+            // Wire the input once, whether the bar was just created or already
+            // present statically — otherwise a static bar has no listener.
+            const input = document.getElementById('poemFilter');
+            if (input && !input.dataset.filterWired) {
+                input.dataset.filterWired = '1';
+                input.addEventListener('input', renderPoems);
+            }
         }
 
         function renderPoems() {
@@ -666,12 +675,7 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
             <p class="subtitle">${subtitle || "My Poems"}</p>
         </div>
 
-        <div class="filter-bar" id="filterBar">
-            <label class="filter-field"><span class="filter-icon" aria-hidden="true">🔍</span>
-                <input type="search" id="poemFilter" class="filter-input" placeholder="Filter by title…" aria-label="Filter poems by title" autocomplete="off"></label>
-            <span class="filter-count" id="filterCount" aria-live="polite"></span>
-        </div>
-
+        <!-- The title filter bar is inserted here by renderPoems()/setupHomeFilter(). -->
         <div class="poem-grid" id="poemGrid">
             <!-- Poems will be populated by JavaScript -->
         </div>
