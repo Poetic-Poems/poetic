@@ -102,6 +102,7 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
 
         const anchor = `poem-${fileName}`;
         const date = data.date ? formatDateForDisplay(data.date) : "Unknown Date";
+        const isoDate = data.date ? toISODate(data.date) : "";
         const hasSongLink = hasActiveAudio(data.audio);
 
         poemData.push({
@@ -109,6 +110,7 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
           slug,
           title,
           date,
+          isoDate,
           anchor,
           yamlPath,
           hasSongLink,
@@ -130,6 +132,13 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
       poem.anchor = `poem-${poem.fileName}`;
     });
 
+    // Compute the corpus min/max ISO dates (ignoring poems without a date) so
+    // the filter bar's date-range inputs can be bounded to the actual data.
+    const isoDates = poemData.map((poem) => poem.isoDate).filter(Boolean);
+    const minIsoDate = isoDates.length ? isoDates.reduce((a, b) => (a < b ? a : b)) : "";
+    const maxIsoDate = isoDates.length ? isoDates.reduce((a, b) => (a > b ? a : b)) : "";
+    const dateBoundsAttrs = isoDates.length ? ` min="${minIsoDate}" max="${maxIsoDate}"` : "";
+
     let concatenatedContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -147,6 +156,23 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
             <h1>Fragments &#38; Unity</h1>
             <p class="subtitle">Concatenated view of all poems (${poemData.length} poems)</p>
             <a href="index.html" class="back-link">← Back to Main Page</a>
+        </div>
+
+        <div class="filter-bar" id="filterBar">
+            <label class="filter-field">
+                <span class="filter-icon" aria-hidden="true">🔍</span>
+                <input type="search" id="poemFilter" class="filter-input" placeholder="Filter poems…" aria-label="Filter poems by text" autocomplete="off">
+            </label>
+            <div class="scope-toggle" role="group" aria-label="Search scope">
+                <button type="button" class="scope-led is-on" id="scopeTitles" aria-pressed="true"><span class="led" aria-hidden="true"></span>Titles</button>
+                <button type="button" class="scope-led is-on" id="scopeLyrics" aria-pressed="true"><span class="led" aria-hidden="true"></span>Lyrics</button>
+            </div>
+            <div class="date-range">
+                <label class="date-field">From <input type="date" id="dateFrom" class="filter-date"${dateBoundsAttrs}></label>
+                <label class="date-field">To <input type="date" id="dateTo" class="filter-date"${dateBoundsAttrs}></label>
+            </div>
+            <button type="button" class="filter-reset" id="filterReset">Clear</button>
+            <span class="filter-count" id="filterCount" aria-live="polite"></span>
         </div>
 
         <div class="toc">
@@ -185,13 +211,13 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
         const poemContent = renderFragment(poemDataObj, { audiomackArtist });
 
         concatenatedContent += `
-        <div class="poem-section" id="${poem.anchor}">
+        <div class="poem-section" id="${poem.anchor}" data-date="${poem.isoDate || ''}">
             <h2 class="poem-title"><a href="${poem.slug}/">${poem.title}</a></h2>
             <div class="poem-content">${poemContent}</div>
         </div>`;
       } catch (err) {
         concatenatedContent += `
-        <div class="poem-section" id="${poem.anchor}">
+        <div class="poem-section" id="${poem.anchor}" data-date="${poem.isoDate || ''}">
             <h2 class="poem-title"><a href="${poem.slug}/">${poem.title}</a></h2>
             <div class="poem-content"><p class="no-content">Error rendering poem: ${err.message}</p></div>
         </div>`;
@@ -315,6 +341,114 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
         window.addEventListener('scroll', toggleBackToTop);
         // Check on page load
         toggleBackToTop();
+
+        // Filter bar: live text search (titles/lyrics) + date range
+        function initFilterBar() {
+            const filterInput = document.getElementById('poemFilter');
+            const dateFrom = document.getElementById('dateFrom');
+            const dateTo = document.getElementById('dateTo');
+            const scopeTitlesBtn = document.getElementById('scopeTitles');
+            const scopeLyricsBtn = document.getElementById('scopeLyrics');
+            const resetBtn = document.getElementById('filterReset');
+            const countEl = document.getElementById('filterCount');
+
+            const sections = Array.from(document.querySelectorAll('.poem-section'));
+            const scope = { titles: true, lyrics: true };
+
+            const index = sections.map((section) => {
+                const titleEl = section.querySelector('.poem-title a');
+                const bodyEl = section.querySelector('.poem-body');
+                const link = document.querySelector('#poemTableBody a[href="#' + section.id + '"]');
+                return {
+                    section: section,
+                    title: (titleEl ? titleEl.textContent : '').toLowerCase(),
+                    body: (bodyEl ? bodyEl.textContent : '').toLowerCase(),
+                    date: section.getAttribute('data-date') || '',
+                    row: link ? link.closest('tr') : null
+                };
+            });
+
+            function updateScopeButton(btn, on) {
+                if (!btn) return;
+                if (on) {
+                    btn.classList.add('is-on');
+                } else {
+                    btn.classList.remove('is-on');
+                }
+                btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+            }
+
+            function toggleScope(key, btn) {
+                const next = !scope[key];
+                if (!next) {
+                    const otherKey = key === 'titles' ? 'lyrics' : 'titles';
+                    if (!scope[otherKey]) {
+                        // Refuse to turn off the last remaining active scope
+                        return;
+                    }
+                }
+                scope[key] = next;
+                updateScopeButton(btn, next);
+                applyFilters();
+            }
+
+            function applyFilters() {
+                const q = (filterInput ? filterInput.value : '').trim().toLowerCase();
+                const from = dateFrom ? dateFrom.value : '';
+                const to = dateTo ? dateTo.value : '';
+                let visibleCount = 0;
+
+                index.forEach((entry) => {
+                    const textMatch = q === ''
+                        || (scope.titles && entry.title.includes(q))
+                        || (scope.lyrics && entry.body.includes(q));
+                    const dateMatch = (!from || entry.date === '' || entry.date >= from)
+                        && (!to || entry.date === '' || entry.date <= to);
+                    const visible = textMatch && dateMatch;
+
+                    if (visible) {
+                        entry.section.classList.remove('hidden');
+                        if (entry.row) entry.row.classList.remove('hidden');
+                        visibleCount++;
+                    } else {
+                        entry.section.classList.add('hidden');
+                        if (entry.row) entry.row.classList.add('hidden');
+                    }
+                });
+
+                if (countEl) {
+                    const filterActive = q !== '' || !!from || !!to || !scope.titles || !scope.lyrics;
+                    countEl.textContent = filterActive
+                        ? ('Showing ' + visibleCount + ' of ' + index.length)
+                        : '';
+                }
+            }
+
+            if (scopeTitlesBtn) {
+                scopeTitlesBtn.addEventListener('click', () => toggleScope('titles', scopeTitlesBtn));
+            }
+            if (scopeLyricsBtn) {
+                scopeLyricsBtn.addEventListener('click', () => toggleScope('lyrics', scopeLyricsBtn));
+            }
+            if (filterInput) filterInput.addEventListener('input', applyFilters);
+            if (dateFrom) dateFrom.addEventListener('change', applyFilters);
+            if (dateTo) dateTo.addEventListener('change', applyFilters);
+
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    if (filterInput) filterInput.value = '';
+                    if (dateFrom) dateFrom.value = '';
+                    if (dateTo) dateTo.value = '';
+                    scope.titles = true;
+                    scope.lyrics = true;
+                    updateScopeButton(scopeTitlesBtn, true);
+                    updateScopeButton(scopeLyricsBtn, true);
+                    applyFilters();
+                });
+            }
+        }
+
+        initFilterBar();
     </script>
 </body>
 </html>`;
@@ -336,11 +470,33 @@ const RENDER_POEMS_SCRIPT = `        function formatPoemDate(dateStr) {
             return d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
         }
 
+        function homeFilterQuery() {
+            const input = document.getElementById('poemFilter');
+            return input ? input.value.trim().toLowerCase() : '';
+        }
+
+        function setupHomeFilter() {
+            if (document.getElementById('filterBar')) return;
+            const grid = document.getElementById('poemGrid');
+            if (!grid || !grid.parentNode) return;
+            const bar = document.createElement('div');
+            bar.className = 'filter-bar';
+            bar.id = 'filterBar';
+            bar.innerHTML = '<label class="filter-field"><span class="filter-icon" aria-hidden="true">🔍</span>'
+                + '<input type="search" id="poemFilter" class="filter-input" placeholder="Filter by title…" aria-label="Filter poems by title" autocomplete="off"></label>'
+                + '<span class="filter-count" id="filterCount" aria-live="polite"></span>';
+            grid.parentNode.insertBefore(bar, grid);
+            document.getElementById('poemFilter').addEventListener('input', renderPoems);
+        }
+
         function renderPoems() {
+            setupHomeFilter();
             const grid = document.getElementById('poemGrid');
             grid.innerHTML = '';
+            const q = homeFilterQuery();
+            const matches = q ? allPoems.filter(function (p) { return p.title.toLowerCase().includes(q); }) : allPoems;
 
-            allPoems.forEach(poem => {
+            matches.forEach(poem => {
                 const card = document.createElement('div');
                 card.className = 'poem-card';
                 card.innerHTML = \`
@@ -357,6 +513,15 @@ const RENDER_POEMS_SCRIPT = `        function formatPoemDate(dateStr) {
 
                 grid.appendChild(card);
             });
+
+            const count = document.getElementById('filterCount');
+            if (count) count.textContent = q ? ('Showing ' + matches.length + ' of ' + allPoems.length) : '';
+            if (!matches.length) {
+                const empty = document.createElement('p');
+                empty.className = 'filter-empty';
+                empty.textContent = 'No poems match “' + q + '”.';
+                grid.appendChild(empty);
+            }
         }
 
         // Initial render
@@ -468,10 +633,17 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
         );
       }
 
-      // Self-heal the poem-grid rendering logic (e.g. adds poem dates under
-      // titles) so previously-built index.html files pick up template changes.
+      // Self-heal the poem-grid rendering logic by replacing the ENTIRE
+      // managed block — from the first managed helper (either
+      // `formatPoemDate`, added in 2.1.0, or the older `renderPoems`,
+      // whichever a previously-built file starts with) through the last
+      // `renderPoems();` call — in one shot. Matching the whole block
+      // greedily (rather than just `renderPoems`/its call) is idempotent:
+      // it avoids duplicate-helper accumulation across builds and lets newly
+      // added helpers (e.g. the title filter) self-heal into any
+      // previously-built index.html regardless of the version that built it.
       indexContent = indexContent.replace(
-        /function renderPoems\(\)[\s\S]*?renderPoems\(\);/,
+        /function (?:formatPoemDate|renderPoems)[\s\S]*renderPoems\(\);/,
         () => RENDER_POEMS_SCRIPT
       );
     } else {
@@ -492,6 +664,12 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
         <div class="header">
             <h1>Fragments &#38; Unity</h1>
             <p class="subtitle">${subtitle || "My Poems"}</p>
+        </div>
+
+        <div class="filter-bar" id="filterBar">
+            <label class="filter-field"><span class="filter-icon" aria-hidden="true">🔍</span>
+                <input type="search" id="poemFilter" class="filter-input" placeholder="Filter by title…" aria-label="Filter poems by title" autocomplete="off"></label>
+            <span class="filter-count" id="filterCount" aria-live="polite"></span>
         </div>
 
         <div class="poem-grid" id="poemGrid">

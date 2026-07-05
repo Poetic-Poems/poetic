@@ -7,6 +7,23 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] — 2026-07-05
+
+### Added
+
+- The home page (`index.html`) now has a live title filter above the poem grid —
+  typing narrows the visible poem cards to matching titles.
+- The all-poems page (`all-poems.html`) now has a filter bar with a text search,
+  a two-LED scope control (search titles, lyrics, or both — both by default),
+  and an earliest/latest date-range filter. The filters combine, and hidden
+  poems are also hidden from the table of contents.
+
+### Fixed
+
+- The `index.html` self-heal now replaces the whole managed render block in one
+  idempotent step, so repeated builds no longer accumulate duplicate copies of
+  the poem-grid helper functions.
+
 ## [2.1.0] — 2026-07-05
 
 ### Added
