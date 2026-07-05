@@ -7,6 +7,19 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- CI/deployment workflows now use actions and a Node.js version that target
+  the current Node 24 Actions runtime, instead of the deprecated Node 20 one
+  (`actions/checkout`, `actions/setup-node`, `actions/configure-pages`,
+  `actions/upload-pages-artifact`, `actions/deploy-pages` bumped to their
+  latest majors; build/sync Node.js version bumped from the EOL 18 to 22).
+  Consumer repos deploying to GitHub Pages were seeing deprecation warnings
+  and at least one outright deploy failure caused by the forced runtime
+  switch.
+
 ## [2.2.2] — 2026-07-05
 
 ### Fixed
