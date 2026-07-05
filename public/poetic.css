@@ -134,6 +134,11 @@ h2.poem-title {
   margin: 0 0 10px 0;
 }
 
+.poem-card .poem-date {
+  font-size: 0.85em;
+  opacity: 0.7;
+}
+
 .audio-indicator {
   color: #007AFF;
   font-size: 1.2em;

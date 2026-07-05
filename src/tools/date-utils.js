@@ -52,6 +52,33 @@ function formatDateForDisplay(dateStr) {
 }
 
 /**
+ * Normalize a poem date (Date object or yyyy-mm-dd string) to a raw
+ * yyyy-mm-dd string, suitable for client-side locale formatting.
+ * Returns null if the date is missing or not in a recognisable raw form
+ * (e.g. already a "DayOfWeek, DD Month YYYY" display string).
+ * @param {string|Date} dateStr
+ * @returns {string|null}
+ */
+function toISODate(dateStr) {
+  if (!dateStr) {
+    return null;
+  }
+
+  if (dateStr instanceof Date) {
+    if (isNaN(dateStr.getTime())) {
+      return null;
+    }
+    const y = dateStr.getUTCFullYear();
+    const m = String(dateStr.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(dateStr.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+
+  const s = String(dateStr);
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null;
+}
+
+/**
  * Parse date string for sorting (handles both formats)
  * @param {string} dateStr - Date string in either format
  * @returns {Date} - Date object for sorting
@@ -91,5 +118,6 @@ function parseDateForSorting(dateStr) {
 
 module.exports = {
   formatDateForDisplay,
-  parseDateForSorting
+  parseDateForSorting,
+  toISODate
 };

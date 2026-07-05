@@ -13,7 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
 const { slugFromFile } = require("./slugify");
-const { parseDateForSorting, formatDateForDisplay } = require("./date-utils");
+const { parseDateForSorting, formatDateForDisplay, toISODate } = require("./date-utils");
 const { readPoeticConfig } = require("./poetic-config");
 const { loadPoemData, renderFragment } = require("./poem-render");
 const beautify = require("js-beautify");
@@ -325,6 +325,43 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
   }
 }
 
+// Canonical rendering logic for the poem grid on index.html. Kept as a single
+// source of truth so it can both seed a fresh index.html and self-heal an
+// existing one on every build (see the `indexContent.replace` call below).
+const RENDER_POEMS_SCRIPT = `        function formatPoemDate(dateStr) {
+            const parts = dateStr.split('-').map(Number);
+            if (parts.length !== 3 || parts.some(isNaN)) return dateStr;
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            if (isNaN(d.getTime())) return dateStr;
+            return d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function renderPoems() {
+            const grid = document.getElementById('poemGrid');
+            grid.innerHTML = '';
+
+            allPoems.forEach(poem => {
+                const card = document.createElement('div');
+                card.className = 'poem-card';
+                card.innerHTML = \`
+                    <div class="poem-title">
+                        <a href="\${poem.file}">\${poem.title}</a>
+                        \${poem.hasAudio ? '<span class="audio-indicator">🎵</span>' : ''}
+                    </div>
+                    \${poem.date ? \`<div class="poem-date">\${formatPoemDate(poem.date)}</div>\` : ''}
+                \`;
+
+                card.addEventListener('click', () => {
+                    window.location.href = poem.file;
+                });
+
+                grid.appendChild(card);
+            });
+        }
+
+        // Initial render
+        renderPoems();`;
+
 function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = undefined) {
   try {
     // Read YAML files from the poems directory for metadata
@@ -361,11 +398,13 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
         // Clean URL: point to slug/ directory instead of slug.html
         const file = `${slug}/`;
         const hasAudio = hasActiveAudio(data.audio);
+        const date = toISODate(data.date);
 
         poemData.push({
           file: file,
           title: title,
           hasAudio: hasAudio,
+          date: date,
         });
       } catch (err) {
         console.warn(`Warning: Could not read ${yamlFile}:`, err.message);
@@ -379,6 +418,7 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
           file: "${poem.file}",
           title: "${poem.title.replace(/"/g, '\\"')}",
           hasAudio: ${poem.hasAudio},
+          date: ${poem.date ? `"${poem.date}"` : "null"},
         }`;
       })
       .join(",\n");
@@ -427,6 +467,13 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
           `$1\n    ${linksToAdd}`
         );
       }
+
+      // Self-heal the poem-grid rendering logic (e.g. adds poem dates under
+      // titles) so previously-built index.html files pick up template changes.
+      indexContent = indexContent.replace(
+        /function renderPoems\(\)[\s\S]*?renderPoems\(\);/,
+        () => RENDER_POEMS_SCRIPT
+      );
     } else {
       // Create a default index.html template
       indexContent = `<!DOCTYPE html>
@@ -461,30 +508,7 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
 ${poemArrayString}
         ];
 
-        function renderPoems() {
-            const grid = document.getElementById('poemGrid');
-            grid.innerHTML = '';
-
-            allPoems.forEach(poem => {
-                const card = document.createElement('div');
-                card.className = 'poem-card';
-                card.innerHTML = \`
-                    <div class="poem-title">
-                        <a href="\${poem.file}">\${poem.title}</a>
-                        \${poem.hasAudio ? '<span class="audio-indicator">🎵</span>' : ''}
-                    </div>
-                \`;
-
-                card.addEventListener('click', () => {
-                    window.location.href = poem.file;
-                });
-
-                grid.appendChild(card);
-            });
-        }
-
-        // Initial render
-        renderPoems();
+${RENDER_POEMS_SCRIPT}
     </script>
 </body>
 </html>`;

@@ -7,6 +7,14 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — 2026-07-05
+
+### Added
+
+- The home page (`index.html`) now shows each poem's date under its title,
+  formatted in the visitor's browser locale (long month name, no weekday) —
+  e.g. "4 May 2015" or "May 4, 2015" depending on locale.
+
 ## [2.0.1] — 2026-07-05
 
 ### Fixed
