@@ -10,7 +10,8 @@
  *   resolveConfig(config, env)                       - apply defaults + validate
  *   extractSlug(post)                                - recover a poem's slug from post content
  *   mapBySlug(posts)                                 - Map<slug, post>
- *   composePost({ title, bodyHtml, isoDate, label }) - build Blogger post body
+ *   bloggerAcceptableLabels(labels)                  - filter poem labels to Blogger-acceptable ones
+ *   composePost({ title, bodyHtml, isoDate, label, labels }) - build Blogger post body
  *   normalizeHtml(s)                                 - collapse whitespace for comparison
  *   postNeedsUpdate(existingPost, desiredPost)       - check if a post needs updating
  *   selectRemoved(posts, currentSlugs, label)        - posts to draft/delete
@@ -140,17 +141,38 @@ function mapBySlug(posts) {
 }
 
 /**
+ * Filter poem labels down to those acceptable to Blogger.
+ *
+ * Trims each label, drops empty strings, and drops any label containing a
+ * comma (Blogger uses comma as its label separator). Preserves order.
+ *
+ * @param {string[]} labels
+ * @returns {string[]}
+ */
+function bloggerAcceptableLabels(labels) {
+  return (labels || [])
+    .map(label => label.trim())
+    .filter(label => label !== '' && !label.includes(','));
+}
+
+/**
  * Compose a Blogger post body object.
  *
- * @param {{ title: string, bodyHtml: string, isoDate: string, label: string }} opts
+ * The post's labels are a de-duplicated array of the base label followed by
+ * the poem's own Blogger-acceptable labels (base label first; dedupe keeps
+ * the first occurrence). This is the full set the post should carry — the
+ * sync fully reconciles existing posts to match it.
+ *
+ * @param {{ title: string, bodyHtml: string, isoDate: string, label: string, labels?: string[] }} opts
  * @returns {{ kind: string, title: string, content: string, labels: string[], published: string }}
  */
-function composePost({ title, bodyHtml, isoDate, label }) {
+function composePost({ title, bodyHtml, isoDate, label, labels = [] }) {
+  const allLabels = [label, ...bloggerAcceptableLabels(labels)];
   return {
     kind: 'blogger#post',
     title,
     content: bodyHtml,
-    labels: [label],
+    labels: [...new Set(allLabels)],
     published: `${isoDate}T00:00:00Z`,
   };
 }
@@ -169,6 +191,10 @@ function normalizeHtml(s) {
 /**
  * Determine if an existing Blogger post needs to be updated.
  *
+ * Labels are compared for set-equality (order-independent) — this is a full
+ * reconcile, so a poem label added or removed on either side triggers an
+ * update, not just labels missing from the existing post.
+ *
  * `published` is compared by instant (not string), since Blogger may echo
  * back a timestamp in a different timezone offset than the one we sent.
  *
@@ -179,9 +205,11 @@ function normalizeHtml(s) {
 function postNeedsUpdate(existingPost, desiredPost) {
   if (existingPost.title !== desiredPost.title) return true;
   if (normalizeHtml(existingPost.content || '') !== normalizeHtml(desiredPost.content || '')) return true;
-  const existingLabels = existingPost.labels || [];
-  for (const label of desiredPost.labels || []) {
-    if (!existingLabels.includes(label)) return true;
+  const existingLabels = [...(existingPost.labels || [])].sort();
+  const desiredLabels = [...(desiredPost.labels || [])].sort();
+  if (existingLabels.length !== desiredLabels.length ||
+      existingLabels.some((label, i) => label !== desiredLabels[i])) {
+    return true;
   }
   if (existingPost.published !== undefined && desiredPost.published !== undefined) {
     const existingInstant = new Date(existingPost.published).getTime();
@@ -472,6 +500,7 @@ async function main() {
         bodyHtml,
         isoDate,
         label: opts.label,
+        labels: data.labels || [],
       });
 
       currentSlugs.add(data.slug);
@@ -573,6 +602,7 @@ module.exports = {
   resolveConfig,
   extractSlug,
   mapBySlug,
+  bloggerAcceptableLabels,
   composePost,
   normalizeHtml,
   postNeedsUpdate,

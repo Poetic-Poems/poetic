@@ -7,6 +7,21 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Metadata section** — `.poem` files may end with a new `====`-delimited
+  Metadata section holding directives and labels, one per line. See
+  `docs/POEM-SYNTAX.md` for full syntax.
+- **Labels** — a poem's labels are displayed with the poem on the generated
+  site (both the poem's own page and its index card).
+- Poem labels are attached as Blogger post labels on sync, reconciled in full
+  against each post's existing labels; a label containing a comma is not sent
+  to Blogger, since Blogger uses commas to separate labels.
+- **Directives** are parsed and preserved in the poem's data for future use;
+  no directive behaviour is defined yet.
+
 ## [2.2.3] — 2026-07-05
 
 ### Fixed

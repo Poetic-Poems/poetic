@@ -59,6 +59,12 @@ class PoemParser {
     if (this.eof()) return this.result;
     this.parseAnalysis();
 
+    if (this.eof()) return this.result;
+    this.expectMarker('====', 'end-of-analysis');
+
+    if (this.eof()) return this.result;
+    this.parseMetadata();
+
     // Warn about variables used before definition
     if (this.usedBeforeDefined.size > 0) {
       for (const varName of this.usedBeforeDefined) {
@@ -1224,6 +1230,89 @@ class PoemParser {
     }
 
     return renderGfm(contentLines.join('\n'));
+  }
+
+  /**
+   * Parse metadata section (directives and labels)
+   *
+   * Reads lines until the end-of-file marker (====) or EOF, without
+   * consuming the marker. Recognises three line shapes (checked in this
+   * order):
+   *   - blank line -> skipped
+   *   - `#` followed by whitespace or end-of-line -> a comment, skipped
+   *   - directive line (`%name key:value ...`) -> appended to
+   *     this.result.directives as { name, attributes? }
+   *   - label line (`#label`) -> appended (de-duplicated, first-seen order)
+   *     to this.result.labels
+   * Any other line is unrecognised and produces a warning.
+   */
+  parseMetadata() {
+    this.skipBlankLines();
+
+    const directiveRe = /^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i;
+    const labelRe = /^\s*#([^&<>\\#\s]+?)(\s+#.*)?\s*$/i;
+    const seenLabels = new Set();
+
+    while (true) {
+      const line = this.peek();
+      if (line === null || line.trim() === '====') {
+        break;
+      }
+
+      const trimmed = line.trim();
+
+      if (trimmed === '') {
+        this.next();
+        continue;
+      }
+
+      // Comment: '#' followed by whitespace or end-of-line
+      if (/^\s*#(\s|$)/.test(line)) {
+        this.next();
+        continue;
+      }
+
+      const directiveMatch = line.match(directiveRe);
+      if (directiveMatch) {
+        const directive = { name: directiveMatch[1] };
+        const attrsRaw = directiveMatch[2] ? directiveMatch[2].trim() : '';
+        if (attrsRaw !== '') {
+          const attributes = {};
+          for (const token of attrsRaw.split(/\s+/)) {
+            const colonIndex = token.indexOf(':');
+            const key = token.slice(0, colonIndex);
+            const value = token.slice(colonIndex + 1);
+            attributes[key] = value;
+          }
+          directive.attributes = attributes;
+        }
+        if (!this.result.directives) {
+          this.result.directives = [];
+        }
+        this.result.directives.push(directive);
+        this.next();
+        continue;
+      }
+
+      const labelMatch = line.match(labelRe);
+      if (labelMatch) {
+        const label = labelMatch[1];
+        if (!seenLabels.has(label)) {
+          seenLabels.add(label);
+          if (!this.result.labels) {
+            this.result.labels = [];
+          }
+          this.result.labels.push(label);
+        }
+        this.next();
+        continue;
+      }
+
+      console.warn(`Warning: unrecognised metadata line: "${trimmed}"`);
+      this.next();
+    }
+
+    this.skipBlankLines();
   }
 
   /**

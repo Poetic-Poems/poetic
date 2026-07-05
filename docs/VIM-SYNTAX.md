@@ -9,6 +9,7 @@ The syntax highlighting provides colour-coding for:
 - **Header elements**: Title, author, and date
 - **Dividers and markers**: `----` and `====` separators
 - **Labels**: Version labels {% raw %}`{{ ... }}`{% endraw %}, segment labels `{ ... }`, postscript labels, and analysis labels
+- **Metadata section**: Labels (`#tag`) and directives (`%name key:value ...`) in the block after a trailing `====` marker
 - **Variables**: Single-line and multi-line variable definitions (`={var}=`), and variable references (`${var}`)
 - **Comment blocks**: `<<# ... #>>`
 - **Literal blocks**: `<<< ... >>>` with optional language-specific syntax highlighting
@@ -28,6 +29,36 @@ The syntax highlighting provides colour-coding for:
 > highlighter, it is highlighted with the general inline rules above (headings,
 > bold/italic, etc.) rather than the full embedded Markdown syntax. The analysis
 > section and `<<<markdown>>>` blocks use full Markdown highlighting.
+
+## Metadata Section
+
+A `.poem` file can have a **Metadata** section after the poem body, delimited by a `====`
+line (highlighted by the `poemEndMarkerMark`/`poemEndMarkerLineOnly` groups described above).
+Two line types are recognised there:
+
+- **Labels** — a `#` immediately followed by a non-space run of characters (the label body
+  cannot contain whitespace or the characters `& < > \ #`), optionally followed by a trailing
+  `# comment`. Because Markdown-style headings need whitespace after the `#`, headings and
+  labels never match the same line: `#tag` is a label, `# Heading` is a heading.
+- **Directives** — a `%` followed by a name (letters, digits, `.`, `-`), zero or more
+  whitespace-separated `key:value` attribute pairs, and an optional trailing `# comment`.
+
+| Group | Covers | Default link |
+|-------|--------|---------------|
+| `poemLabelMark` | The `#` at the start of a label line | `Delimiter` |
+| `poemLabel` | The label body | `Identifier` |
+| `poemLabelComment` | A trailing `# comment` on a label line | `Comment` |
+| `poemDirective` | The `%name` at the start of a directive line | `PreProc` |
+| `poemDirectiveAttr` | Each `key:value` attribute pair on a directive line | `Macro` |
+| `poemDirectiveComment` | A trailing `# comment` on a directive line | `Comment` |
+
+```poem
+====
+#draft
+#reviewed  # needs another pass
+
+%status state:draft priority:high  # tracked externally
+```
 
 ## Embedded Language Support
 

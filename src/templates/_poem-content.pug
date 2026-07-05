@@ -44,7 +44,7 @@ mixin processLines(text)
       - index++
 
 //- Main poem-content mixin.
-//- Locals used: title, author, date, slug, versions, audio, postscript, analysis, audiomackArtist
+//- Locals used: title, author, date, slug, versions, audio, postscript, analysis, audiomackArtist, labels
 mixin poemContent
   div(id=`poem--${slug}`)
     div.poem-info
@@ -81,6 +81,11 @@ mixin poemContent
       else
         p.no-content No content available
     //- end poem-body
+
+    if labels && labels.length > 0
+      ul.poem-labels
+        each label in labels
+          li.poem-label= label
 
     if audio
       div(id=`song--${slug}` class="song-link")

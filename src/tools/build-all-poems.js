@@ -104,6 +104,7 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
         const date = data.date ? formatDateForDisplay(data.date) : "Unknown Date";
         const isoDate = data.date ? toISODate(data.date) : "";
         const hasSongLink = hasActiveAudio(data.audio);
+        const labels = Array.isArray(data.labels) ? data.labels : [];
 
         poemData.push({
           fileName,
@@ -114,6 +115,7 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomack
           anchor,
           yamlPath,
           hasSongLink,
+          labels,
         });
       } catch (err) {
         console.warn(`Warning: Could not read ${file}:`, err.message);
@@ -526,6 +528,7 @@ const RENDER_POEMS_SCRIPT = `        function formatPoemDate(dateStr) {
                         \${poem.hasAudio ? '<span class="audio-indicator">🎵</span>' : ''}
                     </div>
                     \${poem.date ? \`<div class="poem-date">\${formatPoemDate(poem.date)}</div>\` : ''}
+                    \${poem.labels && poem.labels.length ? '<div class="poem-card-labels">' + poem.labels.map(function (label) { return '<span class="poem-card-label">' + label + '</span>'; }).join('') + '</div>' : ''}
                 \`;
 
                 card.addEventListener('click', () => {
@@ -585,12 +588,14 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
         const file = `${slug}/`;
         const hasAudio = hasActiveAudio(data.audio);
         const date = toISODate(data.date);
+        const labels = Array.isArray(data.labels) ? data.labels : [];
 
         poemData.push({
           file: file,
           title: title,
           hasAudio: hasAudio,
           date: date,
+          labels: labels,
         });
       } catch (err) {
         console.warn(`Warning: Could not read ${yamlFile}:`, err.message);
@@ -600,11 +605,15 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
     // Generate the JavaScript array for the poems
     const poemArrayString = poemData
       .map((poem) => {
+        const labelsArrayString = poem.labels
+          .map((label) => `"${String(label).replace(/"/g, '\\"')}"`)
+          .join(", ");
         return `        {
           file: "${poem.file}",
           title: "${poem.title.replace(/"/g, '\\"')}",
           hasAudio: ${poem.hasAudio},
           date: ${poem.date ? `"${poem.date}"` : "null"},
+          labels: [${labelsArrayString}],
         }`;
       })
       .join(",\n");

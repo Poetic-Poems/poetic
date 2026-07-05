@@ -149,7 +149,11 @@ Posts created before this scheme keep their original permalinks.
 
 ### Labels
 
-Every post managed by Poetic receives the label specified by `blogger_label` (default: `poem`). The publisher uses this label to identify which posts it owns — do not apply the same label to posts you manage manually.
+Every post managed by Poetic receives the label specified by `blogger_label` (default: `poem`), plus any per-poem labels declared with `#label` lines in the poem's Metadata section. The publisher uses the base label to identify which posts it owns — do not apply the same label to posts you manage manually.
+
+The sync fully reconciles each post's labels to exactly this set — the base label plus the poem's current labels — on every run. Removing a label from a poem removes it from the Blogger post on the next sync, and any label added manually in the Blogger UI is overwritten, since Poetic owns these posts.
+
+A poem label containing a comma is not sent to Blogger, since Blogger uses comma as its label separator.
 
 ### Removed poems
 

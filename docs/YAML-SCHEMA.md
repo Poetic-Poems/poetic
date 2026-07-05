@@ -114,6 +114,37 @@ analysis:
     Only plain text paragraphs need blank line separation.
 ```
 
+### Labels
+```yaml
+labels:
+  - reflection
+  - nature
+```
+
+`labels` is an array of strings, one per unique label in the poem's Metadata
+section, de-duplicated and in first-seen order. Omitted entirely when the
+Metadata section has no labels.
+
+### Directives
+```yaml
+directives:
+  - name: example.directive
+    attributes:
+      key: value
+  - name: another.directive
+```
+
+`directives` is an array of objects, one per directive line in the poem's
+Metadata section, in source order (duplicates allowed - directives are not
+de-duplicated). Each object has:
+
+- `name`: String - the directive name
+- `attributes`: Map of string keys to string values, parsed from the
+  directive line's ` key:value` tokens. Omitted entirely from an entry
+  whose directive has no attributes (there is no empty-map form).
+
+Omitted entirely when the Metadata section has no directives.
+
 ## File Naming
 
 Each poem's URL slug is its **source filename stem** — the basename of the `.poem` file

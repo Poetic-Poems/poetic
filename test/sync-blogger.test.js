@@ -3,8 +3,9 @@
 /**
  * Tests for sync-blogger.js pure helpers.
  *
- * Covers: parseArgs, resolveConfig, extractSlug, mapBySlug, composePost,
- * normalizeHtml, postNeedsUpdate, selectRemoved, extractContent.
+ * Covers: parseArgs, resolveConfig, extractSlug, mapBySlug,
+ * bloggerAcceptableLabels, composePost, normalizeHtml, postNeedsUpdate,
+ * selectRemoved, extractContent.
  */
 
 const { test } = require('node:test');
@@ -15,6 +16,7 @@ const {
   resolveConfig,
   extractSlug,
   mapBySlug,
+  bloggerAcceptableLabels,
   composePost,
   normalizeHtml,
   postNeedsUpdate,
@@ -190,6 +192,33 @@ test('mapBySlug: skips posts with no extractable slug marker', () => {
   assert.strictEqual(map.get('has-slug').id, '2');
 });
 
+// ── bloggerAcceptableLabels ──────────────────────────────────────────────────
+
+test('bloggerAcceptableLabels: returns labels unchanged when already clean', () => {
+  assert.deepStrictEqual(bloggerAcceptableLabels(['love', 'grief']), ['love', 'grief']);
+});
+
+test('bloggerAcceptableLabels: trims surrounding whitespace', () => {
+  assert.deepStrictEqual(bloggerAcceptableLabels(['  love  ', 'grief\t']), ['love', 'grief']);
+});
+
+test('bloggerAcceptableLabels: drops empty and whitespace-only labels', () => {
+  assert.deepStrictEqual(bloggerAcceptableLabels(['love', '', '   ', 'grief']), ['love', 'grief']);
+});
+
+test('bloggerAcceptableLabels: drops labels containing a comma', () => {
+  assert.deepStrictEqual(bloggerAcceptableLabels(['love', 'grief, loss', 'hope']), ['love', 'hope']);
+});
+
+test('bloggerAcceptableLabels: preserves order', () => {
+  assert.deepStrictEqual(bloggerAcceptableLabels(['c', 'a', 'b']), ['c', 'a', 'b']);
+});
+
+test('bloggerAcceptableLabels: treats missing input as empty array', () => {
+  assert.deepStrictEqual(bloggerAcceptableLabels(undefined), []);
+  assert.deepStrictEqual(bloggerAcceptableLabels([]), []);
+});
+
 // ── composePost ───────────────────────────────────────────────────────────────
 
 test('composePost: returns correct shape', () => {
@@ -214,6 +243,44 @@ test('composePost: uses midnight GMT for published', () => {
 test('composePost: label is wrapped in an array', () => {
   const post = composePost({ title: 'T', bodyHtml: '', isoDate: '2020-06-01', label: 'verses' });
   assert.deepStrictEqual(post.labels, ['verses']);
+});
+
+test('composePost: defaults to no poem labels when labels is omitted', () => {
+  const post = composePost({ title: 'T', bodyHtml: '', isoDate: '2020-06-01', label: 'poem' });
+  assert.deepStrictEqual(post.labels, ['poem']);
+});
+
+test('composePost: includes poem labels alongside the base label, base label first', () => {
+  const post = composePost({
+    title: 'T',
+    bodyHtml: '',
+    isoDate: '2020-06-01',
+    label: 'poem',
+    labels: ['love', 'grief'],
+  });
+  assert.deepStrictEqual(post.labels, ['poem', 'love', 'grief']);
+});
+
+test('composePost: de-duplicates labels, keeping the first occurrence', () => {
+  const post = composePost({
+    title: 'T',
+    bodyHtml: '',
+    isoDate: '2020-06-01',
+    label: 'poem',
+    labels: ['poem', 'love', 'love'],
+  });
+  assert.deepStrictEqual(post.labels, ['poem', 'love']);
+});
+
+test('composePost: drops comma-containing poem labels', () => {
+  const post = composePost({
+    title: 'T',
+    bodyHtml: '',
+    isoDate: '2020-06-01',
+    label: 'poem',
+    labels: ['love', 'grief, loss'],
+  });
+  assert.deepStrictEqual(post.labels, ['poem', 'love']);
 });
 
 // ── normalizeHtml ─────────────────────────────────────────────────────────────
@@ -270,11 +337,30 @@ test('postNeedsUpdate: returns true when a desired label is missing', () => {
   assert.strictEqual(postNeedsUpdate(existing, desired), true);
 });
 
-test('postNeedsUpdate: returns false when existing has extra labels beyond desired', () => {
-  // Extra labels on existing are fine — we only check that desired labels are present
+test('postNeedsUpdate: returns true when existing has extra labels beyond desired (full reconcile)', () => {
+  // Label sets must match exactly — an extra label on existing (e.g. removed from the poem
+  // or added manually in the Blogger UI) triggers an update to bring it back into line.
   const existing = { title: 'P', content: '<p>a</p>', labels: ['poem', 'extra'] };
   const desired  = { title: 'P', content: '<p>a</p>', labels: ['poem'] };
+  assert.strictEqual(postNeedsUpdate(existing, desired), true);
+});
+
+test('postNeedsUpdate: returns false when label sets are equal regardless of order', () => {
+  const existing = { title: 'P', content: '<p>a</p>', labels: ['grief', 'poem', 'love'] };
+  const desired  = { title: 'P', content: '<p>a</p>', labels: ['poem', 'love', 'grief'] };
   assert.strictEqual(postNeedsUpdate(existing, desired), false);
+});
+
+test('postNeedsUpdate: returns true when a poem label is added', () => {
+  const existing = { title: 'P', content: '<p>a</p>', labels: ['poem'] };
+  const desired  = { title: 'P', content: '<p>a</p>', labels: ['poem', 'love'] };
+  assert.strictEqual(postNeedsUpdate(existing, desired), true);
+});
+
+test('postNeedsUpdate: returns true when a poem label is removed', () => {
+  const existing = { title: 'P', content: '<p>a</p>', labels: ['poem', 'love'] };
+  const desired  = { title: 'P', content: '<p>a</p>', labels: ['poem'] };
+  assert.strictEqual(postNeedsUpdate(existing, desired), true);
 });
 
 test('postNeedsUpdate: treats missing labels property as empty array', () => {

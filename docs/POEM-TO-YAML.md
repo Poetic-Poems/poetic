@@ -55,6 +55,17 @@ The converter handles all features defined in the `.poem` syntax specification:
 - Markdown-style headings: `#` → `<h3>`, `##` → `<h4>`, `###` → `<h5>`
 - Collapsed newlines within paragraphs, preserved paragraph breaks
 
+### Metadata
+A bottom `====`-delimited Metadata section, after Analysis, produces the
+`labels` and `directives` YAML fields:
+- A `#label` line adds `label` to `labels` (de-duplicated, first-seen order)
+- A `%directive.name key:value ...` line adds `{ name, attributes? }` to
+  `directives` (source order, duplicates allowed; `attributes` is omitted
+  when the directive has no ` key:value` tokens)
+- A `# comment` line (`#` followed by whitespace) is ignored
+- See `docs/YAML-SCHEMA.md` for the exact shapes and `poem-syntax.ebnf` for
+  the authoritative line-matching patterns
+
 ### Inline Markup
 Converts text markup to HTML entities:
 

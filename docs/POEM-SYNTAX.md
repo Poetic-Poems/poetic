@@ -18,8 +18,11 @@ A poem file consists of the following sections in strict order:
 3. **Audio** (optional)
 4. **Postscript** (optional)
 5. **Analysis** (optional)
+6. **Metadata** (optional)
 
-**Note:** Dividers (`----` and `====`) are only required if there is subsequent non-empty content. If the parser reaches the end of the file, all remaining sections are assumed to be empty.
+**Note:** Dividers (`----` and `====`) are only required if there is subsequent non-empty content. If the parser reaches the end of the file, all remaining sections — including Metadata — are assumed to be empty.
+
+**Extensibility:** This section order is open to extension by Poetic's maintainers at any time, by defining a new `====`-delimited section at the bottom of the file, after Metadata. Poem authors and downstream tools should tolerate — and pass through unchanged — any trailing `====`-delimited section they do not recognise.
 
 ## 0. Preamble Section
 
@@ -426,7 +429,89 @@ More detailed content.
 ====
 ```
 
-## 6. Comment Blocks
+## 6. Metadata Section
+
+Section for directives and labels. The section and its markers are optional if empty.
+
+### Structure
+
+```
+[%<directive-name> <key>:<value> ...]  [# comment]
+[#<label>]  [# comment]
+
+====
+```
+
+### Directives
+
+A directive line has the form:
+
+```
+%name key:value key2:value2   # optional comment
+```
+
+Authoritative syntax:
+
+```
+/^ \s* %([\w.-]+) ((?:\s+[\w.]+:[\w.-]+)*) (\s+#.*)? \s*$/xi
+```
+
+- Capture group 1 is the directive name, made up of word characters, `.`, and `-`
+- Capture group 2 is zero or more whitespace-separated `key:value` attribute pairs
+- Capture group 3 is an optional trailing `# comment`
+
+Directives change Poetic's behaviour. No directives are currently defined or acted upon — every directive is parsed and preserved in the poem's data for future use.
+
+### Labels
+
+A label line has the form:
+
+```
+#label   # optional comment
+```
+
+Authoritative syntax:
+
+```
+/^ \s* #([^&<>\\#\s]+?) (\s+#.*)? \s*$/xi
+```
+
+- Capture group 1 is the label itself: a single run of characters excluding whitespace and `& < > \ #`
+- Capture group 2 is an optional trailing `# comment`, which is ignored
+
+A `#` immediately followed by a non-space character starts a label (`#tag`); a `#` followed by whitespace starts a comment (`# words`) and is not treated as a label.
+
+Labels are displayed with the poem on the generated site. A label is also attached as a Blogger post label when the label is acceptable to Blogger; a label containing a comma is not sent to Blogger, since Blogger uses commas to separate labels.
+
+### Rules
+
+- Directives and labels may be mixed within the Metadata section, one per line
+- Blank lines and `# ...` comment lines are allowed between directives and labels
+- The `====` end marker is only required if there are subsequent non-empty sections
+- Any text after a directive, label, or the end marker on the same line is ignored
+
+### Example
+
+Reaching the Metadata section requires the four `====` markers that close the Versions, Audio, Postscript, and Analysis sections, even when those sections are themselves empty:
+
+```
+Title
+1970-01-01
+
+A line of verse
+
+====  # end of versions section (no audio follows)
+====  # end of audio section (no postscript follows)
+====  # end of postscript section (no analysis follows)
+====  # end of analysis section (metadata follows)
+
+%some-directive key:value
+
+#nature
+#reflection
+```
+
+## 7. Comment Blocks
 
 Comment blocks allow you to include notes that won't appear in the output:
 
@@ -459,7 +544,7 @@ Don't forget to revise this verse
 More poem lines
 ```
 
-## 7. Variables
+## 8. Variables
 
 Variables allow you to define reusable text snippets that can be substituted throughout your poem file.
 
@@ -602,7 +687,7 @@ This demonstrates:
 - Multi-line variables
 - The `${disclaimer}` variable contains a literal block, which is properly expanded and parsed when the variable is used
 
-## 8. Inline Markup
+## 9. Inline Markup
 
 The **poem body** and **labels** use a Markdown-like inline dialect (the
 "WYSIWYG" dialect): literal line breaks and indentation are preserved, and the
@@ -729,7 +814,7 @@ Notes:
 For a single file that exercises every feature, see
 [`_example.poem`](../src/poems/poem/_example.poem).
 
-## 9. Minimal File Structure
+## 10. Minimal File Structure
 
 The absolute minimal valid poem file looks like this:
 
@@ -785,7 +870,7 @@ This won't appear in the output
 #>>
 ```
 
-## 10. Structural Rules
+## 11. Structural Rules
 
 ### Line Anchoring
 
@@ -883,10 +968,10 @@ The Poem format supports two Markdown-like features to control presentation:
 
 Note: To avoid accidental removal of meaningful trailing spaces, maintenance scripts that strip trailing whitespace should exclude `.poem` files. The included script `scripts/remove-trailing-spaces.sh` skips `.poem` files.
 
-## 11. Complete Example
+## 12. Complete Example
 
 See `_example.poem` for a complete example file demonstrating all features.
 
-## 12. Formal Grammar
+## 13. Formal Grammar
 
 For the complete formal specification, see `poem-syntax.ebnf`, which defines the grammar in Extended Backus-Naur Form (EBNF).

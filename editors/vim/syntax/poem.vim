@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language:     Poem
 " Maintainer:   (maintainer name)
-" Last Change:  2026-06-28
+" Last Change:  2026-07-06
 " Filenames:    *.poem
 " URL:          https://github.com/warwickallen/poetic
 
@@ -159,6 +159,23 @@ syn match poemHeading1 "^#\s\+.*$"
 syn match poemHeading2 "^##\s\+.*$"
 syn match poemHeading3 "^###\s\+.*$"
 
+" Metadata section (the block after a ==== marker at the end of the file).
+" Labels: a '#' immediately followed by a non-space run of characters (the
+" label body excludes whitespace and the characters & < > \ #), optionally
+" followed by a trailing " # comment". A '#' followed by whitespace is a
+" Markdown-style heading (poemHeading1 above) instead, so the two rules
+" never match the same text: "#tag" is a label, "# words" is a heading.
+syn match poemLabelMark "^\s*\zs#\ze[^&<>\\#[:space:]]" nextgroup=poemLabel
+syn match poemLabel "[^&<>\\#[:space:]]\+" contained nextgroup=poemLabelComment skipwhite
+syn match poemLabelComment "#.*$" contained
+
+" Directives: a '%' followed by a name (letters, digits, '.', '-'), zero or
+" more whitespace-separated key:value attribute pairs, and an optional
+" trailing " # comment".
+syn match poemDirective "^\s*%[[:alnum:]._-]\+" nextgroup=poemDirectiveAttr,poemDirectiveComment skipwhite
+syn match poemDirectiveAttr "\<[[:alnum:]._]\+:[[:alnum:].-]\+" contained nextgroup=poemDirectiveAttr,poemDirectiveComment skipwhite
+syn match poemDirectiveComment "#.*$" contained
+
 " Inline markup (poem body and labels).
 " Emphasis follows Markdown conventions: single markers (* or _) = italic,
 " double markers (** or __) = bold.
@@ -240,6 +257,14 @@ hi def link poemAnalysisLabel Type
 hi def link poemHeading1 Title
 hi def link poemHeading2 Title
 hi def link poemHeading3 Title
+
+hi def link poemLabelMark Delimiter
+hi def link poemLabel Identifier
+hi def link poemLabelComment Comment
+
+hi def link poemDirective PreProc
+hi def link poemDirectiveAttr Macro
+hi def link poemDirectiveComment Comment
 
 hi def link poemEmphasis Underlined
 hi def link poemStrong Statement

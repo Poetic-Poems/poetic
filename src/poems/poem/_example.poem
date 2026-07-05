@@ -124,4 +124,14 @@ A fenced code block:
 let answer = 42;
 ```
 
+====  # end of analysis
+
+# The Metadata section (optional) holds labels (#tag) and directives (%name key:value).
+# A line like this one - '#' followed by whitespace - is an ordinary comment, not a label.
+
+#reflection
+#nature
+
+%example.directive key:value  # illustrative only
+
 ====

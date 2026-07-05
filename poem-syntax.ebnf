@@ -35,9 +35,13 @@ poem_file = [ preamble ],
                       [ blank_lines,
                         analysis_section,
                         [ blank_lines,
-                          end_of_file_marker,
-                          blank_lines,
-                          [ ignored_content ] ] ] ] ] ] ] ] ;
+                          end_of_analysis_marker,
+                          [ blank_lines,
+                            metadata_section,
+                            [ blank_lines,
+                              end_of_file_marker,
+                              blank_lines,
+                              [ ignored_content ] ] ] ] ] ] ] ] ] ] ;
 
 (* ============================================================================
    PREAMBLE SECTION
@@ -270,6 +274,68 @@ full_label = "{Full}", { ? any character except newline ? } ;
 (* Analysis content is rendered as GitHub-Flavoured Markdown (see gfm_content). *)
 analysis_content = gfm_content ;
 
+(* ============================================================================
+   METADATA SECTION
+   The Metadata section holds two line types: directives and labels. It is
+   the last section of a poem file, delimited by end_of_analysis_marker
+   before it and end_of_file_marker after it (see poem_file).
+   ============================================================================ *)
+
+metadata_section = { metadata_line } ;
+
+metadata_line = blank_line | metadata_comment_line | directive_line | label_line ;
+
+(* A '#' immediately followed by whitespace or end-of-line is an ordinary
+   comment, not a label (see label_line, which requires a non-whitespace
+   character immediately after '#'). Comment lines are ignored and never
+   appear in the parsed output. *)
+metadata_comment_line = [ whitespace ], "#", ( whitespace | ? end of line ? ), { ? any character except newline ? } ;
+
+(* Directive line. The authoritative specification is this PCRE:
+
+     /^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i
+
+   Capture group 1 is the directive name; group 2 is zero or more
+   ' key:value' attribute tokens (each token is split on its FIRST ':' to
+   give the key and value, then collected into an `attributes` object -
+   omitted entirely from the parsed representation when group 2 is empty);
+   group 3 is an optional inline comment, discarded. *)
+directive_line = [ whitespace ], "%", directive_name,
+                  { whitespace, directive_attribute },
+                  [ whitespace, inline_comment ],
+                  [ whitespace ] ;
+
+directive_name = directive_name_char, { directive_name_char } ;
+
+directive_name_char = letter | digit | "_" | "." | "-" ;
+
+directive_attribute = directive_attribute_key, ":", directive_attribute_value ;
+
+directive_attribute_key = directive_attribute_key_char, { directive_attribute_key_char } ;
+
+directive_attribute_key_char = letter | digit | "_" | "." ;
+
+directive_attribute_value = directive_attribute_value_char, { directive_attribute_value_char } ;
+
+directive_attribute_value_char = letter | digit | "_" | "." | "-" ;
+
+(* Label line. The authoritative specification is this PCRE:
+
+     /^\s*#([^&<>\\#\s]+?)(\s+#.*)?\s*$/i
+
+   Capture group 1 is the label text: a run of characters excluding '&',
+   '<', '>', '\', '#', and whitespace; capture group 2 is an optional inline
+   comment, discarded. Because group 1 excludes whitespace, '#' immediately
+   followed by whitespace never matches label_line - it matches
+   metadata_comment_line instead (see above). *)
+label_line = [ whitespace ], "#", label_token, [ whitespace, inline_comment ], [ whitespace ] ;
+
+label_token = label_token_char, { label_token_char } ;
+
+label_token_char = ? any character except "&", "<", ">", "\", "#", and whitespace ? ;
+
+inline_comment = "#", { ? any character except newline ? } ;
+
 (* Blockquote: in WYSIWYG poem segments, any content_line beginning with optional
    indentation then '>' (i.e. /^\s*>/) is a blockquote line. Contiguous such lines
    are grouped into one blockquote; the leading '>' (and one optional following
@@ -426,6 +492,8 @@ end_of_poem_marker = "====", { ? any character except newline ? } ;
 end_of_audio_marker = "====", { ? any character except newline ? } ;
 
 end_of_postscript_marker = "====", { ? any character except newline ? } ;
+
+end_of_analysis_marker = "====", { ? any character except newline ? } ;
 
 end_of_file_marker = "====", { ? any character except newline ? } ;
 
@@ -654,6 +722,31 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
          is literal value text and does not delimit the list or separate
          parameters (e.g. in `(k=a\)b, m=n)`, the escaped `)` is part of
          `k`'s value, and the list is only closed by the final `)`).
+
+      34. The Metadata section is optional. Reaching it requires all four
+         preceding `====` markers (end_of_poem_marker, end_of_audio_marker,
+         end_of_postscript_marker, end_of_analysis_marker) even when the
+         audio, postscript, and/or analysis sections between them are empty
+         (per constraint 15, an empty section's marker is only skippable if
+         the parser reaches end-of-file there - it is still required when
+         non-empty content, here the Metadata section, follows it).
+
+      35. Within the Metadata section, blank lines are skipped, and a line
+         consisting of `#` immediately followed by whitespace (or nothing
+         else on the line) is an ordinary comment - not a label - and is
+         skipped without appearing in the parsed output. Any line that
+         matches neither directive_line nor label_line is unrecognised; it
+         is skipped and a warning is emitted.
+
+      36. Labels are de-duplicated in the parsed output: repeated
+         occurrences of the same label text keep only the first occurrence,
+         preserving first-seen order. Directives are NOT de-duplicated -
+         each directive_line becomes a separate entry, in source order,
+         even when its name and/or attributes repeat.
+
+      37. A directive with no attribute tokens omits the `attributes` field
+         entirely from its parsed representation - there is no empty-object
+         form for a directive with no attributes.
 *)
 
 (* ============================================================================

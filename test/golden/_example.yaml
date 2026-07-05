@@ -122,3 +122,10 @@ analysis:
     <p>A fenced code block:</p>
     <pre><code>let answer = 42;
     </code></pre>
+labels:
+  - reflection
+  - nature
+directives:
+  - name: example.directive
+    attributes:
+      key: value
