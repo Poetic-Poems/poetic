@@ -7,6 +7,26 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] — 2026-07-07
+
+### Added
+
+- **Alternatives in plain text.** The reserved `poetic-alternatives` span class
+  marks options in an alternatives group: two or more spans carrying it that are
+  directly adjacent (no separating characters) are treated as alternatives. The
+  HTML keeps every option (wire up your own toggle); the `raw/` plain-text output
+  keeps the last option and drops the rest. Three or more options are supported.
+
+### Fixed
+
+- **Multi-class spans.** `/.a.b{x}` now emits `<span class="a b">` (multiple
+  classes, as documented) instead of `<span class="a.b">` (a single dotted
+  class). Hyphenated single classes such as `/.text-highlight{x}` are unchanged.
+- Hardened the raw converter against edge cases: an out-of-range numeric
+  character reference (e.g. `&#99999999;`) is left literal instead of aborting
+  the build; `%{title}`/`%{author}` are decoded before use as context values;
+  the index page's no-remote fallback links to the repo-root `raw/` directory.
+
 ## [3.0.1] — 2026-07-07
 
 ### Changed

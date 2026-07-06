@@ -28,6 +28,20 @@ test('renderGfm supports GFM lists, tables and strikethrough', () => {
   assert.match(renderGfm('~~gone~~'), /<s>gone<\/s>/);
 });
 
+test('span /.class{} — a single class is emitted as-is', () => {
+  assert.match(parseSegments(['{V}', '/.highlight{x}'])[0].lines, /<span class="highlight">x<\/span>/);
+  assert.match(parseSegments(['{V}', '/.25{x}'])[0].lines, /<span class="25">x<\/span>/);
+});
+
+test('span /.a.b{} — dots separate multiple classes, hyphens are kept', () => {
+  assert.match(parseSegments(['{V}', '/.red.bold{x}'])[0].lines, /<span class="red bold">x<\/span>/);
+  assert.match(
+    parseSegments(['{V}', '/.poetic-alternatives.25{x}'])[0].lines,
+    /<span class="poetic-alternatives 25">x<\/span>/
+  );
+  assert.match(parseSegments(['{V}', '/.text-highlight{x}'])[0].lines, /<span class="text-highlight">x<\/span>/);
+});
+
 test('renderGfm typographer converts dashes and quotes', () => {
   assert.match(renderGfm('a -- b'), /–/);  // en dash
   assert.match(renderGfm('a --- b'), /—/); // em dash

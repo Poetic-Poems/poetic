@@ -1420,7 +1420,10 @@ class PoemParser {
         return match; // Leave unchanged
       }
 
-      return `<span class="${className}">${content}</span>`;
+      // Dots separate multiple classes: `/.a.b{x}` → class="a b" (hyphens are
+      // part of a single class name and are preserved).
+      const classAttr = className.split('.').filter(Boolean).join(' ');
+      return `<span class="${classAttr}">${content}</span>`;
     });
 
     // Basic formatting (Markdown-style emphasis: ** = strong, * = em)

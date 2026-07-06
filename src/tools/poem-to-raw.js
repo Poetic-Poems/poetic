@@ -56,11 +56,30 @@ function decodeEntities(text) {
 // runs in poem text (e.g. describing `<<<...>>>` blocks) are left untouched.
 const TAG_RE = /<\/?[a-zA-Z][a-zA-Z0-9]*(?:\s[^<>]*)?\/?>/g;
 
-// Flatten the engine's inline-markup HTML to plain text: hard breaks and block
-// boundaries become newlines, remaining tags are dropped, entities decoded.
+// A span carrying the reserved `poetic-alternatives` class marks one option in
+// an alternatives group (e.g. `/.poetic-alternatives.a{...}/.poetic-alternatives.b{...}`).
+// Consecutive such spans that are directly adjacent — no separating characters,
+// not even whitespace — form the group. The HTML keeps every option (the author
+// wires up any runtime toggle between them); plain text can show only one, so
+// the raw converter keeps the last option and drops the rest.
+const ALT_SPAN_SRC =
+  '<span class="(?:[^"]*\\s)?poetic-alternatives(?:\\s[^"]*)?">(?:(?!<\\/span>)[\\s\\S])*<\\/span>';
+const ALT_GROUP_RE = new RegExp(`(?:${ALT_SPAN_SRC}){2,}`, 'g');
+const ALT_SPAN_RE = new RegExp(ALT_SPAN_SRC, 'g');
+
+function collapseAlternatives(html) {
+  return html.replace(ALT_GROUP_RE, (group) => {
+    const spans = group.match(ALT_SPAN_RE);
+    return spans[spans.length - 1]; // keep the last option; its tags are stripped later
+  });
+}
+
+// Flatten the engine's inline-markup HTML to plain text: alternatives collapse
+// to their last option, hard breaks and block boundaries become newlines,
+// remaining tags are dropped, entities decoded.
 function htmlToPlainText(html) {
   return decodeEntities(
-    html
+    collapseAlternatives(html)
       .replace(/<br\s*\/?>\n?/gi, '\n')                 // hard break (absorb an adjacent newline)
       .replace(/<\/(p|blockquote|div|li|h[1-6])\s*>/gi, '\n')
       .replace(TAG_RE, '')
@@ -208,4 +227,7 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { htmlToPlainText, decodeEntities, segmentToText, renderPoemText, buildIndex };
+module.exports = {
+  htmlToPlainText, decodeEntities, collapseAlternatives,
+  segmentToText, renderPoemText, buildIndex,
+};

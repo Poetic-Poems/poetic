@@ -788,6 +788,9 @@ Span elements allow you to apply custom CSS classes to inline text. The class na
 - Empty class name `/.{text}` produces `<span>text</span>` (with a warning)
 - Invalid class names are left unchanged (with a warning)
 - Empty content `/.class{}` produces `<span class="class"></span>`
+- Dots separate multiple classes: `/.red.bold{x}` produces
+  `<span class="red bold">x</span>`. Hyphens are part of a single class name and
+  are preserved (`/.text-highlight{x}` → `<span class="text-highlight">x</span>`).
 
 **Examples:**
 ```
@@ -795,6 +798,22 @@ Span elements allow you to apply custom CSS classes to inline text. The class na
 /.red.bold{multi-class styling}
 /.note{This can contain *bold* and _italic_ markup}
 ```
+
+#### Alternatives (`poetic-alternatives`)
+
+`poetic-alternatives` is a reserved class that marks a span as one option in a
+set of alternatives. When two or more spans carrying this class are directly
+adjacent — no separating characters, not even whitespace — they form an
+alternatives group:
+
+```
+/.poetic-alternatives.a{first wording}/.poetic-alternatives.b{second wording}
+```
+
+All options are emitted to the HTML (add the extra class you need to target them,
+e.g. `.a`/`.b`, and wire up any runtime toggle yourself). The plain-text `raw/`
+output cannot toggle, so it keeps **the last** option in each group and drops the
+rest. Three or more options are supported; the last always wins in plain text.
 
 ### Smart Quotes and Punctuation
 

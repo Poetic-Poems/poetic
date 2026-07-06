@@ -7,6 +7,7 @@ const { PoemParser } = require('../src/tools/poem-to-yaml');
 const {
   htmlToPlainText,
   decodeEntities,
+  collapseAlternatives,
   segmentToText,
   renderPoemText,
   buildIndex,
@@ -59,6 +60,39 @@ test('htmlToPlainText: literal <<< / >>> runs in text are preserved', () => {
     htmlToPlainText('bare <<< and >>> stays'),
     'bare <<< and >>> stays'
   );
+});
+
+// ── poetic-alternatives (plain text keeps the last option) ──────────────────
+
+const altSpan = (cls, text) => `<span class="poetic-alternatives ${cls}">${text}</span>`;
+
+test('collapseAlternatives: an adjacent pair keeps the last option', () => {
+  const html = altSpan('a', 'first') + altSpan('b', 'second');
+  assert.strictEqual(htmlToPlainText(collapseAlternatives(html)), 'second');
+});
+
+test('collapseAlternatives: three or more adjacent options keep the last', () => {
+  const html = altSpan('a', 'one') + altSpan('b', 'two') + altSpan('c', 'three');
+  assert.strictEqual(htmlToPlainText(html), 'three');
+});
+
+test('collapseAlternatives: options separated by whitespace are NOT a group', () => {
+  const html = altSpan('a', 'first') + ' ' + altSpan('b', 'second');
+  assert.strictEqual(htmlToPlainText(html), 'first second');
+});
+
+test('collapseAlternatives: adjacent spans without the marker are both kept', () => {
+  const html = '<span class="25">first</span><span class="26">second</span>';
+  assert.strictEqual(htmlToPlainText(html), 'firstsecond');
+});
+
+test('alternatives collapse end to end through the parser', () => {
+  const out = raw([
+    '{Verse}',
+    'God is /.poetic-alternatives.a{near}/.poetic-alternatives.b{here} always',
+  ]);
+  assert.match(out, /God is here always/);
+  assert.doesNotMatch(out, /near/);
 });
 
 // ── Variable spec (the gaps this converter closes) ──────────────────────────
