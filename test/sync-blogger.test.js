@@ -10,6 +10,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert');
+const path = require('path');
 
 const {
   parseArgs,
@@ -64,8 +65,12 @@ test('parseArgs: unknown flags are silently ignored', () => {
 
 // ── resolveConfig ─────────────────────────────────────────────────────────────
 
+// `credentialsPath` is passed as `null` throughout so these tests never read
+// a real `.blogger-credentials.json` that might exist in the process's CWD
+// (e.g. in a consumer repo that has run blogger-auth.js) — see TECH-DEBT.md.
+
 test('resolveConfig: defaults when config is empty', () => {
-  const opts = resolveConfig({}, {});
+  const opts = resolveConfig({}, {}, null);
   assert.strictEqual(opts.enabled, false);
   assert.strictEqual(opts.blogId, undefined);
   assert.strictEqual(opts.label, 'poem');
@@ -76,45 +81,45 @@ test('resolveConfig: defaults when config is empty', () => {
 });
 
 test('resolveConfig: enabled=true when blogger_sync="true"', () => {
-  const opts = resolveConfig({ blogger_sync: 'true' }, {});
+  const opts = resolveConfig({ blogger_sync: 'true' }, {}, null);
   assert.strictEqual(opts.enabled, true);
 });
 
 test('resolveConfig: enabled=false for any value other than "true"', () => {
-  assert.strictEqual(resolveConfig({ blogger_sync: 'yes' }, {}).enabled, false);
-  assert.strictEqual(resolveConfig({ blogger_sync: '1' }, {}).enabled, false);
-  assert.strictEqual(resolveConfig({ blogger_sync: '' }, {}).enabled, false);
+  assert.strictEqual(resolveConfig({ blogger_sync: 'yes' }, {}, null).enabled, false);
+  assert.strictEqual(resolveConfig({ blogger_sync: '1' }, {}, null).enabled, false);
+  assert.strictEqual(resolveConfig({ blogger_sync: '' }, {}, null).enabled, false);
 });
 
 test('resolveConfig: picks up blogger_blog_id', () => {
-  const opts = resolveConfig({ blogger_blog_id: '1234567890' }, {});
+  const opts = resolveConfig({ blogger_blog_id: '1234567890' }, {}, null);
   assert.strictEqual(opts.blogId, '1234567890');
 });
 
 test('resolveConfig: picks up blogger_label', () => {
-  const opts = resolveConfig({ blogger_label: 'verses' }, {});
+  const opts = resolveConfig({ blogger_label: 'verses' }, {}, null);
   assert.strictEqual(opts.label, 'verses');
 });
 
 test('resolveConfig: valid removed values are accepted', () => {
-  assert.strictEqual(resolveConfig({ blogger_removed: 'draft' }, {}).removed, 'draft');
-  assert.strictEqual(resolveConfig({ blogger_removed: 'delete' }, {}).removed, 'delete');
-  assert.strictEqual(resolveConfig({ blogger_removed: 'keep' }, {}).removed, 'keep');
+  assert.strictEqual(resolveConfig({ blogger_removed: 'draft' }, {}, null).removed, 'draft');
+  assert.strictEqual(resolveConfig({ blogger_removed: 'delete' }, {}, null).removed, 'delete');
+  assert.strictEqual(resolveConfig({ blogger_removed: 'keep' }, {}, null).removed, 'keep');
 });
 
 test('resolveConfig: invalid removed falls back to "draft"', () => {
-  assert.strictEqual(resolveConfig({ blogger_removed: 'archive' }, {}).removed, 'draft');
-  assert.strictEqual(resolveConfig({ blogger_removed: '' }, {}).removed, 'draft');
+  assert.strictEqual(resolveConfig({ blogger_removed: 'archive' }, {}, null).removed, 'draft');
+  assert.strictEqual(resolveConfig({ blogger_removed: '' }, {}, null).removed, 'draft');
 });
 
 test('resolveConfig: valid content values are accepted', () => {
-  assert.strictEqual(resolveConfig({ blogger_content: 'full' }, {}).content, 'full');
-  assert.strictEqual(resolveConfig({ blogger_content: 'poem' }, {}).content, 'poem');
+  assert.strictEqual(resolveConfig({ blogger_content: 'full' }, {}, null).content, 'full');
+  assert.strictEqual(resolveConfig({ blogger_content: 'poem' }, {}, null).content, 'poem');
 });
 
 test('resolveConfig: invalid content falls back to "full"', () => {
-  assert.strictEqual(resolveConfig({ blogger_content: 'text' }, {}).content, 'full');
-  assert.strictEqual(resolveConfig({ blogger_content: '' }, {}).content, 'full');
+  assert.strictEqual(resolveConfig({ blogger_content: 'text' }, {}, null).content, 'full');
+  assert.strictEqual(resolveConfig({ blogger_content: '' }, {}, null).content, 'full');
 });
 
 test('resolveConfig: hasCredentials true when all three vars present', () => {
@@ -123,17 +128,23 @@ test('resolveConfig: hasCredentials true when all three vars present', () => {
     BLOGGER_CLIENT_SECRET: 'csec',
     BLOGGER_REFRESH_TOKEN: 'rtoken',
   };
-  assert.strictEqual(resolveConfig({}, env).hasCredentials, true);
+  assert.strictEqual(resolveConfig({}, env, null).hasCredentials, true);
 });
 
 test('resolveConfig: hasCredentials false when any var missing', () => {
-  assert.strictEqual(resolveConfig({}, { BLOGGER_CLIENT_ID: 'x', BLOGGER_CLIENT_SECRET: 'y' }).hasCredentials, false);
-  assert.strictEqual(resolveConfig({}, { BLOGGER_CLIENT_ID: 'x', BLOGGER_REFRESH_TOKEN: 'z' }).hasCredentials, false);
-  assert.strictEqual(resolveConfig({}, { BLOGGER_CLIENT_SECRET: 'y', BLOGGER_REFRESH_TOKEN: 'z' }).hasCredentials, false);
+  assert.strictEqual(resolveConfig({}, { BLOGGER_CLIENT_ID: 'x', BLOGGER_CLIENT_SECRET: 'y' }, null).hasCredentials, false);
+  assert.strictEqual(resolveConfig({}, { BLOGGER_CLIENT_ID: 'x', BLOGGER_REFRESH_TOKEN: 'z' }, null).hasCredentials, false);
+  assert.strictEqual(resolveConfig({}, { BLOGGER_CLIENT_SECRET: 'y', BLOGGER_REFRESH_TOKEN: 'z' }, null).hasCredentials, false);
+});
+
+test('resolveConfig: hasCredentials true when missing env vars are filled in from the credentials file', () => {
+  const fixturePath = path.join(__dirname, 'fixtures', 'blogger-credentials.json');
+  const opts = resolveConfig({}, { BLOGGER_CLIENT_ID: 'x' }, fixturePath);
+  assert.strictEqual(opts.hasCredentials, true);
 });
 
 test('resolveConfig: audiomackArtist from audiomack_artist config key', () => {
-  const opts = resolveConfig({ audiomack_artist: 'myband' }, {});
+  const opts = resolveConfig({ audiomack_artist: 'myband' }, {}, null);
   assert.strictEqual(opts.audiomackArtist, 'myband');
 });
 

@@ -69,9 +69,14 @@ let refreshToken = undefined;
  *
  * @param {object} config - raw .poetic-config object
  * @param {object} env    - environment variables (e.g. process.env)
+ * @param {string|null} [credentialsPath] - path to the credentials JSON file,
+ *   read as a fallback for any env var that is absent. Defaults to
+ *   `.blogger-credentials.json` resolved against the process's CWD; pass
+ *   `null` to disable the file fallback entirely (e.g. for hermetic tests
+ *   that must not pick up a real credentials file left on disk).
  * @returns {{ enabled: boolean, blogId: string|undefined, label: string, removed: string, content: string, audiomackArtist: string, hasCredentials: boolean }}
  */
-function resolveConfig(config, env) {
+function resolveConfig(config, env, credentialsPath = path.resolve('.blogger-credentials.json')) {
   const enabled = config.blogger_sync === 'true';
   const blogId = config.blogger_blog_id || undefined;
 
@@ -90,8 +95,7 @@ function resolveConfig(config, env) {
 
   // Load fallback values from the credentials file if any env var is absent.
   let fileCredentials = {};
-  const credentialsPath = path.resolve('.blogger-credentials.json');
-  if (fs.existsSync(credentialsPath)) {
+  if (credentialsPath && fs.existsSync(credentialsPath)) {
     try {
       const raw = fs.readFileSync(credentialsPath, 'utf8');
       fileCredentials = JSON.parse(raw)?.installed ?? {};

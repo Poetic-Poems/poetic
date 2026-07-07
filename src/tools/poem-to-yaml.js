@@ -1456,19 +1456,24 @@ class PoemParser {
  * Convert a .poem file to YAML
  */
 /**
- * Parse a .poem file into a structured poem-data object, prepending the
- * directory's `.shared.poem` (shared variable definitions) when present. This
- * is the single canonical parse used by both the YAML pipeline and the raw
- * plain-text converter, so variable handling stays identical across outputs.
+ * Parse a .poem file into a structured poem-data object, prepending a shared
+ * poem's variable definitions when present. This is the single canonical
+ * parse used by both the YAML pipeline and the raw plain-text converter, so
+ * variable handling stays identical across outputs.
+ *
+ * `options.sharedPoemPath`, when given, overrides the default lookup of
+ * `<poem's directory>/.shared.poem` — pass `null` to skip the prepend
+ * entirely (e.g. for hermetic tests/fixtures that must not depend on
+ * whatever `.shared.poem` happens to be on disk).
  */
-function parsePoemFile(poemFilePath) {
+function parsePoemFile(poemFilePath, options = {}) {
   let content = fs.readFileSync(poemFilePath, 'utf8');
 
-  // Prepend .shared.poem if it exists in the same directory
-  const poemDir = path.dirname(poemFilePath);
-  const sharedPoemPath = path.join(poemDir, '.shared.poem');
+  const sharedPoemPath = 'sharedPoemPath' in options
+    ? options.sharedPoemPath
+    : path.join(path.dirname(poemFilePath), '.shared.poem');
 
-  if (fs.existsSync(sharedPoemPath)) {
+  if (sharedPoemPath && fs.existsSync(sharedPoemPath)) {
     const sharedContent = fs.readFileSync(sharedPoemPath, 'utf8');
     content = sharedContent + content;
   }
@@ -1476,8 +1481,8 @@ function parsePoemFile(poemFilePath) {
   return new PoemParser(content).parse();
 }
 
-function convertPoemToYaml(poemFilePath) {
-  const data = parsePoemFile(poemFilePath);
+function convertPoemToYaml(poemFilePath, options = {}) {
+  const data = parsePoemFile(poemFilePath, options);
 
   return yaml.dump(data, {
     lineWidth: -1, // Don't wrap lines

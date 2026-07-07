@@ -286,13 +286,17 @@ test('a label without any trailing "(...)" behaves exactly as before (no params 
 // ── Golden fixture: _params-example.poem ────────────────────────────────────
 
 test('_params-example.poem matches the golden fixture', () => {
-  const actual = convertPoemToYaml(path.join(POEM_DIR, '_params-example.poem'));
+  // sharedPoemPath: null — this fixture has no author line of its own and
+  // falls back to the ${author} default; it must not pick up whatever
+  // .shared.poem happens to sit next to it (that file is consumer-owned and
+  // its `author` value is not part of this golden fixture). See TECH-DEBT.md.
+  const actual = convertPoemToYaml(path.join(POEM_DIR, '_params-example.poem'), { sharedPoemPath: null });
   const goldenPath = path.join(__dirname, 'golden', '_params-example.yaml');
   const golden = fs.readFileSync(goldenPath, 'utf8');
   assert.strictEqual(
     actual,
     golden,
     'Output drifted from test/golden/_params-example.yaml. If intentional, regenerate it:\n' +
-      "  node -e \"process.stdout.write(require('./src/tools/poem-to-yaml').convertPoemToYaml('src/poems/poem/_params-example.poem'))\" > test/golden/_params-example.yaml"
+      "  node -e \"process.stdout.write(require('./src/tools/poem-to-yaml').convertPoemToYaml('src/poems/poem/_params-example.poem', { sharedPoemPath: null }))\" > test/golden/_params-example.yaml"
   );
 });

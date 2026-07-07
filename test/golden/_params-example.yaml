@@ -1,5 +1,5 @@
 title: Params Example
-author: A Poet
+author: ${author}
 date: '1970-02-01'
 versions:
   - label: Version 1
