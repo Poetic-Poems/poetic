@@ -85,6 +85,14 @@ See `.github/workflows/release.yml`. Releases are tagged; consumer repos can pin
 - If you encounter historical language in an existing doc, remove it and move
   the substance to `CHANGELOG.md` if it is significant.
 
+## Commit messages
+
+All commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+(`<type>[(scope)][!]: <description>`, e.g. `fix(build-poems): resolve output path`). See the
+"Commit messages" section in `README.md` for the full type list. A `commit-msg` hook
+(`.githooks/commit-msg`) enforces this once a contributor runs
+`git config core.hooksPath .githooks`.
+
 ## Tech debt
 
 When you defer work, take a shortcut, or notice a known gap, record it in

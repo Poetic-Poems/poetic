@@ -297,6 +297,29 @@ To switch channels, edit `.poetic-version` and change the `channel` line.
 
 If you improve a framework file (a tool, template, editor integration, or doc), please open a pull request against [warwickallen/poetic](https://github.com/warwickallen/poetic). Personal poems and your `README.md` stay in your own repo.
 
+### Commit messages
+
+This repo follows [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/):
+
+```
+<type>[(scope)][!]: <description>
+```
+
+Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`.
+Add `!` after the type/scope (e.g. `feat!:`) for a breaking change.
+
+```
+feat(poem-to-yaml): support multi-line titles
+fix(build-poems): resolve output path relative to repo root
+docs: clarify sync-framework usage
+```
+
+Enable the commit-message check once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ## Further information
 
 ### Getting help
