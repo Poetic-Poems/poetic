@@ -1,9 +1,11 @@
+.claude/settings.json
 *.code-workspace
 *.sw[op]
 node_modules
 
 src/poems/yaml/*.yaml
 public/*.html
+public/raw/*.html
 
 !src/poems/yaml/_*.yaml
 !public/poetic-footer.html
