@@ -38,6 +38,7 @@ npm run build:all      # build + start dev server at http://localhost:8080
 npm start              # start dev server only
 npm test               # run Node.js built-in test suite
 npm run check          # verify no trailing whitespace in tracked files (also runs in CI)
+npm run check:build    # verify expected build artefacts exist after `npm run build` (also runs in CI)
 ```
 
 **On WSL/Linux**, use `./scripts/setup-linux.sh npm run ...` to ensure the correct Node.js is used.

@@ -202,3 +202,27 @@ Note: Changes have been made. Review with 'git diff' before committing.
 - Run the script without `--check` to fix any violations it finds.
 - Changes are written to the working tree only — you still need to `git add`
   and `git commit` them.
+
+---
+
+## `scripts/check-build-artifacts.sh`
+
+Verifies that `npm run build` produced the expected generated files under
+`public/`: `index.html`, `all-poems.html`, and `poetic.css`.
+
+### Usage
+
+```bash
+npm run build
+npm run check:build    # or: bash scripts/check-build-artifacts.sh
+```
+
+### Behaviour
+
+- Checks for the presence of each required file; does not build anything
+  itself, so it must run after `npm run build`.
+- Prints ✓/✗ per file and exits with status 1 if any are missing.
+- This is the check run in CI (`npm run check:build`, wired into
+  `.github/workflows/build-poems.yml`) as a build smoke test — it catches a
+  silently broken build pipeline (e.g. a template change that throws before
+  writing output) before it reaches Pages.
