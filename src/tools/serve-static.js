@@ -14,6 +14,7 @@ const { parseDateForSorting, formatDateForDisplay } = require("./date-utils");
 const { slugFromFile } = require("./slugify");
 const { readPoeticConfig } = require("./poetic-config");
 const { loadPoemData, renderFragment } = require("./poem-render");
+const { REPO_ROOT } = require("./repo-root");
 
 function parseArgs(argv) {
   const args = { port: undefined, dir: undefined };
@@ -201,11 +202,11 @@ function hasActiveAudio(audioData) {
 
 function concatenateAllHtmlFiles(dirPath) {
   try {
-    const config = readPoeticConfig();
+    const config = readPoeticConfig(REPO_ROOT);
     const audiomackArtist = config.audiomack_artist || '';
 
     // Read YAML files for poem metadata
-    const poemsDir = path.join(process.cwd(), "src", "poems", "yaml");
+    const poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml");
     let yamlFiles;
     try {
       yamlFiles = fs

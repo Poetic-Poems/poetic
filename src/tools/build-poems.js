@@ -13,9 +13,10 @@ const { slugFromFile } = require("./slugify");
 const { formatDateForDisplay } = require("./date-utils");
 const { readPoeticConfig } = require("./poetic-config");
 const { resolveRefs, readPoemFile, clearRefCache, renderPage } = require("./poem-render");
+const { REPO_ROOT } = require("./repo-root");
 
-const POEMS_DIR = path.join(process.cwd(), "src", "poems", "yaml");
-const PUBLIC_DIR = path.join(process.cwd(), "public");
+const POEMS_DIR = path.join(REPO_ROOT, "src", "poems", "yaml");
+const PUBLIC_DIR = path.join(REPO_ROOT, "public");
 
 /**
  * Process all YAML files in the poems directory
@@ -25,7 +26,7 @@ function buildAllPoems() {
   clearRefCache();
 
   // Read config once
-  const config = readPoeticConfig();
+  const config = readPoeticConfig(REPO_ROOT);
   const rawFavicon = config.favicon || "poetic-logo.svg";
   // Strip a leading "public/" so href="../<favicon>" resolves correctly from slug/ subdirs
   const favicon = rawFavicon.replace(/^public\//, '');

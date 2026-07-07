@@ -16,6 +16,7 @@ const { slugFromFile } = require("./slugify");
 const { parseDateForSorting, formatDateForDisplay, toISODate } = require("./date-utils");
 const { readPoeticConfig } = require("./poetic-config");
 const { loadPoemData, renderFragment } = require("./poem-render");
+const { REPO_ROOT } = require("./repo-root");
 const beautify = require("js-beautify");
 
 /**
@@ -49,7 +50,7 @@ function hasActiveAudio(audioData) {
 function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", audiomackArtist = "") {
   try {
     // Read YAML files from the poems directory for metadata
-    const poemsDir = path.join(process.cwd(), "src", "poems", "yaml");
+    const poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml");
     const yamlFiles = fs
       .readdirSync(poemsDir)
       .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
@@ -602,7 +603,7 @@ const RENDER_POEMS_SCRIPT = `        function formatPoemDate(dateStr) {
 function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = undefined) {
   try {
     // Read YAML files from the poems directory for metadata
-    const poemsDir = path.join(process.cwd(), "src", "poems", "yaml");
+    const poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml");
     const yamlFiles = fs
       .readdirSync(poemsDir)
       .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
@@ -774,14 +775,14 @@ ${RENDER_POEMS_SCRIPT}
 
 // Main execution
 function main() {
-  const publicDir = path.join(process.cwd(), "public");
+  const publicDir = path.join(REPO_ROOT, "public");
 
   if (!fs.existsSync(publicDir)) {
     console.error(`Error: Public directory not found: ${publicDir}`);
     process.exit(1);
   }
 
-  const config = readPoeticConfig();
+  const config = readPoeticConfig(REPO_ROOT);
   // Strip a leading "public/" so the href resolves correctly when public/ is
   // served as the web root (both locally and once GitHub Pages deploys its
   // contents to the site root) — see build-poems.js for the same rule.

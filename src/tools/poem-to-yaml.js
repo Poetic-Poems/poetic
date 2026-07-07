@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 const { renderGfm } = require('./markdown');
+const { REPO_ROOT } = require('./repo-root');
 
 /**
  * Parse a .poem file and convert to structured data
@@ -1504,8 +1505,8 @@ function main() {
 
   if (args[0] === '--all') {
     // Convert all .poem files in src/poems/poem/ directory
-    const poemDir = path.join(process.cwd(), 'src', 'poems', 'poem');
-    const yamlDir = path.join(process.cwd(), 'src', 'poems', 'yaml');
+    const poemDir = path.join(REPO_ROOT, 'src', 'poems', 'poem');
+    const yamlDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
     const files = fs.readdirSync(poemDir);
 
     for (const file of files) {

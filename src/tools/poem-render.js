@@ -15,12 +15,13 @@ const yaml = require('js-yaml');
 const pug = require('pug');
 const { slugFromFile } = require('./slugify');
 const { formatDateForDisplay } = require('./date-utils');
+const { REPO_ROOT } = require('./repo-root');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 const FRAGMENT_TEMPLATE = path.join(TEMPLATES_DIR, 'poem.pug');
 const PAGE_TEMPLATE = path.join(TEMPLATES_DIR, 'poem-page.pug');
 
-const POEMS_DIR = path.join(process.cwd(), 'src', 'poems', 'yaml');
+const POEMS_DIR = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
 
 /**
  * The closed set of build-time "context" variable names that `%{name}`
