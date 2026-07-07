@@ -98,6 +98,7 @@ public/
 ├── all-poems.html                       # Generated concatenated view
 ├── poetic.css                           # Framework CSS (synced from poetic)
 ├── poetic.js                            # Framework JS — shared Audiomack loader (synced)
+├── poetic-footer.html                   # Default footer content (synced; see footer_source)
 ├── custom.css                           # User CSS (never overwritten by sync)
 ├── fragments-and-unity.template.html    # Blogger template with injected CSS
 ├── poem1.html                           # Redirect stub → poem1/ (meta-refresh)
@@ -126,6 +127,7 @@ src/tools/
 ├── build-all-poems.js                   # Main build script
 ├── build-poems.js                       # Individual poem builder
 ├── date-utils.js                        # Date format utilities
+├── footer.js                            # Shared footer renderer (render + idempotent insert)
 ├── poem-render.js                       # Shared renderer (fragment + full page)
 ├── poem-to-yaml.js                      # Converter script
 ├── poetic-config.js                     # Shared .poetic-config reader
@@ -188,6 +190,8 @@ Supported keys:
 | `blogger_content` | `full` | Content posted to Blogger: `full` (complete styled HTML page) or `poem` (poem fragment only) |
 | `blogger_label` | `poem` | Blogger label applied to all managed posts |
 | `blogger_template` | `public/blogger-template.html` | Path to the Blogger XML theme template file injected by `npm run build:blogger` |
+| `show_footer` | `true` | Set to `false` to omit the footer from every built page |
+| `footer_source` | `public/poetic-footer.html` | Path to the HTML file whose contents are injected as the page footer |
 
 Example:
 
@@ -222,6 +226,36 @@ The subtitle shown below the site title on `index.html` defaults to `My Poems`. 
 
 ```
 subtitle=Warwick Allen's Poems
+```
+
+#### Footer
+
+Every page the build generates — individual poem pages, `index.html`, `all-poems.html`, and `public/raw/index.html` — gets a footer as the last element in `<body>`. By default it reads `public/poetic-footer.html` (included with the framework) and shows "Built with Poetic" linking to the framework repo, alongside the Poetic logo.
+
+Turn it off entirely:
+
+```
+show_footer=false
+```
+
+Or supply your own footer content by pointing `footer_source` at a file of your own (never overwritten by a framework sync, unlike the default `public/poetic-footer.html`):
+
+```
+footer_source=public/my-footer.html
+```
+
+The footer source file is raw HTML, injected verbatim inside a `<footer class="poetic-footer">` wrapper. It may reference `%{base}` — the relative path prefix back to the site root (`''` on `index.html`/`all-poems.html`, `../` on one-directory-deep pages like individual poem pages and `raw/index.html`) — useful for linking an image or asset that lives in `public/`:
+
+```html
+<img src="%{base}poetic-logo.svg" alt="Poetic logo">
+```
+
+Rebuilding is idempotent: each build replaces the previously-inserted footer in place (identified by an HTML comment marker) rather than appending a new one, so `index.html` never accumulates duplicate footers across repeated builds, and toggling `show_footer` off removes an existing footer on the next build.
+
+To keep the default footer file but prevent it being overwritten on the next framework sync, add it to `skip_paths`:
+
+```
+skip_paths=public/poetic-footer.html
 ```
 
 ### Publishing to Blogger

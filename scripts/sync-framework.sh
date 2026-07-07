@@ -81,6 +81,7 @@ FRAMEWORK_PATHS=(
   public/poetic.css
   public/poetic.js
   public/poetic-logo.svg
+  public/poetic-footer.html
   .github/workflows/build-poems.yml
   .github/workflows/sync-framework.yml
   .github/workflows/sync-blogger.yml

@@ -27,6 +27,8 @@ const { parsePoemFile } = require('./poem-to-yaml');
 const { substituteContextVars, CONTEXT_VAR_NAMES } = require('./poem-render');
 const { slugFromFile } = require('./slugify');
 const { formatDateForDisplay } = require('./date-utils');
+const { readPoeticConfig } = require('./poetic-config');
+const { renderFooter, upsertFooter } = require('./footer');
 
 // Named HTML entities the engine (and Markdown) can emit, mapped to Unicode.
 const NAMED_ENTITIES = {
@@ -218,9 +220,13 @@ function main() {
     }
   }
 
+  const config = readPoeticConfig(repoTop);
+  // public/raw/index.html lives one directory deep, like individual poem pages.
+  const footerBlock = renderFooter(config, repoTop, { base: '../' });
+
   fs.writeFileSync(
     path.join(publicRawDir, 'index.html'),
-    buildIndex(entries, githubRepoSlug(repoTop)),
+    upsertFooter(buildIndex(entries, githubRepoSlug(repoTop)), footerBlock),
     'utf8'
   );
 }

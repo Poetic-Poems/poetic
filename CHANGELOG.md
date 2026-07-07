@@ -7,6 +7,20 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Site footer.** Every built page — individual poem pages, `index.html`,
+  `all-poems.html`, and `public/raw/index.html` — now gets a footer reading
+  "Built with Poetic" (linking the framework repo) alongside the Poetic logo,
+  sourced from the new framework-owned `public/poetic-footer.html`. Two new
+  `.poetic-config` keys control it: `show_footer` (set to `false` to omit the
+  footer; default `true`) and `footer_source` (path to a custom footer HTML
+  file; default `public/poetic-footer.html`). Rebuilding is idempotent — the
+  footer is replaced in place rather than duplicated on each build. See
+  [`docs/BUILD.md`](docs/BUILD.md#footer).
+
 ## [3.1.0] — 2026-07-07
 
 ### Added

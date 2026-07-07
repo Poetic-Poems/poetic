@@ -669,6 +669,34 @@ div.analysis {
   width: 100%;
 }
 
+/* Footer (public/poetic-footer.html injected by the build; see docs/BUILD.md) */
+.poetic-footer {
+  border-top: 1px solid #eee;
+  color: #999;
+  font-size: 0.85em;
+  margin-top: 40px;
+  padding-top: 20px;
+  text-align: center;
+}
+
+.poetic-footer-link {
+  align-items: center;
+  color: inherit;
+  display: inline-flex;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.poetic-footer-link:hover {
+  text-decoration: underline;
+}
+
+.poetic-footer-logo {
+  height: 1.2em;
+  vertical-align: middle;
+  width: auto;
+}
+
 /* Dark mode support using .dark-mode class (for Blogger JavaScript workaround) */
 html.dark-mode {
   color-scheme: dark;
@@ -841,6 +869,11 @@ html.dark-mode .poem-card-label:focus-visible {
   background: #26313b;
 }
 
+html.dark-mode .poetic-footer {
+  border-color: #23303a;
+  color: #9aa6b2;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #22262b;
@@ -1004,5 +1037,10 @@ html.dark-mode .poem-card-label:focus-visible {
   .poem-card-label:hover,
   .poem-card-label:focus-visible {
     background: #26313b;
+  }
+
+  .poetic-footer {
+    border-color: var(--border);
+    color: var(--muted);
   }
 }

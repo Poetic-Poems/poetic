@@ -14,6 +14,8 @@
  *   blogger_content  - post content: "full" (default, HTML page) or "poem" (poem fragment only)
  *   blogger_label    - Blogger label applied to managed posts (default: "poem")
  *   blogger_template - path to the Blogger theme template file (default: public/blogger-template.html)
+ *   show_footer      - set to "false" to omit the Poetic footer (default: true)
+ *   footer_source    - path to the footer HTML file (default: public/poetic-footer.html)
  */
 
 const fs = require('fs');
@@ -24,7 +26,7 @@ const path = require('path');
  * Returns an empty object if the file does not exist.
  *
  * @param {string} [cwd] - Directory to search for .poetic-config (defaults to process.cwd())
- * @returns {{ favicon?: string, subtitle?: string, audiomack_artist?: string, skip_paths?: string, auto_sync?: string, sync_schedule?: string, blogger_sync?: string, blogger_blog_id?: string, blogger_removed?: string, blogger_content?: string, blogger_label?: string, blogger_template?: string }}
+ * @returns {{ favicon?: string, subtitle?: string, audiomack_artist?: string, skip_paths?: string, auto_sync?: string, sync_schedule?: string, blogger_sync?: string, blogger_blog_id?: string, blogger_removed?: string, blogger_content?: string, blogger_label?: string, blogger_template?: string, show_footer?: string, footer_source?: string }}
  */
 function readPoeticConfig(cwd) {
   const configPath = path.join(cwd || process.cwd(), '.poetic-config');

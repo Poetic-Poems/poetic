@@ -13,6 +13,7 @@ const { slugFromFile } = require("./slugify");
 const { formatDateForDisplay } = require("./date-utils");
 const { readPoeticConfig } = require("./poetic-config");
 const { resolveRefs, readPoemFile, clearRefCache, renderPage } = require("./poem-render");
+const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
 
 const POEMS_DIR = path.join(REPO_ROOT, "src", "poems", "yaml");
@@ -32,6 +33,9 @@ function buildAllPoems() {
   const favicon = rawFavicon.replace(/^public\//, '');
   const subtitle = config.subtitle || 'My Poems';
   const audiomackArtist = config.audiomack_artist || '';
+  // Poem pages live at public/<slug>/index.html, one directory deep, so
+  // footer-relative asset links (e.g. %{base}poetic-logo.svg) need "../".
+  const footerBlock = renderFooter(config, REPO_ROOT, { base: '../' });
 
   // Ensure directories exist
   if (!fs.existsSync(POEMS_DIR)) {
@@ -118,6 +122,7 @@ function buildAllPoems() {
     let pageHtml;
     try {
       pageHtml = renderPage(poemData, { favicon, subtitle, audiomackArtist });
+      pageHtml = upsertFooter(pageHtml, footerBlock);
     } catch (err) {
       console.error(`Error rendering page for ${poemData.title}:`, err.message);
       errorCount++;
@@ -159,9 +164,14 @@ function buildAllPoems() {
   }
 
   // Warn about stale HTML artefacts that have no corresponding YAML source.
-  // Exclude framework-generated aggregates (index, all-poems) and template files.
+  // Exclude framework-generated aggregates (index, all-poems), template files,
+  // and the configured footer_source file (when it lives directly in public/).
+  const footerSourcePath = resolveFooterSourcePath(config, REPO_ROOT);
+  const footerSourceBasename = path.dirname(footerSourcePath) === PUBLIC_DIR
+    ? path.basename(footerSourcePath)
+    : null;
   const htmlFiles = fs.readdirSync(PUBLIC_DIR)
-    .filter(f => f.endsWith('.html') && !f.includes('.template.') && f !== 'index.html' && f !== 'all-poems.html');
+    .filter(f => f.endsWith('.html') && !f.includes('.template.') && f !== 'index.html' && f !== 'all-poems.html' && f !== footerSourceBasename);
   for (const htmlFile of htmlFiles) {
     const slug = htmlFile.slice(0, -5);
     if (!builtSlugs.has(slug)) {

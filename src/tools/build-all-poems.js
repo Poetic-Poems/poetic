@@ -16,6 +16,7 @@ const { slugFromFile } = require("./slugify");
 const { parseDateForSorting, formatDateForDisplay, toISODate } = require("./date-utils");
 const { readPoeticConfig } = require("./poetic-config");
 const { loadPoemData, renderFragment } = require("./poem-render");
+const { renderFooter, upsertFooter } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
 const beautify = require("js-beautify");
 
@@ -799,10 +800,20 @@ function main() {
   if (audiomackArtist) {
     console.log(`Using audiomack_artist from .poetic-config: ${audiomackArtist}`);
   }
+  // all-poems.html and index.html both live at the public/ root.
+  const footerBlock = renderFooter(config, REPO_ROOT, { base: '' });
+  if (config.show_footer === 'false') {
+    console.log('Footer disabled via .poetic-config (show_footer=false)');
+  } else if (config.footer_source) {
+    console.log(`Using footer_source from .poetic-config: ${config.footer_source}`);
+  }
 
   console.log("Step 1: Building all-poems.html...");
 
-  const concatenatedContent = concatenateAllHtmlFiles(publicDir, favicon, audiomackArtist);
+  const concatenatedContent = upsertFooter(
+    concatenateAllHtmlFiles(publicDir, favicon, audiomackArtist),
+    footerBlock
+  );
   const allPoemsOutputPath = path.join(publicDir, "all-poems.html");
 
   const prettifiedContent = beautify.html(concatenatedContent, {
@@ -821,7 +832,8 @@ function main() {
   const updatedIndexContent = generateIndexHtml(publicDir, favicon, subtitle);
   if (updatedIndexContent) {
     const indexPath = path.join(publicDir, "index.html");
-    const prettifiedIndexContent = beautify.html(updatedIndexContent, {
+    const finalIndexContent = upsertFooter(updatedIndexContent, footerBlock);
+    const prettifiedIndexContent = beautify.html(finalIndexContent, {
       indent_size: 2,
       wrap_line_length: 80,
       preserve_newlines: false,

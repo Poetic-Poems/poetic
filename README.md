@@ -255,6 +255,8 @@ Commit it to your repo so that GitHub Actions can read it when building and depl
 | `favicon` | Filename of the favicon shown in browser tabs (default: `poetic-logo.svg`; file must exist in `public/`) |
 | `subtitle` | Subtitle shown beneath the site title on the index page |
 | `blogger_sync` | Set to `true` to enable automatic Blogger publishing (default: `false`; see [`docs/BLOGGER.md`](docs/BLOGGER.md)) |
+| `show_footer` | Set to `false` to omit the "Built with Poetic" footer from every built page (default: `true`) |
+| `footer_source` | Path to the HTML file injected as the page footer (default: `public/poetic-footer.html`; see [`docs/BUILD.md`](docs/BUILD.md#footer)) |
 
 Settings such as `favicon`, `subtitle`, `auto_sync`, and `sync_schedule` are only applied during CI if `.poetic-config` is present in the repository.
 
