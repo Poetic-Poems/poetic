@@ -36,3 +36,16 @@ add an option to `convertPoemToYaml()` to skip the shared-prepend for fixtures.
 For `resolveConfig`, take the credentials file path (or its contents) as an
 argument so a real `.blogger-credentials.json` in the CWD cannot leak into the
 test.
+## Test portability should be made explicit in the public API
+
+_Logged 2026-07-07._
+
+The review confirmed that the current test suite passes in this repository but
+still depends on ambient repository state in a way that makes downstream usage
+less predictable. The parser and Blogger config helpers are functional, but the
+project would benefit from making the relevant inputs explicit so the same code
+can be exercised reliably in both the framework repo and synced consumer repos.
+
+**Suggested fix:** add explicit parameters for shared-poem and credentials-file
+input paths where they are used, then update tests to pass fixture-controlled
+values rather than relying on the process working directory.
