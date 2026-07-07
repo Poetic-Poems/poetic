@@ -10,10 +10,9 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { parseDateForSorting, formatDateForDisplay } = require("./date-utils");
-const { slugFromFile } = require("./slugify");
 const { readPoeticConfig } = require("./poetic-config");
-const { loadPoemData, renderFragment } = require("./poem-render");
+const { renderFooter, upsertFooter } = require("./footer");
+const { concatenateAllHtmlFiles } = require("./build-all-poems");
 const { REPO_ROOT } = require("./repo-root");
 
 function parseArgs(argv) {
@@ -185,247 +184,6 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
 
-function hasActiveAudio(audioData) {
-  if (!audioData || typeof audioData !== 'object') return false;
-  for (const platform in audioData) {
-    const entries = audioData[platform];
-    if (platform === 'suno') {
-      if (typeof entries === 'string' && entries.trim()) return true;
-    } else if (platform === 'audiomack') {
-      if (entries === true) return true;
-    } else if (Array.isArray(entries)) {
-      if (entries.some((entry) => entry.active === true)) return true;
-    }
-  }
-  return false;
-}
-
-function concatenateAllHtmlFiles(dirPath) {
-  try {
-    const config = readPoeticConfig(REPO_ROOT);
-    const audiomackArtist = config.audiomack_artist || '';
-
-    // Read YAML files for poem metadata
-    const poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml");
-    let yamlFiles;
-    try {
-      yamlFiles = fs
-        .readdirSync(poemsDir)
-        .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
-        .filter((file) => !file.startsWith("YAML-SCHEMA"))
-        .filter((file) => !file.startsWith("_"));
-    } catch (_) {
-      yamlFiles = [];
-    }
-
-    if (yamlFiles.length === 0) {
-      return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>No HTML Files Found</title>
-    <link rel="stylesheet" href="/poetic.css">
-    <link rel="stylesheet" href="/custom.css">
-</head>
-<body>
-    <div class="container">
-        <div class="poem-section text-center">
-            <h1>No HTML Files Found</h1>
-            <p>No HTML files were found in the directory.</p>
-        </div>
-    </div>
-</body>
-</html>`;
-    }
-
-    const yaml = require('js-yaml');
-
-    // Build poem metadata list from YAML
-    const poemData = [];
-    yamlFiles.forEach((file) => {
-      const yamlPath = path.join(poemsDir, file);
-      try {
-        const yamlContent = fs.readFileSync(yamlPath, "utf8");
-        const data = yaml.load(yamlContent);
-        const title = data.title;
-        if (!title) return;
-        const slug = slugFromFile(file);
-        if (slug === "index" || slug === "all-poems") return;
-        const date = data.date ? formatDateForDisplay(data.date) : "Unknown Date";
-        const hasSongLink = hasActiveAudio(data.audio);
-        poemData.push({ slug, title, date, anchor: `poem-${slug}`, yamlPath, hasSongLink });
-      } catch (_) {}
-    });
-
-    // Sort poems by date (oldest first)
-    poemData.sort((a, b) => parseDateForSorting(a.date) - parseDateForSorting(b.date));
-    poemData.forEach((poem) => { poem.anchor = `poem-${poem.slug}`; });
-
-    let concatenatedContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Poems - Concatenated View</title>
-    <link rel="stylesheet" href="/poetic.css">
-    <link rel="stylesheet" href="/custom.css">
-    <script src="/poetic.js" defer></script>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>All Poems</h1>
-            <p class="subtitle">Concatenated view of all poems (${poemData.length} poems)</p>
-            <a href="/" class="back-link">← Back to Main Page</a>
-        </div>
-
-        <div class="toc">
-            <h2>Table of Contents</h2>
-            <table class="toc-table" id="poemTable">
-                <thead>
-                    <tr>
-                        <th class="sortable" onclick="sortTable(0, 'title')">Poem Title</th>
-                        <th class="sortable" onclick="sortTable(1, 'date')">Poem Date</th>
-                        <th class="sortable" onclick="sortTable(2, 'audio')">🎵 Audio</th>
-                    </tr>
-                </thead>
-                <tbody id="poemTableBody">`;
-
-    poemData.forEach((poem) => {
-      const audioIcon = poem.hasSongLink ? "🎵" : "";
-      concatenatedContent += `<tr>
-                        <td><a href="#${poem.anchor}">${poem.title}</a></td>
-                        <td>${poem.date}</td>
-                        <td class="audio-cell">${audioIcon}</td>
-                    </tr>`;
-    });
-
-    concatenatedContent += `</tbody>
-            </table>
-        </div>`;
-
-    // Render each poem fragment in-memory via poem-render
-    poemData.forEach((poem) => {
-      try {
-        const poemDataObj = loadPoemData(poem.yamlPath);
-        if (!poemDataObj) throw new Error(`Failed to load ${poem.yamlPath}`);
-        const poemContent = renderFragment(poemDataObj, { audiomackArtist });
-
-        concatenatedContent += `
-        <div class="poem-section" id="${poem.anchor}">
-            <h2 class="poem-title"><a href="/${poem.slug}/">${poem.title}</a></h2>
-            <div class="poem-content">${poemContent}</div>
-        </div>`;
-      } catch (err) {
-        concatenatedContent += `
-        <div class="poem-section" id="${poem.anchor}">
-            <h2 class="poem-title"><a href="/${poem.slug}/">${poem.title}</a></h2>
-            <div class="poem-content"><p class="no-content">Error rendering poem: ${err.message}</p></div>
-        </div>`;
-      }
-    });
-
-    concatenatedContent += `
-    </div>
-
-    <script>
-        let currentSort = { column: -1, direction: 'asc' };
-
-        function parseDate(dateStr) {
-            if (dateStr === "Unknown Date") return new Date(0);
-
-            // Ensure dateStr is a string
-            if (typeof dateStr !== 'string') {
-                dateStr = String(dateStr);
-            }
-
-            // Handle both yyyy-mm-dd and "DayOfWeek, DD Month YYYY" formats
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-                const date = new Date(dateStr + 'T00:00:00');
-                return isNaN(date.getTime()) ? new Date(0) : date;
-            }
-
-            // Handle display format: "Monday, 4 May 2015" or "Friday, 1 August 1997"
-            const months = {
-                'January': 0, 'February': 1, 'March': 2, 'April': 3, 'May': 4, 'June': 5,
-                'July': 6, 'August': 7, 'September': 8, 'October': 9, 'November': 10, 'December': 11
-            };
-
-            const parts = dateStr.split(', ');
-            if (parts.length >= 2) {
-                const datePart = parts[1].split(' ');
-                if (datePart.length >= 3) {
-                    const day = parseInt(datePart[0]);
-                    const month = months[datePart[1]];
-                    const year = parseInt(datePart[2]);
-                    if (!isNaN(day) && month !== undefined && !isNaN(year)) {
-                        return new Date(year, month, day);
-                    }
-                }
-            }
-            return new Date(0); // fallback for invalid dates
-        }
-
-        function sortTable(columnIndex, sortType) {
-            const table = document.getElementById('poemTable');
-            const tbody = document.getElementById('poemTableBody');
-            const rows = Array.from(tbody.getElementsByTagName('tr'));
-
-            // Determine sort direction
-            if (currentSort.column === columnIndex) {
-                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.direction = 'asc';
-            }
-            currentSort.column = columnIndex;
-
-            // Update header styling
-            const headers = table.getElementsByTagName('th');
-            for (let i = 0; i < headers.length; i++) {
-                headers[i].className = 'sortable';
-                if (i === columnIndex) {
-                    headers[i].className = currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc';
-                }
-            }
-
-            // Sort rows
-            rows.sort((a, b) => {
-                const aVal = a.cells[columnIndex].textContent.trim();
-                const bVal = b.cells[columnIndex].textContent.trim();
-
-                let comparison = 0;
-
-                if (sortType === 'date') {
-                    const aDate = parseDate(aVal);
-                    const bDate = parseDate(bVal);
-                    comparison = aDate - bDate;
-                } else if (sortType === 'audio') {
-                    // Audio sorting: songs first (🎵), then no audio
-                    const aHasAudio = aVal.includes('🎵');
-                    const bHasAudio = bVal.includes('🎵');
-                    comparison = bHasAudio - aHasAudio; // Songs first (1-0 = 1, 0-1 = -1)
-                } else {
-                    // String comparison (for titles)
-                    comparison = aVal.localeCompare(bVal);
-                }
-
-                return currentSort.direction === 'asc' ? comparison : -comparison;
-            });
-
-            // Re-append sorted rows
-            rows.forEach(row => tbody.appendChild(row));
-        }
-    </script>
-</body>
-</html>`;
-
-    return concatenatedContent;
-  } catch (err) {
-    return `<!DOCTYPE html><html><body><h1>Error reading directory</h1><p>${err.message}</p></body></html>`;
-  }
-}
-
 if (!directoryExists(ROOT_DIR)) {
   console.error(`Directory not found: ${ROOT_DIR}`);
   process.exit(1);
@@ -438,7 +196,15 @@ const server = http.createServer((req, res) => {
 
     // Handle special concatenation endpoint
     if (pathname === "/all-poems") {
-      const concatenatedContent = concatenateAllHtmlFiles(ROOT_DIR);
+      const config = readPoeticConfig(REPO_ROOT);
+      const rawFavicon = config.favicon || "poetic-logo.svg";
+      const favicon = rawFavicon.replace(/^public\//, "");
+      const audiomackArtist = config.audiomack_artist || "";
+      const footerBlock = renderFooter(config, REPO_ROOT, { base: "" });
+      const concatenatedContent = upsertFooter(
+        concatenateAllHtmlFiles(ROOT_DIR, favicon, audiomackArtist),
+        footerBlock
+      );
 
       res.writeHead(200, {
         "Access-Control-Allow-Origin": "*",

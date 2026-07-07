@@ -11,6 +11,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The dev server's live `/all-poems` route now includes the footer.**
+  `src/tools/serve-static.js` reused its own duplicate of
+  `all-poems.html` generation, which diverged from the real build (no
+  favicon/subtitle sync) and omitted the footer from `src/tools/footer.js`.
+  It now reuses `src/tools/build-all-poems.js`'s `concatenateAllHtmlFiles`
+  directly, so the live route matches the built `all-poems.html`.
 - **`scripts/sync-framework.sh` now syncs `scripts/check-build-artifacts.sh`.**
   It was missing from `FRAMEWORK_PATHS`, so consumers running `npm run
   check:build` (including CI, via `.github/workflows/build-poems.yml`) got
