@@ -151,12 +151,15 @@ not set.
 
 ## `scripts/remove-trailing-spaces.sh`
 
-Remove trailing whitespace from all git-tracked files in the repository.
+Remove trailing whitespace from all git-tracked files in the repository, or
+(with `--check`) verify there is none without modifying anything.
 
 ### Usage
 
 ```bash
-bash scripts/remove-trailing-spaces.sh
+bash scripts/remove-trailing-spaces.sh          # fix in place
+bash scripts/remove-trailing-spaces.sh --check  # report only; exit 1 if any found
+npm run check                                   # same as --check
 ```
 
 ### Behaviour
@@ -165,7 +168,17 @@ bash scripts/remove-trailing-spaces.sh
 - Skips files that do not exist on disk (e.g. deleted but still tracked).
 - **Skips `.poem` files** — trailing double-spaces in `.poem` files are
   meaningful (they signal a forced line break in the `.poem` syntax).
-- Modifies files in place and prints a summary of what changed.
+- **Canonicalizes `.md` files instead of stripping them** — Markdown treats a
+  line ending in exactly two spaces as a hard line break, so a single trailing
+  space is removed, two are left alone, and three or more are collapsed down
+  to exactly two. Whitespace-only lines are always fully emptied.
+- **Skips binary files** (detected via `grep -I`), so images and other
+  non-text assets are never rewritten.
+- Without `--check`, modifies files in place and prints a summary of what
+  changed.
+- With `--check`, prints each offending file and exits with status 1 if any
+  are found — nothing is written to disk. This is the mode run in CI
+  (`npm run check`, wired into `.github/workflows/build-poems.yml`).
 
 ### Output
 
@@ -184,9 +197,8 @@ Note: Changes have been made. Review with 'git diff' before committing.
 
 ### Notes
 
-- Run this before committing if your editor does not strip trailing spaces
-  automatically.
-- A pre-commit hook or CI check may call this script; no manual invocation is
-  needed in that case.
+- Run `npm run check` (or the script with `--check`) before committing to
+  catch trailing whitespace without risking an unreviewed rewrite.
+- Run the script without `--check` to fix any violations it finds.
 - Changes are written to the working tree only — you still need to `git add`
   and `git commit` them.

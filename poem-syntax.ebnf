@@ -694,7 +694,7 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
    29. Variable definitions and blank lines may appear before the header
        (title/author/date). This allows for defining variables at the top
        of the file that can be used in the header itself
-   
+
       30. A line that begins with optional indentation and the character `>`
          (i.e. matches `/^\s*>/`) is a blockquote line. Contiguous blockquote
          lines are grouped into a single `blockquote`. The leading `>` and

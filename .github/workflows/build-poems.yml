@@ -63,6 +63,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Check for trailing whitespace
+        run: npm run check
+
       - name: Build poems
         run: npm run build
 
