@@ -6,8 +6,8 @@
 # documentation.  This script fetches the requested ref from the upstream repo,
 # checks out each framework-owned path at that ref, and updates .poetic-version.
 #
-# Paths listed in skip_paths inside .poetic-config are left untouched, allowing
-# users to maintain local overrides of specific framework files.
+# Paths listed in skip_paths inside .poetic-config.yaml are left untouched,
+# allowing users to maintain local overrides of specific framework files.
 #
 # Usage:
 #   scripts/sync-framework.sh                  # sync using ref in .poetic-version
@@ -91,13 +91,24 @@ FRAMEWORK_PATHS=(
   scripts/setup-linux.sh
 )
 
-# Paths the user has opted to manage locally (comma-separated in .poetic-config)
+# Paths the user has opted to manage locally (a YAML list under skip_paths
+# in .poetic-config.yaml, e.g.:
+#   skip_paths:
+#     - public/poetic.css
 SKIP_PATHS=()
-if [ -f .poetic-config ]; then
-  skip_raw=$(grep '^skip_paths=' .poetic-config 2>/dev/null | cut -d= -f2 || true)
-  if [ -n "$skip_raw" ]; then
-    IFS=',' read -ra SKIP_PATHS <<< "$skip_raw"
-  fi
+if [ -f .poetic-config.yaml ]; then
+  while IFS= read -r skip_path; do
+    SKIP_PATHS+=("$skip_path")
+  done < <(awk '
+    /^skip_paths:/ { in_list=1; next }
+    in_list && /^[[:space:]]*-[[:space:]]/ {
+      sub(/^[[:space:]]*-[[:space:]]*/, "");
+      gsub(/^[\"'"'"']|[\"'"'"']$/, "");
+      print;
+      next
+    }
+    in_list && /^[^[:space:]]/ { in_list=0 }
+  ' .poetic-config.yaml)
 fi
 
 echo "Syncing from poetic @ $POETIC_REF (${POETIC_COMMIT:0:8})..."

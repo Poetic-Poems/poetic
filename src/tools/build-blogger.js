@@ -32,7 +32,7 @@ const { readPoeticConfig } = require("./poetic-config");
  *   3. First <publicDir>/*.template.html found (backward-compat with old hardcoded name)
  *   4. Default: <publicDir>/blogger-template.html
  *
- * @param {object} config    - Parsed .poetic-config object
+ * @param {object} config    - Parsed .poetic-config.yaml object
  * @param {string} publicDir - Absolute path to the public/ directory
  * @returns {string}         - Resolved template path
  */

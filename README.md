@@ -238,11 +238,11 @@ The script fetches the `poetic` remote, checks out all framework files at the re
 
 ### Configuration
 
-Create a `.poetic-config` file in your repo root to configure site settings and auto-sync behaviour:
+Create a `.poetic-config.yaml` file in your repo root to configure site settings and auto-sync behaviour:
 
-```
-auto_sync=true
-sync_schedule=weekly
+```yaml
+auto_sync: true
+sync_schedule: weekly
 ```
 
 Commit it to your repo so that GitHub Actions can read it when building and deploying your site. Supported keys:
@@ -251,18 +251,18 @@ Commit it to your repo so that GitHub Actions can read it when building and depl
 |---|---|
 | `auto_sync` | Set to `true` to enable scheduled auto-sync (default: disabled) |
 | `sync_schedule` | How often the workflow synchronisation schedule runs: `hourly`, `daily`, or `weekly` (default: `weekly`).  See [Automatic sync (GitHub Actions)](#automatic-sync-github-actions) below. |
-| `skip_paths` | Comma-separated list of framework paths to leave untouched during sync (e.g. `public/poetic.css`) |
+| `skip_paths` | List of framework paths to leave untouched during sync (e.g. `public/poetic.css`) |
 | `favicon` | Filename of the favicon shown in browser tabs (default: `poetic-logo.svg`; file must exist in `public/`) |
 | `subtitle` | Subtitle shown beneath the site title on the index page |
 | `blogger_sync` | Set to `true` to enable automatic Blogger publishing (default: `false`; see [`docs/BLOGGER.md`](docs/BLOGGER.md)) |
 | `show_footer` | Set to `false` to omit the "Built with Poetic" footer from every built page (default: `true`) |
 | `footer_source` | Path to the HTML file injected as the page footer (default: `public/poetic-footer.html`; see [`docs/BUILD.md`](docs/BUILD.md#footer)) |
 
-Settings such as `favicon`, `subtitle`, `auto_sync`, and `sync_schedule` are only applied during CI if `.poetic-config` is present in the repository.
+Settings such as `favicon`, `subtitle`, `auto_sync`, and `sync_schedule` are only applied during CI if `.poetic-config.yaml` is present in the repository.
 
 ### Automatic sync (GitHub Actions)
 
-The included workflow (`.github/workflows/sync-framework.yml`) opens a pull request (a proposal to merge the changes, which you review and approve on GitHub) if framework files are behind. Scheduled runs are **opt-in**: set `auto_sync=true` in `.poetic-config` to enable them.
+The included workflow (`.github/workflows/sync-framework.yml`) opens a pull request (a proposal to merge the changes, which you review and approve on GitHub) if framework files are behind. Scheduled runs are **opt-in**: set `auto_sync: true` in `.poetic-config.yaml` to enable them.
 
 To trigger a sync immediately (e.g., to pick up a specific release), use **Actions → Sync framework from poetic → Run workflow** and optionally enter a ref. Manual runs always work regardless of the `auto_sync` setting.
 

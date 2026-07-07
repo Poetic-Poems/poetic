@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - 'src/poems/**'
-      - '.poetic-config'
+      - '.poetic-config.yaml'
       - 'src/tools/sync-blogger.js'
       - '.github/workflows/sync-blogger.yml'
   workflow_dispatch:
@@ -31,9 +31,9 @@ jobs:
       - name: Check feature flag
         id: precheck
         run: |
-          if [ ! -f .poetic-config ] || ! grep -q '^blogger_sync=true$' .poetic-config; then
+          if [ ! -f .poetic-config.yaml ] || ! grep -qE '^blogger_sync:[[:space:]]*true[[:space:]]*$' .poetic-config.yaml; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Blogger sync disabled. Set blogger_sync=true in .poetic-config to enable."
+            echo "Blogger sync disabled. Set blogger_sync: true in .poetic-config.yaml to enable."
             exit 0
           fi
           echo "skip=false" >> "$GITHUB_OUTPUT"

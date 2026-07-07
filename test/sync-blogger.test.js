@@ -80,14 +80,15 @@ test('resolveConfig: defaults when config is empty', () => {
   assert.strictEqual(opts.hasCredentials, false);
 });
 
-test('resolveConfig: enabled=true when blogger_sync="true"', () => {
-  const opts = resolveConfig({ blogger_sync: 'true' }, {}, null);
+test('resolveConfig: enabled=true when blogger_sync=true', () => {
+  const opts = resolveConfig({ blogger_sync: true }, {}, null);
   assert.strictEqual(opts.enabled, true);
 });
 
-test('resolveConfig: enabled=false for any value other than "true"', () => {
+test('resolveConfig: enabled=false for any value other than the boolean true', () => {
+  assert.strictEqual(resolveConfig({ blogger_sync: 'true' }, {}, null).enabled, false);
   assert.strictEqual(resolveConfig({ blogger_sync: 'yes' }, {}, null).enabled, false);
-  assert.strictEqual(resolveConfig({ blogger_sync: '1' }, {}, null).enabled, false);
+  assert.strictEqual(resolveConfig({ blogger_sync: 1 }, {}, null).enabled, false);
   assert.strictEqual(resolveConfig({ blogger_sync: '' }, {}, null).enabled, false);
 });
 

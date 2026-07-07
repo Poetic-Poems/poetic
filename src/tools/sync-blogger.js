@@ -67,7 +67,7 @@ let refreshToken = undefined;
 /**
  * Resolve and validate Blogger config, applying defaults.
  *
- * @param {object} config - raw .poetic-config object
+ * @param {object} config - raw .poetic-config.yaml object
  * @param {object} env    - environment variables (e.g. process.env)
  * @param {string|null} [credentialsPath] - path to the credentials JSON file,
  *   read as a fallback for any env var that is absent. Defaults to
@@ -77,8 +77,8 @@ let refreshToken = undefined;
  * @returns {{ enabled: boolean, blogId: string|undefined, label: string, removed: string, content: string, audiomackArtist: string, hasCredentials: boolean }}
  */
 function resolveConfig(config, env, credentialsPath = path.resolve('.blogger-credentials.json')) {
-  const enabled = config.blogger_sync === 'true';
-  const blogId = config.blogger_blog_id || undefined;
+  const enabled = config.blogger_sync === true;
+  const blogId = config.blogger_blog_id != null ? String(config.blogger_blog_id) : undefined;
 
   const VALID_REMOVED = ['draft', 'delete', 'keep'];
   const removed = VALID_REMOVED.includes(config.blogger_removed)
@@ -445,12 +445,12 @@ async function main() {
     const opts = resolveConfig(readPoeticConfig(), process.env);
 
     if (!opts.enabled) {
-      console.log('Blogger sync disabled (set blogger_sync=true in .poetic-config).');
+      console.log('Blogger sync disabled (set blogger_sync: true in .poetic-config.yaml).');
       return;
     }
 
     if (!opts.blogId) {
-      console.log('Blogger sync: blogger_blog_id is required in .poetic-config.');
+      console.log('Blogger sync: blogger_blog_id is required in .poetic-config.yaml.');
       return;
     }
 

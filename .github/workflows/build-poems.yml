@@ -10,7 +10,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/**'
-      - '.poetic-config'
+      - '.poetic-config.yaml'
   pull_request:
     branches: [main]
     paths:
@@ -20,7 +20,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/**'
-      - '.poetic-config'
+      - '.poetic-config.yaml'
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages

@@ -790,22 +790,22 @@ function main() {
   const rawFavicon = config.favicon || "poetic-logo.svg";
   const favicon = rawFavicon.replace(/^public\//, '');
   if (config.favicon) {
-    console.log(`Using favicon from .poetic-config: ${favicon}`);
+    console.log(`Using favicon from .poetic-config.yaml: ${favicon}`);
   }
   const subtitle = config.subtitle;
   if (subtitle) {
-    console.log(`Using subtitle from .poetic-config: ${subtitle}`);
+    console.log(`Using subtitle from .poetic-config.yaml: ${subtitle}`);
   }
   const audiomackArtist = config.audiomack_artist || '';
   if (audiomackArtist) {
-    console.log(`Using audiomack_artist from .poetic-config: ${audiomackArtist}`);
+    console.log(`Using audiomack_artist from .poetic-config.yaml: ${audiomackArtist}`);
   }
   // all-poems.html and index.html both live at the public/ root.
   const footerBlock = renderFooter(config, REPO_ROOT, { base: '' });
-  if (config.show_footer === 'false') {
-    console.log('Footer disabled via .poetic-config (show_footer=false)');
+  if (config.show_footer === false) {
+    console.log('Footer disabled via .poetic-config.yaml (show_footer: false)');
   } else if (config.footer_source) {
-    console.log(`Using footer_source from .poetic-config: ${config.footer_source}`);
+    console.log(`Using footer_source from .poetic-config.yaml: ${config.footer_source}`);
   }
 
   console.log("Step 1: Building all-poems.html...");

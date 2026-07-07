@@ -2,9 +2,9 @@
 
 /**
  * Tests for the Poetic footer feature: the `show_footer` / `footer_source`
- * .poetic-config keys, and the shared renderFooter/upsertFooter helpers used
- * by every GitHub Pages page the framework builds (individual poem pages,
- * index.html, all-poems.html, and public/raw/index.html).
+ * .poetic-config.yaml keys, and the shared renderFooter/upsertFooter helpers
+ * used by every GitHub Pages page the framework builds (individual poem
+ * pages, index.html, all-poems.html, and public/raw/index.html).
  */
 
 const { test } = require('node:test');
@@ -51,15 +51,15 @@ test('renderFooter: default config renders the default public/poetic-footer.html
   assert.match(block, /Built with <a href="https:\/\/x\.test">Poetic<\/a>/);
 });
 
-test('renderFooter: show_footer=false disables the footer entirely', () => {
+test('renderFooter: show_footer: false disables the footer entirely', () => {
   const repoRoot = tmpRepo({ 'public/poetic-footer.html': '<p>Built with Poetic</p>' });
-  const block = renderFooter({ show_footer: 'false' }, repoRoot, { base: '' });
+  const block = renderFooter({ show_footer: false }, repoRoot, { base: '' });
   assert.strictEqual(block, '');
 });
 
-test('renderFooter: any value other than the exact string "false" leaves the footer enabled', () => {
+test('renderFooter: any value other than the boolean false leaves the footer enabled', () => {
   const repoRoot = tmpRepo({ 'public/poetic-footer.html': '<p>x</p>' });
-  for (const value of ['true', 'no', '0', '']) {
+  for (const value of [true, 'false', 'no', 0, '']) {
     const block = renderFooter({ show_footer: value }, repoRoot, { base: '' });
     assert.notStrictEqual(block, '', `show_footer=${JSON.stringify(value)} must not disable the footer`);
   }

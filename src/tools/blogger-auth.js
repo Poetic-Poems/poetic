@@ -23,8 +23,8 @@
  *
  * After running, add the printed values as GitHub Actions secrets:
  *   BLOGGER_CLIENT_ID, BLOGGER_CLIENT_SECRET, BLOGGER_REFRESH_TOKEN
- * And add your blog ID to .poetic-config:
- *   blogger_blog_id=<id>
+ * And add your blog ID to .poetic-config.yaml:
+ *   blogger_blog_id: "<id>"
  */
 
 'use strict';
@@ -173,7 +173,7 @@ Prerequisites (Google Cloud Console):
 
 After running:
   - Add BLOGGER_CLIENT_ID, BLOGGER_CLIENT_SECRET, BLOGGER_REFRESH_TOKEN as GitHub Actions secrets.
-  - Add blogger_blog_id=<id> to .poetic-config.
+  - Add blogger_blog_id: "<id>" to .poetic-config.yaml.
 `);
     return;
   }
@@ -289,10 +289,10 @@ After running:
   console.log(`   BLOGGER_CLIENT_ID     = ${clientId}`);
   console.log(`   BLOGGER_CLIENT_SECRET = ${clientSecret}`);
   console.log(`   BLOGGER_REFRESH_TOKEN = ${refreshToken || '<see above>'}`);
-  console.log('2. Add to .poetic-config:');
-  console.log('   blogger_sync=true');
-  console.log('   blogger_blog_id=<your blog numeric ID>');
-  console.log('   blogger_label=poem');
+  console.log('2. Add to .poetic-config.yaml:');
+  console.log('   blogger_sync: true');
+  console.log('   blogger_blog_id: "<your blog numeric ID>"');
+  console.log('   blogger_label: poem');
   console.log('─────────────────────────────────────────────────────────\n');
 }
 

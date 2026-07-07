@@ -138,7 +138,7 @@ test('renderPage: Audiomack button has NO inline loadAudiomackPlayer function', 
 
 test('readPoeticConfig: parses audiomack_artist key', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-cfg-'));
-  fs.writeFileSync(path.join(dir, '.poetic-config'), 'audiomack_artist=testband\nfavicon=test.svg\n', 'utf8');
+  fs.writeFileSync(path.join(dir, '.poetic-config.yaml'), 'audiomack_artist: testband\nfavicon: test.svg\n', 'utf8');
   const config = readPoeticConfig(dir);
   assert.strictEqual(config.audiomack_artist, 'testband');
   assert.strictEqual(config.favicon, 'test.svg');

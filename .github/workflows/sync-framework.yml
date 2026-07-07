@@ -2,7 +2,7 @@ name: Sync framework from poetic
 
 on:
   schedule:
-    - cron: '0 * * * *'   # Every hour (sync_schedule in .poetic-config determines when to actually run)
+    - cron: '0 * * * *'   # Every hour (sync_schedule in .poetic-config.yaml determines when to actually run)
   workflow_dispatch:
     inputs:
       ref:
@@ -30,12 +30,12 @@ jobs:
             exit 0
           fi
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            if [ ! -f .poetic-config ] || ! grep -q '^auto_sync=true$' .poetic-config; then
+            if [ ! -f .poetic-config.yaml ] || ! grep -qE '^auto_sync:[[:space:]]*true[[:space:]]*$' .poetic-config.yaml; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "Scheduled auto-sync is not enabled. Create .poetic-config with 'auto_sync=true' to enable it."
+              echo "Scheduled auto-sync is not enabled. Create .poetic-config.yaml with 'auto_sync: true' to enable it."
               exit 0
             fi
-            sync_schedule=$(grep '^sync_schedule=' .poetic-config 2>/dev/null | cut -d= -f2)
+            sync_schedule=$(grep -E '^sync_schedule:' .poetic-config.yaml 2>/dev/null | sed -E 's/^sync_schedule:[[:space:]]*//; s/[[:space:]]*$//; s/^["'"'"']//; s/["'"'"']$//')
             sync_schedule="${sync_schedule:-weekly}"
             case "$sync_schedule" in
               hourly)

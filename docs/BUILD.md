@@ -130,7 +130,7 @@ src/tools/
 ├── footer.js                            # Shared footer renderer (render + idempotent insert)
 ├── poem-render.js                       # Shared renderer (fragment + full page)
 ├── poem-to-yaml.js                      # Converter script
-├── poetic-config.js                     # Shared .poetic-config reader
+├── poetic-config.js                     # Shared .poetic-config.yaml reader
 ├── serve-static.js                      # Development server
 └── ...
 ```
@@ -160,19 +160,19 @@ The audio button now uses `data-*` attributes instead of an inline `onclick`:
         data-artist="saltysojourner">🎵 Load Audio Player</button>
 ```
 
-Set the Audiomack artist in `.poetic-config`:
+Set the Audiomack artist in `.poetic-config.yaml`:
 
-```
-audiomack_artist=saltysojourner
+```yaml
+audiomack_artist: saltysojourner
 ```
 
 ### Customisation
 
 The build script uses the same logic as the development server (`src/tools/serve-static.js`) but generates a static file instead of serving dynamically. You can modify the styling or functionality by editing the build script.
 
-### `.poetic-config`
+### `.poetic-config.yaml`
 
-User-specific build settings live in `.poetic-config` at the repo root. This file is yours — it is never overwritten by a framework sync — and should be committed to version control so that CI picks it up when building for GitHub Pages.
+User-specific build settings live in `.poetic-config.yaml` at the repo root. This file is yours — it is never overwritten by a framework sync — and should be committed to version control so that CI picks it up when building for GitHub Pages.
 
 Supported keys:
 
@@ -181,11 +181,11 @@ Supported keys:
 | `favicon` | `poetic-logo.svg` | Filename (inside `public/`) of the browser-tab icon |
 | `subtitle` | `My Poems` | Subtitle shown below the site title on `index.html` |
 | `audiomack_artist` | _(none)_ | Audiomack artist slug used for embedded audio players (e.g. `saltysojourner`) |
-| `skip_paths` | _(none)_ | Comma-separated list of framework paths to skip during sync |
+| `skip_paths` | _(none)_ | List of framework paths to skip during sync |
 | `auto_sync` | _(off)_ | Set to `true` to enable the hourly scheduled sync workflow |
 | `sync_schedule` | `weekly` | How often the scheduled sync runs: `hourly`, `daily`, or `weekly` |
 | `blogger_sync` | `false` | Set to `true` to enable automatic Blogger publishing via GitHub Actions |
-| `blogger_blog_id` | _(required when enabled)_ | Numeric Blogger blog ID (visible in the blog URL in Blogger settings) |
+| `blogger_blog_id` | _(required when enabled)_ | Numeric Blogger blog ID (visible in the blog URL in Blogger settings) — quote it as a string; it exceeds `Number.MAX_SAFE_INTEGER` and loses precision as a YAML number |
 | `blogger_removed` | `draft` | What happens to a post when its source poem is removed: `draft`, `delete`, or `keep` |
 | `blogger_content` | `full` | Content posted to Blogger: `full` (complete styled HTML page) or `poem` (poem fragment only) |
 | `blogger_label` | `poem` | Blogger label applied to all managed posts |
@@ -195,37 +195,39 @@ Supported keys:
 
 Example:
 
-```
-favicon=my-icon.png
-subtitle=Warwick Allen's Poems
-audiomack_artist=saltysojourner
-skip_paths=public/poetic-logo.svg
-auto_sync=true
-sync_schedule=hourly
+```yaml
+favicon: my-icon.png
+subtitle: Warwick Allen's Poems
+audiomack_artist: saltysojourner
+skip_paths:
+  - public/poetic-logo.svg
+auto_sync: true
+sync_schedule: hourly
 ```
 
 #### Favicon
 
 The browser-tab icon defaults to `public/poetic-logo.svg`, which is included with the framework. To use a different icon, place your file in `public/` and set the `favicon` key:
 
-```
-favicon=my-icon.png
+```yaml
+favicon: my-icon.png
 ```
 
 The build will then emit `<link rel="icon" href="my-icon.png" ...>` in both `index.html` and `all-poems.html`. Any file format the browser supports works (`svg`, `png`, `ico`, etc.).
 
 To keep the default logo but prevent it being overwritten on the next framework sync, add it to `skip_paths`:
 
-```
-skip_paths=public/poetic-logo.svg
+```yaml
+skip_paths:
+  - public/poetic-logo.svg
 ```
 
 #### Subtitle
 
 The subtitle shown below the site title on `index.html` defaults to `My Poems`. Override it with the `subtitle` key:
 
-```
-subtitle=Warwick Allen's Poems
+```yaml
+subtitle: Warwick Allen's Poems
 ```
 
 #### Footer
@@ -234,14 +236,14 @@ Every page the build generates — individual poem pages, `index.html`, `all-poe
 
 Turn it off entirely:
 
-```
-show_footer=false
+```yaml
+show_footer: false
 ```
 
 Or supply your own footer content by pointing `footer_source` at a file of your own (never overwritten by a framework sync, unlike the default `public/poetic-footer.html`):
 
-```
-footer_source=public/my-footer.html
+```yaml
+footer_source: public/my-footer.html
 ```
 
 The footer source file is raw HTML, injected verbatim inside a `<footer class="poetic-footer">` wrapper. It may reference `%{base}` — the relative path prefix back to the site root (`''` on `index.html`/`all-poems.html`, `../` on one-directory-deep pages like individual poem pages and `raw/index.html`) — useful for linking an image or asset that lives in `public/`:
@@ -254,10 +256,11 @@ Rebuilding is idempotent: each build replaces the previously-inserted footer in 
 
 To keep the default footer file but prevent it being overwritten on the next framework sync, add it to `skip_paths`:
 
-```
-skip_paths=public/poetic-footer.html
+```yaml
+skip_paths:
+  - public/poetic-footer.html
 ```
 
 ### Publishing to Blogger
 
-Poetic supports optional automatic publishing of poems to a Blogger blog. The feature is off by default and is enabled per-consumer via `.poetic-config`. See [`docs/BLOGGER.md`](BLOGGER.md) for the full setup guide, including one-time Google OAuth authorisation, GitHub secrets, and theme parity steps.
+Poetic supports optional automatic publishing of poems to a Blogger blog. The feature is off by default and is enabled per-consumer via `.poetic-config.yaml`. See [`docs/BLOGGER.md`](BLOGGER.md) for the full setup guide, including one-time Google OAuth authorisation, GitHub secrets, and theme parity steps.

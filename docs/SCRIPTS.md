@@ -3,7 +3,7 @@
 This document covers the shell scripts in `scripts/`.  All scripts are
 framework-owned and synced from upstream poetic — do not hand-edit them if
 you want changes to survive the next sync.  For local overrides, add the path
-to `skip_paths` in `.poetic-config`.
+to `skip_paths` in `.poetic-config.yaml`.
 
 ---
 
@@ -116,7 +116,7 @@ scripts/sync-framework.sh --ref main       # sync from latest main
    headers do not interfere with the public repo fetch).
 3. Resolves the requested ref — first as a remote branch, then as a tag.
 4. Checks out each framework-owned path at the resolved commit.
-5. Skips any paths listed in `skip_paths` in `.poetic-config`.
+5. Skips any paths listed in `skip_paths` in `.poetic-config.yaml`.
 6. Updates `.poetic-version` with the synced channel, ref, and full commit hash.
 
 ### After syncing
@@ -131,13 +131,15 @@ script once more to pick up the new version before committing.
 
 ### Skipping paths
 
-To keep a local override of a framework file, add it to `.poetic-config`:
+To keep a local override of a framework file, add it to `.poetic-config.yaml`:
 
-```
-skip_paths=public/poetic.css,public/poetic-logo.svg
+```yaml
+skip_paths:
+  - public/poetic.css
+  - public/poetic-logo.svg
 ```
 
-Comma-separated paths are compared exactly against the framework path list.
+Each path is compared exactly against the framework path list.
 
 ### Notes on CI authentication
 

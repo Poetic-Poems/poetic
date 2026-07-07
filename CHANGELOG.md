@@ -7,6 +7,21 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **`.poetic-config` is now `.poetic-config.yaml` (breaking).** The config
+  file moved from `key=value` lines to YAML. `skip_paths` is now a YAML list
+  instead of a comma-separated string, and `auto_sync`, `blogger_sync`, and
+  `show_footer` are now real YAML booleans instead of the strings `"true"` /
+  `"false"`. `blogger_blog_id` must be quoted as a string — it exceeds
+  `Number.MAX_SAFE_INTEGER` and loses precision as a YAML number. All other
+  keys are unchanged. Consumers must rename and convert their config file;
+  `readPoeticConfig` logs a warning (and treats config as empty) if it finds
+  a leftover `.poetic-config` but no `.poetic-config.yaml`. See
+  [`docs/BUILD.md`](docs/BUILD.md#poetic-configyaml).
+
 ## [3.2.0] — 2026-07-08
 
 ### Added

@@ -1,10 +1,10 @@
 # Publishing to Blogger
 
-Poetic can automatically publish poems to a Blogger blog whenever you push to `main`. The feature is off by default; you enable it per-repo via `.poetic-config`.
+Poetic can automatically publish poems to a Blogger blog whenever you push to `main`. The feature is off by default; you enable it per-repo via `.poetic-config.yaml`.
 
 ## Overview
 
-When `blogger_sync=true`, the GitHub Actions workflow `Sync to Blogger` runs after every push to `main` that touches poem source files. It:
+When `blogger_sync: true`, the GitHub Actions workflow `Sync to Blogger` runs after every push to `main` that touches poem source files. It:
 
 - Builds the poems locally (running the same pipeline as the GitHub Pages build).
 - Calls `src/tools/sync-blogger.js`, which compares the built poems against existing Blogger posts.
@@ -16,22 +16,22 @@ The feature requires one-time OAuth authorisation to obtain a refresh token; all
 
 ## Enabling
 
-Add the following to `.poetic-config` at your repo root:
+Add the following to `.poetic-config.yaml` at your repo root:
 
-```
-blogger_sync=true
-blogger_blog_id=1234567890123456789
+```yaml
+blogger_sync: true
+blogger_blog_id: "1234567890123456789"
 ```
 
-The blog ID is the numeric ID shown in the Blogger URL when you are in the Blogger dashboard (e.g. `https://www.blogger.com/blog/posts/1234567890123456789`).
+The blog ID is the numeric ID shown in the Blogger URL when you are in the Blogger dashboard (e.g. `https://www.blogger.com/blog/posts/1234567890123456789`). Quote it as a string — it exceeds `Number.MAX_SAFE_INTEGER` and loses precision if parsed as a YAML number.
 
 Additional optional keys:
 
-```
-blogger_removed=draft          # draft | delete | keep  (default: draft)
-blogger_content=full           # full | poem            (default: full)
-blogger_label=poem             # Blogger label          (default: poem)
-blogger_template=public/blogger-template.html
+```yaml
+blogger_removed: draft          # draft | delete | keep  (default: draft)
+blogger_content: full           # full | poem            (default: full)
+blogger_label: poem             # Blogger label          (default: poem)
+blogger_template: public/blogger-template.html
 ```
 
 | Key | Default | Description |
@@ -144,8 +144,8 @@ Posts created before this scheme keep their original permalinks.
 
 ### Post content
 
-- `blogger_content=full` (default) — posts the complete styled HTML page (the same content as the GitHub Pages poem page).
-- `blogger_content=poem` — posts only the poem fragment (no surrounding navigation or site chrome).
+- `blogger_content: full` (default) — posts the complete styled HTML page (the same content as the GitHub Pages poem page).
+- `blogger_content: poem` — posts only the poem fragment (no surrounding navigation or site chrome).
 
 ### Labels
 
@@ -159,9 +159,9 @@ A poem label containing a comma is not sent to Blogger, since Blogger uses comma
 
 When a poem source file is deleted:
 
-- `blogger_removed=draft` (default) — the post is reverted to draft so it is no longer publicly visible.
-- `blogger_removed=delete` — the post is permanently deleted.
-- `blogger_removed=keep` — the post is left exactly as is.
+- `blogger_removed: draft` (default) — the post is reverted to draft so it is no longer publicly visible.
+- `blogger_removed: delete` — the post is permanently deleted.
+- `blogger_removed: keep` — the post is left exactly as is.
 
 ### Draft/private poems
 
@@ -185,7 +185,7 @@ npm run sync:blogger -- --only my-poem-slug
 
 ## GitHub Actions workflow
 
-The `Sync to Blogger` workflow (`.github/workflows/sync-blogger.yml`) runs on push to `main` when poem files or the config change. It is gated by the feature flag: if `blogger_sync=true` is not present in `.poetic-config`, the workflow exits immediately without touching Blogger.
+The `Sync to Blogger` workflow (`.github/workflows/sync-blogger.yml`) runs on push to `main` when poem files or the config change. It is gated by the feature flag: if `blogger_sync: true` is not present in `.poetic-config.yaml`, the workflow exits immediately without touching Blogger.
 
 If the three required secrets (`BLOGGER_CLIENT_ID`, `BLOGGER_CLIENT_SECRET`, `BLOGGER_REFRESH_TOKEN`) are not set, the sync script exits gracefully rather than erroring the workflow.
 
