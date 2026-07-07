@@ -7,6 +7,20 @@ in chat. Keep entries short and dated; remove one when it is resolved.
 Format: a dated `## <short title>` describing what, why it matters, where, and a
 suggested fix.
 
+## 2026-07-08 — `scripts/check-build-artifacts.sh` is not synced to consumers
+
+`package.json`'s `check:build` script runs `bash scripts/check-build-artifacts.sh`,
+and `package.json` itself is synced to consumers via `scripts/sync-framework.sh`.
+But `scripts/check-build-artifacts.sh` is missing from that script's
+`FRAMEWORK_PATHS` list, so it never gets copied into consumer repos. Any
+consumer that runs `npm run check:build` (as `fragments-and-unity` does, and
+as CI does via `.github/workflows/build-poems.yml`) gets
+`bash: scripts/check-build-artifacts.sh: No such file or directory` instead
+of the intended build-artifact smoke test. Discovered 2026-07-08 while
+verifying the `.poetic-config.yaml` migration in `fragments-and-unity`. Fix
+by adding `scripts/check-build-artifacts.sh` to `FRAMEWORK_PATHS` in
+`scripts/sync-framework.sh`.
+
 ## 2026-07-07 — `serve-static.js`'s live `/all-poems` route has no footer
 
 `src/tools/serve-static.js` reimplements `all-poems.html` generation in its own
