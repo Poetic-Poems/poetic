@@ -248,17 +248,19 @@ YouTube player's height:
 }
 ```
 
-Link-only services (like the builtin `suno`) get decorative parentheses from
-`poetic.css`:
+Every link-type item is wrapped in a `.song-item-link` div (embed-type items get
+`.song-item-embed`). `poetic.css` uses that generic wrapper to add decorative
+parentheses around all link handlers — placed on the div, so they sit outside the
+`<a>` and are not part of the link:
 
 ```css
-.song-item--suno .song-link-anchor::before { content: "("; }
-.song-item--suno .song-link-anchor::after  { content: ")"; }
+div.song-item-link::before { content: "("; }
+div.song-item-link::after  { content: ")"; }
 ```
 
-A consumer can drop the parentheses for their own handler, or override them
-for `suno`, by overriding `content` for the matching `.song-item--<service>`
-selector in `public/custom.css` (an empty `content: "";` removes them).
+A consumer can drop the parentheses globally by overriding `content` on
+`.song-item-link` in `public/custom.css` (an empty `content: "";` removes them),
+or target a single service via the `.song-item--<service>` modifier.
 
 ### Customisation
 

@@ -63,6 +63,8 @@ test('renderFragment: Audiomack embed button uses data-embed-src/data-title and 
 
   assert.ok(html.includes('class="song-embed-btn"'), 'must have song-embed-btn class');
   assert.ok(html.includes('song-embed--audiomack'), 'must have song-embed--audiomack wrapper class');
+  assert.ok(html.includes('song-item-embed'), 'embed-type item must carry the generic song-item-embed class');
+  assert.ok(!html.includes('song-item-link'), 'an embed-only item must NOT carry song-item-link');
   assert.ok(
     html.includes('data-embed-src="https://audiomack.com/embed/myartist/song/test-poem"'),
     'must have data-embed-src attribute built from artist + slug fallback'
@@ -108,6 +110,8 @@ audio:
     html.includes('<a class="song-link-anchor song-link--suno" href="https://suno.com/s/x" target="_blank">recording on Suno</a>'),
     'must render the exact Suno link anchor'
   );
+  assert.ok(html.includes('song-item-link'), 'link-type item must carry the generic song-item-link class');
+  assert.ok(!html.includes('song-item-embed'), 'a link-only item must NOT carry song-item-embed');
   assert.ok(!html.includes('('), 'must not contain a literal ( around the Suno link');
   assert.ok(!html.includes(')'), 'must not contain a literal ) around the Suno link');
 });

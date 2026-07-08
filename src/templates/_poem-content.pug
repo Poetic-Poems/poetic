@@ -90,7 +90,13 @@ mixin poemContent
     if songs && songs.length > 0
       div(id=`song--${slug}` class="song-link")
         each song in songs
-          div(class=`song-item song-item--${song.service}`)
+          //- Generic type classes (.song-item-embed / .song-item-link) let CSS
+          //- target all embed- or link-type handlers at once; .song-item--<service>
+          //- stays available for per-service overrides.
+          - let songItemClass = `song-item song-item--${song.service}`
+          - if (song.embed) songItemClass += ' song-item-embed'
+          - if (song.link) songItemClass += ' song-item-link'
+          div(class=songItemClass)
             if song.embed
               div(class=`song-embed song-embed--${song.service}`)
                 button.song-embed-btn(

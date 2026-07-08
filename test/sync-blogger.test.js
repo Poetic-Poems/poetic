@@ -473,7 +473,7 @@ test('selectRemoved: skips labelled live posts with no slug marker (legacy/unman
 
 // ── extractContent ────────────────────────────────────────────────────────────
 
-const SAMPLE_AUDIO = '<div class="song-link" id="song--my-poem"><div class="song-item song-item--audiomack"><div class="song-embed song-embed--audiomack"><button class="song-embed-btn" id="song-embed-btn--audiomack--my-poem" type="button" data-embed-src="https://audiomack.com/embed/testartist/song/my-poem" data-title="My Poem">🎵 Load Audiomack Player</button><div class="song-embed-player hidden"></div></div></div><div class="song-item song-item--suno"><a class="song-link-anchor song-link--suno" href="https://suno.com/s/xyz" target="_blank">recording on Suno</a></div></div>';
+const SAMPLE_AUDIO = '<div class="song-link" id="song--my-poem"><div class="song-item song-item--audiomack song-item-embed"><div class="song-embed song-embed--audiomack"><button class="song-embed-btn" id="song-embed-btn--audiomack--my-poem" type="button" data-embed-src="https://audiomack.com/embed/testartist/song/my-poem" data-title="My Poem">🎵 Load Audiomack Player</button><div class="song-embed-player hidden"></div></div></div><div class="song-item song-item--suno song-item-link"><a class="song-link-anchor song-link--suno" href="https://suno.com/s/xyz" target="_blank">recording on Suno</a></div></div>';
 
 const SAMPLE_ANALYSIS_BTN = '<button class="analysis show" id="show-analysis--my-poem" type="button" onclick="...">Show analysis</button>';
 

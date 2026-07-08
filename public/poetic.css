@@ -682,10 +682,13 @@ div.analysis {
   height: 252px;
 }
 
-/* Parentheses around link-only services are decorative — CSS, not markup — so a
-   consumer can remove them by overriding `content` in custom.css. */
-.song-item--suno .song-link-anchor::before { content: "("; }
-.song-item--suno .song-link-anchor::after  { content: ")"; }
+/* Parentheses around link-type song items are decorative — CSS, not markup — so a
+   consumer can remove them by overriding `content` in custom.css. The generic
+   .song-item-link wrapper brackets every link handler (not just suno); pair with
+   .song-item--<service> for per-service overrides. Placing them on the wrapper
+   div keeps the parentheses outside the <a>, so they are not part of the link. */
+div.song-item-link::before { content: "("; }
+div.song-item-link::after  { content: ")"; }
 
 /* Footer (public/poetic-footer.html injected by the build; see docs/BUILD.md) */
 .poetic-footer {

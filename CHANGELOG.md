@@ -7,6 +7,24 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.1] — 2026-07-08
+
+### Added
+
+- **Generic `.song-item-embed` / `.song-item-link` type classes** on each song
+  item, alongside the existing `.song-item--<service>` modifier. They let
+  `custom.css` target every embed- or link-type handler at once rather than
+  service by service.
+
+### Fixed
+
+- **The parentheses around link-type songs (e.g. Suno) are no longer part of
+  the link.** They were emitted by `::before`/`::after` on the `<a>` element, so
+  they picked up link styling and hit area. They now sit on the enclosing
+  `.song-item-link` div, outside the anchor. Override `content` on
+  `.song-item-link` (or a `.song-item--<service>` modifier) in `custom.css` to
+  change or remove them.
+
 ## [4.1.0] — 2026-07-08
 
 ### Added
