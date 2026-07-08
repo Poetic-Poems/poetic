@@ -63,6 +63,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      # Ensure a full vim (with +syntax) is present so test/vim-syntax.test.js
+      # actually runs instead of self-skipping.
+      - name: Install vim
+        run: sudo apt-get update && sudo apt-get install -y vim
+
+      - name: Run tests
+        run: npm test
+
       - name: Check for trailing whitespace
         run: npm run check
 

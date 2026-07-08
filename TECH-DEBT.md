@@ -15,17 +15,6 @@ Where `<id>` is a literal "TD" then the date followed by a zero-padded
 sequential number (starting at 1 for the the first entry of a day). I.e.:
 **TD*YYMMDDNN***
 
-## TD26070801 `npm test` is not run in CI
-
-`.github/workflows/build-poems.yml` runs `npm run check`, `npm run build`,
-and `npm run check:build`, but never `npm test`. All tests under `test/`
-(including `test/vim-syntax.test.js`) only run locally/on request — a
-regression can land on `main` without any test failing in CI. Fix: add an
-`npm test` step to `build-poems.yml`; if `test/vim-syntax.test.js` should
-actually run there rather than skip, also install `vim` on the runner (e.g.
-`apt-get install -y vim`) rather than relying on it being preinstalled on the
-`ubuntu-latest` image.
-
 ## TD26070802 `poem.vim` title/end-marker highlighting quirks
 
 Discovered while building `test/vim-syntax.test.js`'s golden fixture from
