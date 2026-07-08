@@ -121,6 +121,7 @@ if [ -z "${POETIC_RESYNCED:-}" ] && ! is_skipped "$SELF_PATH"; then
 fi
 
 FRAMEWORK_PATHS=(
+  .claude/skills
   .github/workflows/build-poems.yml
   .github/workflows/sync-blogger.yml
   .github/workflows/sync-framework.yml
