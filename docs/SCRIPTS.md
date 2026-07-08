@@ -125,7 +125,13 @@ scripts/sync-framework.sh --commit         # also commit the staged sync
 6. Skips any paths listed in `skip_paths` in `.poetic-config.yaml`.
 7. Updates and stages `.poetic-version` with the synced channel, ref, and full
    commit hash.
-8. If `--commit` was passed and there are staged changes, commits them.
+8. Builds a summary of upstream commit messages between the previously synced
+   commit (read from `.poetic-version` before it was overwritten) and this
+   one, restricted to framework-owned paths. If that previous commit isn't in
+   the local object database (first-ever sync, or upstream history was
+   rewritten), the summary falls back to a note saying so instead of failing.
+9. If `--commit` was passed and there are staged changes, commits them —
+   using the summary as the commit body, when there is one.
 
 ### After syncing
 
@@ -136,7 +142,9 @@ git diff --staged                        # review what changed
 git commit -m "chore: sync framework from poetic <ref>"
 ```
 
-With `--commit`, this happens automatically once the sync completes.
+With `--commit`, this happens automatically once the sync completes, and the
+commit body records which upstream commits were pulled in. Either way, the
+summary is printed to the terminal so you can see it before deciding.
 
 ### Skipping paths
 

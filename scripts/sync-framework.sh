@@ -169,17 +169,53 @@ for path in "${FRAMEWORK_PATHS[@]}"; do
 done
 
 current_channel=$(grep '^channel=' "$VERSION_FILE" 2>/dev/null | cut -d= -f2 || echo releases)
+OLD_COMMIT=$(grep '^commit=' "$VERSION_FILE" 2>/dev/null | cut -d= -f2 || true)
 printf 'channel=%s\nref=%s\ncommit=%s\n' "$current_channel" "$POETIC_REF" "$POETIC_COMMIT" > "$VERSION_FILE"
 git add "$VERSION_FILE"
 
+# Build a commit body from the upstream commit messages between the previously
+# synced commit and this one, restricted to framework-owned paths. Falls back
+# to a note (rather than failing) if the previous commit isn't in the local
+# object database — e.g. first-ever sync, or upstream history was rewritten.
+COMMIT_BODY=""
+if [ -n "$OLD_COMMIT" ] && [ "$OLD_COMMIT" != "$POETIC_COMMIT" ]; then
+  if git cat-file -e "${OLD_COMMIT}^{commit}" 2>/dev/null; then
+    RANGE_LOG=$(git log --oneline --no-decorate "${OLD_COMMIT}..${POETIC_COMMIT}" -- "${FRAMEWORK_PATHS[@]}" 2>/dev/null || true)
+    if [ -n "$RANGE_LOG" ]; then
+      RANGE_LOG_COUNT=$(printf '%s\n' "$RANGE_LOG" | wc -l)
+      if [ "$RANGE_LOG_COUNT" -gt 25 ]; then
+        COMMIT_BODY="$(printf '%s\n' "$RANGE_LOG" | head -25)
+... ($((RANGE_LOG_COUNT - 25)) more commits)"
+      else
+        COMMIT_BODY="$RANGE_LOG"
+      fi
+    fi
+  else
+    COMMIT_BODY="(previous commit ${OLD_COMMIT:0:8} not found upstream; unable to summarize changes)"
+  fi
+fi
+
 echo ""
-COMMIT_MESSAGE="chore: sync framework from poetic $POETIC_REF"
+COMMIT_SUBJECT="chore: sync framework from poetic $POETIC_REF"
 if git diff --staged --quiet; then
   echo "Done. Already up to date — no changes to commit."
-elif $AUTO_COMMIT; then
-  git commit -m "$COMMIT_MESSAGE"
-  echo "Done. Committed: $COMMIT_MESSAGE"
+  exit 0
+fi
+
+if [ -n "$COMMIT_BODY" ]; then
+  echo "Upstream changes in this sync:"
+  echo "$COMMIT_BODY"
+  echo ""
+fi
+
+if $AUTO_COMMIT; then
+  if [ -n "$COMMIT_BODY" ]; then
+    git commit -m "$COMMIT_SUBJECT" -m "$COMMIT_BODY"
+  else
+    git commit -m "$COMMIT_SUBJECT"
+  fi
+  echo "Done. Committed: $COMMIT_SUBJECT"
 else
   echo "Done. Review staged changes with: git diff --staged"
-  echo "Commit with: git commit -m '$COMMIT_MESSAGE'"
+  echo "Commit with: git commit -m '$COMMIT_SUBJECT'"
 fi

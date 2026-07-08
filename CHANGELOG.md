@@ -7,6 +7,19 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] — 2026-07-08
+
+### Added
+
+- **Commit body summary for `scripts/sync-framework.sh --commit`.** The
+  auto-generated commit now includes a body listing the upstream commit
+  messages (restricted to framework-owned paths) between the previously
+  synced commit and this one, so the commit records *what* changed, not just
+  that a sync happened. Falls back to a note if the previous commit can't be
+  found upstream (first-ever sync, or rewritten history). The same summary is
+  printed to the terminal even without `--commit`, so it's visible before you
+  decide whether to commit.
+
 ## [4.2.0] — 2026-07-08
 
 ### Added
