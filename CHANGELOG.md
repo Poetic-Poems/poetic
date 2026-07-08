@@ -11,6 +11,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`scripts/sync-framework.sh` now handles an empty `skip_paths` list safely.**
+  When `.poetic-config.yaml` omits `skip_paths`, the script returns cleanly on
+  older Bash versions instead of failing while iterating the empty `SKIP_PATHS`
+  array under `set -u`.
+
 - **Vim syntax highlighting of the poem title and the final analysis marker.**
   The title (`poemTitle`) was hard-coded to highlight line 1, so a poem with a
   preamble comment block or variable definitions before the header had its

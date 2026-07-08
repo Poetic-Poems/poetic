@@ -92,6 +92,9 @@ fi
 
 is_skipped() {
   local candidate="$1"
+  if [ "${#SKIP_PATHS[@]}" -eq 0 ]; then
+    return 1
+  fi
   for skip_path in "${SKIP_PATHS[@]}"; do
     [ "$candidate" = "$skip_path" ] && return 0
   done
