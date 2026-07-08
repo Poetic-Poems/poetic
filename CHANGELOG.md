@@ -7,6 +7,19 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.1] — 2026-07-08
+
+### Fixed
+
+- **Spurious awk warning during `scripts/sync-framework.sh`.** The
+  `skip_paths` parser in `.poetic-config.yaml` used a bracket regex
+  (`[\"'"'"']`) with an unnecessary backslash before the double quote, which
+  awk doesn't recognize as a valid escape inside a character class. Every
+  sync run printed `awk: cmd. line:5: warning: regexp escape sequence '\"'
+  is not a known regexp operator` to stderr even though quote-stripping still
+  worked correctly. The backslash is removed; behaviour is unchanged, only
+  the warning is gone.
+
 ## [4.3.0] — 2026-07-08
 
 ### Added

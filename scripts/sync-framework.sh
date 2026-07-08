@@ -82,7 +82,7 @@ if [ -f .poetic-config.yaml ]; then
     /^skip_paths:/ { in_list=1; next }
     in_list && /^[[:space:]]*-[[:space:]]/ {
       sub(/^[[:space:]]*-[[:space:]]*/, "");
-      gsub(/^[\"'"'"']|[\"'"'"']$/, "");
+      gsub(/^["'"'"']|["'"'"']$/, "");
       print;
       next
     }
