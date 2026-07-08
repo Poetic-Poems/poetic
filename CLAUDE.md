@@ -97,7 +97,11 @@ All commits follow [Conventional Commits](https://www.conventionalcommits.org/en
 
 When you defer work, take a shortcut, or notice a known gap, record it in
 `TECH-DEBT.md` at the repo root — do not leave it only in a commit message or in
-chat. Keep entries short and dated, and delete one when it is resolved.
+chat. Keep entries short and aligned to the format outlined in `TECH-DEBT.md`,
+and delete one when it is resolved. If you add a entry in `TECH-DEBT.md` and
+refer to that entry in other places (e.g., code comments), note that reference
+in the `TECH-DEBT.md` entry, so whoever addresses that item knows to also remove
+the references.
 
 ## Key docs
 
