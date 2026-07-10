@@ -252,7 +252,10 @@ A handler that serves several kinds of media (like `mega`: audio and video) sets
 - `default_media` — the media type used when the author gives no `audio`/`video`
   token
 - `media_sizes` — a map of media type → size profile, where each profile is a
-  `height` **or** an `aspect_ratio`:
+  `height` **or** an `aspect_ratio`. If a profile somehow ends up with both
+  keys (this can happen when a consumer override deep-merges into a builtin
+  profile — see [Overriding builtin handlers](#overriding-builtin-handlers)),
+  `aspect_ratio` takes precedence and `height` is ignored:
 
 ```yaml
 mega:
@@ -293,9 +296,19 @@ consumer can retune just one size profile without redeclaring the handler's
 song_handlers:
   mega:
     media_sizes:
-      audio: { height: "300px" }   # override only the audio height
+      audio: { aspect_ratio: null, height: "300px" }   # switch audio to a fixed height
       video: { aspect_ratio: "4 / 3" }
 ```
+
+**A size profile is `height` *or* `aspect_ratio`, and if both keys are
+present, `aspect_ratio` wins** (see [Player size](#player-size) above). Because
+the merge is key-by-key rather than a wholesale replace, adding `height` to a
+profile that already has `aspect_ratio` (as the builtin `mega` audio profile
+does) does not switch the sizing mode — it leaves `aspect_ratio` in place *and*
+adds an unused `height`, so nothing visibly changes. To switch a profile from
+one sizing mode to the other, null out the key you're replacing, as in the
+`audio` line above. Overriding `video` needs no `null` here only because that
+profile has no competing key to begin with.
 
 #### Styling custom handlers
 
