@@ -1,4 +1,12 @@
 {
+  "name": "poetic",
+  "version": "5.1.0",
+  "description": "A plain-text poem authoring framework.",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "js-beautify": "^1.15.4",
     "js-yaml": "^4.1.0",

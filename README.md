@@ -225,6 +225,8 @@ Files beginning with `_` (e.g. `_example.poem`, `_shared.yaml`) are excluded fro
 
 Poetic releases are numbered `vMAJOR.MINOR.PATCH` (for example, `v1.2.0`). Each release is tagged on the `main` branch and listed under [Releases](https://github.com/warwickallen/poetic/releases) on GitHub.
 
+`package.json`'s `version` field is the single source of truth: releasing means bumping that field in a commit to `main` (conventionally `chore: release vX.Y.Z`). The [release workflow](.github/workflows/release.yml) then tags that commit and publishes the GitHub release automatically, so the tag can never drift out of sync with `package.json`.
+
 ### Manual sync
 
 Sync framework files at any time by running:
@@ -338,3 +340,7 @@ If any of the tools used here are new to you:
 - **Git** — [Pro Git](https://git-scm.com/book/en/v2) (free online) covers everything from first steps to advanced use
 - **The command line** — search for "command line basics" plus your operating system for a beginner tutorial
 - **Node.js / npm** — for poetic you mostly just need `npm install` (downloads the build tools once) and `npm run build` (generates the HTML); [nodejs.org/en/learn](https://nodejs.org/en/learn) has introductory guides if you want to go deeper
+
+## Licence
+
+MIT — see [`LICENCE`](LICENCE).

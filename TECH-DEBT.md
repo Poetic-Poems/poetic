@@ -16,14 +16,6 @@ Where `<id>` is a literal "TD" then the date followed by a zero-padded
 sequential number (starting at 1 for the the first entry of a day). I.e.:
 **TD*YYMMDDNN***
 
-## TD26071101 No licence
-
-The repo has no LICENSE file and no `license` field in `package.json`, yet the
-README invites template use and the consumer model depends on copying framework
-files. Consumers currently have no legal right to do so. Fix: add an
-OSI-approved licence (MIT suggested), set the package.json field, sync the file
-to consumers. (project-review-2026-07-11: F-GOV-01, R-01.)
-
 ## TD26071102 Site name "Fragments & Unity" hard-coded in generators
 
 `src/tools/build-all-poems.js` bakes "Fragments & Unity" into `all-poems.html`
@@ -62,13 +54,6 @@ index.html files by a greedy self-heal regex (~698-701). The generators
 scripts to `public/` assets loaded via `<script src>`, pass poem data as JSON,
 and add generator tests. (project-review-2026-07-11: F-CODE-01, F-TEST-01,
 R-05.)
-
-## TD26071106 package.json lacks name, version, license, engines
-
-Only `dependencies` and `scripts` are present, though the code needs Node ≥ 18
-(global `fetch`) and the project has tagged releases. The file is synced
-verbatim to consumers. Fix: add the metadata and note the version-bump step in
-the release process. (project-review-2026-07-11: F-DEPS-01, R-06.)
 
 ## TD26071107 sync-framework.sh never deletes upstream-removed files; dead tools ship
 

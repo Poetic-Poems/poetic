@@ -128,6 +128,7 @@ FRAMEWORK_PATHS=(
   .github/workflows/build-poems.yml
   .github/workflows/sync-blogger.yml
   .github/workflows/sync-framework.yml
+  LICENCE
   docs
   editors
   examples

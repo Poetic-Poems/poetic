@@ -69,8 +69,10 @@ Full spec: `docs/POEM-SYNTAX.md` and `poem-syntax.ebnf`.
 
 ## Release process
 
-See `.github/workflows/release.yml`. Releases are tagged; consumer repos can pin to a tag via
-`.poetic-version`.
+`package.json`'s `version` field is the single source of truth. To release, bump it in a commit
+to `main` (conventionally `chore: release vX.Y.Z`); `.github/workflows/release.yml` tags that
+commit and publishes the GitHub release automatically, so the tag can't drift out of sync with
+`package.json`. Consumer repos can pin to a tag via `.poetic-version`.
 
 ## Exemplar config
 

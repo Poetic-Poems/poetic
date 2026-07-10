@@ -11,6 +11,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **MIT licence.** A `LICENCE` file now covers the repo, `package.json`'s
+  `license` field matches it, and the file syncs to consumers. Resolves
+  TD26071101.
+- **Complete `package.json` metadata.** Added `name`, `version`, `license`,
+  `engines` (`node >= 18`), and `private`. The `version` field is now the
+  single source of truth for releases: bumping it in a commit to `main`
+  causes `.github/workflows/release.yml` to tag that commit and publish the
+  GitHub release automatically, so the tag can't drift out of sync with
+  `package.json`. See the "Release process" section in `CLAUDE.md`. Resolves
+  TD26071106.
 - **Per-handler embed permission override.** A custom song handler can set
   `embed_allow` and/or `embed_allowfullscreen` to override the `allow` /
   `allowfullscreen` attributes `poetic.js` puts on that handler's lazy-loaded
