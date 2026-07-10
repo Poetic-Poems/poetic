@@ -3,6 +3,8 @@
  *
  * Supported keys (grouped hierarchically — see examples/poetic-config.example.yaml
  * for a fully-commented reference):
+ *   title              - site title shown in <title> and <h1> on index.html and
+ *                         all-poems.html (default: "My Poems")
  *   favicon            - filename of the browser-tab icon (inside public/)
  *   subtitle           - subtitle shown below the site title on index.html
  *   skip_paths         - list of paths to skip during framework sync
@@ -38,7 +40,7 @@ const LEGACY_CONFIG_FILENAME = '.poetic-config';
  * Returns an empty object if the file does not exist.
  *
  * @param {string} [cwd] - Directory to search for .poetic-config.yaml (defaults to process.cwd())
- * @returns {{ favicon?: string, subtitle?: string, skip_paths?: string[], auto_sync?: { enabled?: boolean, schedule?: string }, footer?: { enabled?: boolean, source?: string }, blogger?: { sync?: boolean, blog_id?: string, removed?: string, content?: string, label?: string, template?: string }, song_handlers?: object }}
+ * @returns {{ title?: string, favicon?: string, subtitle?: string, skip_paths?: string[], auto_sync?: { enabled?: boolean, schedule?: string }, footer?: { enabled?: boolean, source?: string }, blogger?: { sync?: boolean, blog_id?: string, removed?: string, content?: string, label?: string, template?: string }, song_handlers?: object }}
  */
 function readPoeticConfig(cwd) {
   const root = cwd || process.cwd();

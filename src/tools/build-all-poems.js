@@ -21,8 +21,15 @@ const { renderFooter, upsertFooter } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
 const beautify = require("js-beautify");
 
+// Matches the HTML entity style already used elsewhere in these generated
+// pages (e.g. &#8212; for the em dash).
+function escapeAmpersand(str) {
+  return str.replace(/&/g, "&#38;");
+}
+
 function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", config = {}) {
   try {
+    const siteTitle = escapeAmpersand(config.title || "My Poems");
     // Read YAML files from the poems directory for metadata
     const poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml");
     const yamlFiles = fs
@@ -121,7 +128,7 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", config = 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fragments &#38; Unity &#8212; Concatenated View</title>
+    <title>${siteTitle} &#8212; Concatenated View</title>
     <link rel="icon" href="${favicon}" type="image/svg+xml">
     <link rel="stylesheet" href="poetic.css">
     <link rel="stylesheet" href="custom.css">
@@ -130,7 +137,7 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", config = 
 <body>
     <div class="container">
         <div class="header">
-            <h1>Fragments &#38; Unity</h1>
+            <h1>${siteTitle}</h1>
             <p class="subtitle">Concatenated view of all poems (${poemData.length} poems)</p>
             <a href="index.html" class="back-link">← Back to Main Page</a>
         </div>
@@ -666,6 +673,18 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
           `<p class="subtitle">${subtitle}</p>`
         );
       }
+      // Keep the title in sync with config (only if explicitly set)
+      if (config.title) {
+        const escapedTitle = escapeAmpersand(config.title);
+        indexContent = indexContent.replace(
+          /<title>[^<]*<\/title>/,
+          `<title>${escapedTitle}</title>`
+        );
+        indexContent = indexContent.replace(
+          /<h1>[^<]*<\/h1>/,
+          `<h1>${escapedTitle}</h1>`
+        );
+      }
 
       // Strip the legacy inline <style> block now that its rules live in poetic.css
       indexContent = indexContent.replace(/\n?\s*<style>[\s\S]*?<\/style>/, "");
@@ -701,12 +720,13 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
       );
     } else {
       // Create a default index.html template
+      const siteTitle = escapeAmpersand(config.title || "My Poems");
       indexContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fragments &#38; Unity</title>
+    <title>${siteTitle}</title>
     <link rel="icon" href="${favicon}" type="image/svg+xml">
     <link rel="stylesheet" href="poetic.css">
     <link rel="stylesheet" href="custom.css">
@@ -715,7 +735,7 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
 <body>
     <div class="container">
         <div class="header">
-            <h1>Fragments &#38; Unity</h1>
+            <h1>${siteTitle}</h1>
             <p class="subtitle">${subtitle || "My Poems"}</p>
         </div>
 
@@ -768,6 +788,9 @@ function main() {
   const subtitle = config.subtitle;
   if (subtitle) {
     console.log(`Using subtitle from .poetic-config.yaml: ${subtitle}`);
+  }
+  if (config.title) {
+    console.log(`Using title from .poetic-config.yaml: ${config.title}`);
   }
   // all-poems.html and index.html both live at the public/ root.
   const footerBlock = renderFooter(config, REPO_ROOT, { base: '' });

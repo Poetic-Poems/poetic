@@ -11,6 +11,10 @@
 
 # ── Site metadata ────────────────────────────────────────────────────────────
 
+# Site title shown in the <title> and <h1> on index.html and all-poems.html.
+# Default: "My Poems"
+# title: Poems & Fragments
+
 # Filename (inside public/) of the browser-tab icon. Default: poetic-logo.svg
 # favicon: my-icon.png
 

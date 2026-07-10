@@ -436,6 +436,7 @@ every key — copy the section you need and uncomment it — lives at
 
 | Key | Default | Description |
 |-----|---------|-------------|
+| `title` | `My Poems` | Site title shown in the `<title>` and `<h1>` on `index.html` and `all-poems.html` |
 | `favicon` | `poetic-logo.svg` | Filename (inside `public/`) of the browser-tab icon |
 | `subtitle` | `My Poems` | Subtitle shown below the site title on `index.html` |
 | `skip_paths` | _(none)_ | List of framework paths to skip during sync |
@@ -454,6 +455,7 @@ every key — copy the section you need and uncomment it — lives at
 Example:
 
 ```yaml
+title: Fragments & Unity
 favicon: my-icon.png
 subtitle: Warwick Allen's Poems
 skip_paths:
@@ -465,6 +467,16 @@ song_handlers:
   audiomack:
     artist: saltysojourner
 ```
+
+#### Title
+
+The site title shown in the `<title>` and `<h1>` on `index.html` and `all-poems.html` defaults to `My Poems`. Override it with the `title` key:
+
+```yaml
+title: Fragments & Unity
+```
+
+An `&` in the configured value is HTML-escaped automatically.
 
 #### Favicon
 

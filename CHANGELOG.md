@@ -11,6 +11,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Configurable site title.** A new top-level `title` key in
+  `.poetic-config.yaml` sets the `<title>` and `<h1>` shown on `index.html`
+  and `all-poems.html` (default: `My Poems`). Previously the framework's own
+  site name was hard-coded into the generators. See
+  [Title](docs/BUILD.md#title) in `docs/BUILD.md`.
 - **MIT licence.** A `LICENCE` file now covers the repo, `package.json`'s
   `license` field matches it, and the file syncs to consumers. Resolves
   TD26071101.

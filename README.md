@@ -256,13 +256,14 @@ Commit it to your repo so that GitHub Actions can read it when building and depl
 | `auto_sync.enabled` | Set to `true` to enable scheduled auto-sync (default: disabled) |
 | `auto_sync.schedule` | How often the workflow synchronisation schedule runs: `hourly`, `daily`, or `weekly` (default: `weekly`).  See [Automatic sync (GitHub Actions)](#automatic-sync-github-actions) below. |
 | `skip_paths` | List of framework paths to leave untouched during sync (e.g. `public/poetic.css`) |
+| `title` | Site title shown in the `<title>` and `<h1>` on the index page and all-poems page (default: `My Poems`) |
 | `favicon` | Filename of the favicon shown in browser tabs (default: `poetic-logo.svg`; file must exist in `public/`) |
 | `subtitle` | Subtitle shown beneath the site title on the index page |
 | `blogger.sync` | Set to `true` to enable automatic Blogger publishing (default: `false`; see [`docs/BLOGGER.md`](docs/BLOGGER.md)) |
 | `footer.enabled` | Set to `false` to omit the "Built with Poetic" footer from every built page (default: `true`) |
 | `footer.source` | Path to the HTML file injected as the page footer (default: `public/poetic-footer.html`; see [`docs/BUILD.md`](docs/BUILD.md#footer)) |
 
-Settings such as `favicon`, `subtitle`, and `auto_sync` are only applied during CI if `.poetic-config.yaml` is present in the repository.
+Settings such as `title`, `favicon`, `subtitle`, and `auto_sync` are only applied during CI if `.poetic-config.yaml` is present in the repository.
 
 ### Automatic sync (GitHub Actions)
 
