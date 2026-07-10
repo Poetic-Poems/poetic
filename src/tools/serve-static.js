@@ -200,10 +200,8 @@ const server = http.createServer((req, res) => {
       const rawFavicon = config.favicon || "poetic-logo.svg";
       const favicon = rawFavicon.replace(/^public\//, "");
       const footerBlock = renderFooter(config, REPO_ROOT, { base: "" });
-      const concatenatedContent = upsertFooter(
-        concatenateAllHtmlFiles(ROOT_DIR, favicon, config),
-        footerBlock
-      );
+      const { html: allPoemsHtml } = concatenateAllHtmlFiles(ROOT_DIR, favicon, config);
+      const concatenatedContent = upsertFooter(allPoemsHtml, footerBlock);
 
       res.writeHead(200, {
         "Access-Control-Allow-Origin": "*",

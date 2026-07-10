@@ -1594,6 +1594,7 @@ function main() {
     const yamlDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
     const files = fs.readdirSync(poemDir);
 
+    let errorCount = 0;
     for (const file of files) {
       // Skip partial/private files (starting with '_' or '.', e.g. .shared.poem)
       if (file.endsWith('.poem') && !file.startsWith('_') && !file.startsWith('.')) {
@@ -1607,6 +1608,7 @@ function main() {
           console.log(`  → ${path.basename(yamlPath)}`);
         } catch (error) {
           console.error(`Error converting ${file}:`, error.message);
+          errorCount++;
         }
       }
     }
@@ -1622,6 +1624,11 @@ function main() {
     );
     for (const stale of existingYamls.filter(f => !activePoemBases.has(f))) {
       console.warn(`Warning: stale YAML artefact (no source poem): src/poems/yaml/${stale}`);
+    }
+
+    if (errorCount > 0) {
+      console.error(`\n📊 ${errorCount} poem(s) failed to convert.`);
+      process.exit(1);
     }
   } else {
     // Convert single file

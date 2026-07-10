@@ -106,6 +106,14 @@ function resolveContextVars(poemData) {
 const refCache = new Map();
 
 /**
+ * Thrown by resolveRefs when a $ref chain loops back on itself. Kept as a
+ * distinct class so the catch block around the recursive resolveRefs call
+ * (which otherwise swallows resolution errors and falls back to the raw
+ * $ref node) can recognise and rethrow it instead of masking the cycle.
+ */
+class RefCycleError extends Error {}
+
+/**
  * Validate that a referenced element exists in the loaded data
  */
 function validateReferencedElement(data, jsonPath, refPath) {
@@ -125,14 +133,21 @@ function validateReferencedElement(data, jsonPath, refPath) {
 
 /**
  * Resolve $ref references in YAML data with validation and caching.
+ *
+ * `visited` tracks the chain of $ref cache keys currently being resolved
+ * (not the whole refCache, which legitimately holds the same file resolved
+ * from multiple, unrelated branches — a diamond, not a cycle). Each branch
+ * gets a fresh copy of `visited` at every $ref, so sibling references to the
+ * same file are unaffected; only a $ref that loops back to an ancestor in
+ * its own chain trips the guard.
  */
-function resolveRefs(data, basePath = POEMS_DIR) {
+function resolveRefs(data, basePath = POEMS_DIR, visited = new Set()) {
   if (typeof data !== 'object' || data === null) {
     return data;
   }
 
   if (Array.isArray(data)) {
-    return data.map(item => resolveRefs(item, basePath));
+    return data.map(item => resolveRefs(item, basePath, visited));
   }
 
   if (data.$ref && typeof data.$ref === 'string') {
@@ -140,8 +155,14 @@ function resolveRefs(data, basePath = POEMS_DIR) {
     const fullPath = path.resolve(basePath, filePath);
     const cacheKey = `${fullPath}#${jsonPath || ''}`;
 
+    if (visited.has(cacheKey)) {
+      const chain = [...visited, cacheKey].map(key => key.replace(/#$/, ''));
+      throw new RefCycleError(`Reference cycle detected while resolving $ref: ${chain.join(' -> ')}`);
+    }
+    const nextVisited = new Set(visited).add(cacheKey);
+
     if (refCache.has(cacheKey)) {
-      return resolveRefs(refCache.get(cacheKey), path.dirname(fullPath));
+      return resolveRefs(refCache.get(cacheKey), path.dirname(fullPath), nextVisited);
     }
 
     try {
@@ -169,8 +190,11 @@ function resolveRefs(data, basePath = POEMS_DIR) {
       }
 
       refCache.set(cacheKey, result);
-      return resolveRefs(result, path.dirname(fullPath));
+      return resolveRefs(result, path.dirname(fullPath), nextVisited);
     } catch (err) {
+      if (err instanceof RefCycleError) {
+        throw err;
+      }
       console.error(`Error resolving reference ${data.$ref}:`, err.message);
       return data;
     }
@@ -181,7 +205,7 @@ function resolveRefs(data, basePath = POEMS_DIR) {
     if (value instanceof Date) {
       result[key] = value;
     } else {
-      result[key] = resolveRefs(value, basePath);
+      result[key] = resolveRefs(value, basePath, visited);
     }
   }
   return result;

@@ -39,7 +39,8 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", config = 
       .filter((file) => !file.startsWith("_")); // Skip files beginning with underscore
 
     if (yamlFiles.length === 0) {
-      return `<!DOCTYPE html>
+      return {
+        html: `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -56,7 +57,9 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", config = 
         </div>
     </div>
 </body>
-</html>`;
+</html>`,
+        errorCount: 0,
+      };
     }
 
     // Extract poem data from YAML files
@@ -187,6 +190,7 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", config = 
         </div>`;
 
     // Render each poem fragment in-memory (no file reads)
+    let errorCount = 0;
     poemData.forEach((poem) => {
       try {
         const poemDataObj = loadPoemData(poem.yamlPath);
@@ -201,11 +205,8 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", config = 
             <div class="poem-content">${poemContent}</div>
         </div>`;
       } catch (err) {
-        concatenatedContent += `
-        <div class="poem-section" id="${poem.anchor}" data-date="${poem.isoDate || ''}">
-            <h2 class="poem-title"><a href="${poem.slug}/">${poem.title}</a></h2>
-            <div class="poem-content"><p class="no-content">Error rendering poem: ${err.message}</p></div>
-        </div>`;
+        console.error(`Error rendering poem '${poem.title}' (${poem.yamlPath}):`, err.message);
+        errorCount++;
       }
     });
 
@@ -497,9 +498,12 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", config = 
 </body>
 </html>`;
 
-    return concatenatedContent;
+    return { html: concatenatedContent, errorCount };
   } catch (err) {
-    return `<!DOCTYPE html><html><body><h1>Error reading directory</h1><p>${err.message}</p></body></html>`;
+    return {
+      html: `<!DOCTYPE html><html><body><h1>Error reading directory</h1><p>${err.message}</p></body></html>`,
+      errorCount: 1,
+    };
   }
 }
 
@@ -802,10 +806,9 @@ function main() {
 
   console.log("Step 1: Building all-poems.html...");
 
-  const concatenatedContent = upsertFooter(
-    concatenateAllHtmlFiles(publicDir, favicon, config),
-    footerBlock
-  );
+  const { html: allPoemsHtml, errorCount: poemErrorCount } =
+    concatenateAllHtmlFiles(publicDir, favicon, config);
+  const concatenatedContent = upsertFooter(allPoemsHtml, footerBlock);
   const allPoemsOutputPath = path.join(publicDir, "all-poems.html");
 
   const prettifiedContent = beautify.html(concatenatedContent, {
@@ -818,10 +821,14 @@ function main() {
   fs.writeFileSync(allPoemsOutputPath, prettifiedContent, "utf8");
 
   console.log(`✅ Successfully generated ${allPoemsOutputPath}`);
+  if (poemErrorCount > 0) {
+    console.error(`❌ ${poemErrorCount} poem(s) failed to render into all-poems.html (see errors above)`);
+  }
 
   console.log("\nStep 2: Updating index.html...");
 
   const updatedIndexContent = generateIndexHtml(publicDir, favicon, subtitle, config);
+  let indexErrorCount = 0;
   if (updatedIndexContent) {
     const indexPath = path.join(publicDir, "index.html");
     const finalIndexContent = upsertFooter(updatedIndexContent, footerBlock);
@@ -835,7 +842,8 @@ function main() {
     fs.writeFileSync(indexPath, prettifiedIndexContent, "utf8");
     console.log(`✅ Successfully updated ${indexPath}`);
   } else {
-    console.log("⚠️  Skipped index.html update due to errors");
+    console.error("❌ Skipped index.html update due to errors (see warning above)");
+    indexErrorCount = 1;
   }
 
   console.log(
@@ -843,6 +851,12 @@ function main() {
       fs.readdirSync(publicDir).filter((f) => f.endsWith(".html")).length
     } HTML files`
   );
+
+  const totalErrorCount = poemErrorCount + indexErrorCount;
+  if (totalErrorCount > 0) {
+    console.error(`\n📊 Build failed: ${totalErrorCount} error(s) (see above).`);
+    process.exit(1);
+  }
 }
 
 if (require.main === module) {

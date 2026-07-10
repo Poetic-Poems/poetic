@@ -4,6 +4,7 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const { convertPoemToYaml } = require('../src/tools/poem-to-yaml');
 
@@ -48,4 +49,16 @@ test('every poem in the corpus converts without throwing', () => {
       `${f} should convert without error`
     );
   }
+});
+
+test('a poem with no title fails to convert (feeds the --all loop\'s error count)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-broken-poem-'));
+  const brokenPath = path.join(dir, 'broken.poem');
+  fs.writeFileSync(brokenPath, '', 'utf8');
+  assert.throws(
+    () => convertPoemToYaml(brokenPath),
+    /Missing title/,
+    'an empty .poem file should fail conversion with "Missing title", the same error the --all loop catches and counts'
+  );
+  fs.rmSync(dir, { recursive: true, force: true });
 });

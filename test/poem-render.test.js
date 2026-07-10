@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { renderFragment, renderPage, loadPoemData } = require('../src/tools/poem-render');
+const { renderFragment, renderPage, loadPoemData, resolveRefs, readPoemFile, clearRefCache } = require('../src/tools/poem-render');
 const { readPoeticConfig } = require('../src/tools/poetic-config');
 
 // Minimal poem YAML fixture ─ exercises the Audiomack audio path
@@ -436,4 +436,66 @@ test('redirect stub is a meta-refresh pointing to ./<slug>/', () => {
   assert.ok(redirectHtml.includes(`url=./${slug}/`), 'meta-refresh must point to ./<slug>/');
   assert.ok(redirectHtml.includes('<link rel="canonical"'), 'must have canonical link');
   assert.ok(!redirectHtml.includes('<!DOCTYPE html>\n<!DOCTYPE'), 'must have exactly one DOCTYPE');
+});
+
+// ── $ref cycle detection ────────────────────────────────────────────────────
+
+function writeTempRefFiles(filesMap) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-ref-cycle-'));
+  const paths = {};
+  for (const [name, content] of Object.entries(filesMap)) {
+    const p = path.join(dir, name);
+    fs.writeFileSync(p, content, 'utf8');
+    paths[name] = p;
+  }
+  return { dir, paths };
+}
+
+test('resolveRefs: a $ref that points back to itself throws a clear cycle error (not a RangeError / stack overflow)', () => {
+  clearRefCache();
+  const { paths } = writeTempRefFiles({
+    'self.yaml': '$ref: self.yaml\n',
+  });
+  const data = { $ref: 'self.yaml' };
+
+  let caught;
+  try {
+    resolveRefs(data, path.dirname(paths['self.yaml']));
+    assert.fail('expected resolveRefs to throw on a self-referencing $ref cycle');
+  } catch (err) {
+    caught = err;
+  }
+  assert.match(caught.message, /cycle/i, 'error message must mention the cycle');
+  assert.ok(caught.message.includes('self.yaml'), 'error message must name the referencing file');
+});
+
+test('resolveRefs: a two-file $ref cycle (A -> B -> A) throws a clear cycle error', () => {
+  clearRefCache();
+  const { paths } = writeTempRefFiles({
+    'a.yaml': '$ref: b.yaml\n',
+    'b.yaml': '$ref: a.yaml\n',
+  });
+  const data = { $ref: 'b.yaml' };
+
+  let caught;
+  try {
+    resolveRefs(data, path.dirname(paths['a.yaml']));
+    assert.fail('expected resolveRefs to throw on a two-file $ref cycle');
+  } catch (err) {
+    caught = err;
+  }
+  assert.match(caught.message, /cycle/i, 'error message must mention the cycle');
+  assert.ok(
+    caught.message.includes('a.yaml') && caught.message.includes('b.yaml'),
+    'error message must name both files in the cycle'
+  );
+});
+
+test('readPoemFile: a $ref cycle is caught and reported, returning null instead of crashing', () => {
+  clearRefCache();
+  const { paths } = writeTempRefFiles({
+    'cyclic.yaml': '$ref: cyclic.yaml\n',
+  });
+  const result = readPoemFile(paths['cyclic.yaml']);
+  assert.strictEqual(result, null, 'readPoemFile should return null (not throw / crash) on a $ref cycle');
 });

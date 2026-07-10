@@ -9,6 +9,22 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Build failures no longer degrade silently.** Several failure paths used
+  to log a message and let the pipeline exit 0, publishing a degraded site:
+  a `.poem` that failed conversion during `poem-to-yaml.js --all` simply
+  disappeared from the build; a poem that failed to render into
+  `all-poems.html` had `Error rendering poem: <message>` embedded in the
+  published page instead of failing the build; a failed `index.html`
+  regeneration logged "Skipped index.html update due to errors" and still
+  exited 0; and a `$ref` cycle in a poem's YAML crashed `resolveRefs` with an
+  unhelpful stack-overflow `RangeError`. All four now fail the build:
+  conversion and render errors are counted and reported, then the process
+  exits non-zero; `$ref` cycles are detected and raise a clear error naming
+  the referencing file and the cycle instead of recursing forever. Site
+  publishers now see CI fail instead of a partially-broken site deploying.
+
 ### Added
 
 - **Configurable site title.** A new top-level `title` key in
