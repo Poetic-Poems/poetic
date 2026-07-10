@@ -74,24 +74,24 @@ let refreshToken = undefined;
  *   `.blogger-credentials.json` resolved against the process's CWD; pass
  *   `null` to disable the file fallback entirely (e.g. for hermetic tests
  *   that must not pick up a real credentials file left on disk).
- * @returns {{ enabled: boolean, blogId: string|undefined, label: string, removed: string, content: string, audiomackArtist: string, hasCredentials: boolean }}
+ * @returns {{ enabled: boolean, blogId: string|undefined, label: string, removed: string, content: string, hasCredentials: boolean }}
  */
 function resolveConfig(config, env, credentialsPath = path.resolve('.blogger-credentials.json')) {
-  const enabled = config.blogger_sync === true;
-  const blogId = config.blogger_blog_id != null ? String(config.blogger_blog_id) : undefined;
+  const blogger = config.blogger || {};
+  const enabled = blogger.sync === true;
+  const blogId = blogger.blog_id != null ? String(blogger.blog_id) : undefined;
 
   const VALID_REMOVED = ['draft', 'delete', 'keep'];
-  const removed = VALID_REMOVED.includes(config.blogger_removed)
-    ? config.blogger_removed
+  const removed = VALID_REMOVED.includes(blogger.removed)
+    ? blogger.removed
     : 'draft';
 
   const VALID_CONTENT = ['full', 'poem'];
-  const content = VALID_CONTENT.includes(config.blogger_content)
-    ? config.blogger_content
+  const content = VALID_CONTENT.includes(blogger.content)
+    ? blogger.content
     : 'full';
 
-  const label = config.blogger_label || 'poem';
-  const audiomackArtist = config.audiomack_artist || '';
+  const label = blogger.label || 'poem';
 
   // Load fallback values from the credentials file if any env var is absent.
   let fileCredentials = {};
@@ -111,7 +111,7 @@ function resolveConfig(config, env, credentialsPath = path.resolve('.blogger-cre
 
   const hasCredentials = !!(clientId && clientSecret && refreshToken);
 
-  return { enabled, blogId, label, removed, content, audiomackArtist, hasCredentials };
+  return { enabled, blogId, label, removed, content, hasCredentials };
 }
 
 /**
@@ -477,12 +477,12 @@ async function main() {
     const opts = resolveConfig(rawConfig, process.env);
 
     if (!opts.enabled) {
-      console.log('Blogger sync disabled (set blogger_sync: true in .poetic-config.yaml).');
+      console.log('Blogger sync disabled (set blogger: { sync: true } in .poetic-config.yaml).');
       return;
     }
 
     if (!opts.blogId) {
-      console.log('Blogger sync: blogger_blog_id is required in .poetic-config.yaml.');
+      console.log('Blogger sync: blogger.blog_id is required in .poetic-config.yaml.');
       return;
     }
 

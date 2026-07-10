@@ -1,25 +1,29 @@
 /**
  * Read and parse the .poetic-config.yaml file at the repo root.
  *
- * Supported keys:
- *   favicon          - filename of the browser-tab icon (inside public/)
- *   subtitle         - subtitle shown below the site title on index.html
- *   audiomack_artist - Audiomack artist slug used for embedded players
- *   skip_paths       - list of paths to skip during framework sync
- *   auto_sync        - true to enable scheduled sync workflow
- *   sync_schedule    - "hourly", "daily", or "weekly"
- *   blogger_sync     - true to enable Blogger publishing (default: false)
- *   blogger_blog_id  - numeric Blogger blog ID (from the blog URL) — must be
- *                       quoted as a string in YAML; it exceeds
- *                       Number.MAX_SAFE_INTEGER and loses precision if
- *                       parsed as a YAML number
- *   blogger_removed  - what to do with removed poems: "draft" (default), "delete", or "keep"
- *   blogger_content  - post content: "full" (default, HTML page) or "poem" (poem fragment only)
- *   blogger_label    - Blogger label applied to managed posts (default: "poem")
- *   blogger_template - path to the Blogger theme template file (default: public/blogger-template.html)
- *   show_footer      - false to omit the Poetic footer (default: true)
- *   footer_source    - path to the footer HTML file (default: public/poetic-footer.html)
- *   song_handlers    - map of custom song-link/embedded-player handlers (see docs/BUILD.md)
+ * Supported keys (grouped hierarchically — see examples/poetic-config.example.yaml
+ * for a fully-commented reference):
+ *   favicon            - filename of the browser-tab icon (inside public/)
+ *   subtitle           - subtitle shown below the site title on index.html
+ *   skip_paths         - list of paths to skip during framework sync
+ *   auto_sync.enabled  - true to enable scheduled sync workflow
+ *   auto_sync.schedule - "hourly", "daily", or "weekly"
+ *   footer.enabled     - false to omit the Poetic footer (default: true)
+ *   footer.source      - path to the footer HTML file (default: public/poetic-footer.html)
+ *   blogger.sync       - true to enable Blogger publishing (default: false)
+ *   blogger.blog_id    - numeric Blogger blog ID (from the blog URL) — must be
+ *                         quoted as a string in YAML; it exceeds
+ *                         Number.MAX_SAFE_INTEGER and loses precision if
+ *                         parsed as a YAML number
+ *   blogger.removed    - what to do with removed poems: "draft" (default), "delete", or "keep"
+ *   blogger.content    - post content: "full" (default, HTML page) or "poem" (poem fragment only)
+ *   blogger.label      - Blogger label applied to managed posts (default: "poem")
+ *   blogger.template   - path to the Blogger theme template file (default: public/blogger-template.html)
+ *   song_handlers      - map of custom song-link/embedded-player handlers, keyed by
+ *                         service name; a handler's own scalar fields (e.g. an
+ *                         `artist` added under song_handlers.audiomack) become
+ *                         {token} values in that handler's URL templates (see
+ *                         docs/BUILD.md)
  */
 
 const fs = require('fs');
@@ -34,7 +38,7 @@ const LEGACY_CONFIG_FILENAME = '.poetic-config';
  * Returns an empty object if the file does not exist.
  *
  * @param {string} [cwd] - Directory to search for .poetic-config.yaml (defaults to process.cwd())
- * @returns {{ favicon?: string, subtitle?: string, audiomack_artist?: string, skip_paths?: string[], auto_sync?: boolean, sync_schedule?: string, blogger_sync?: boolean, blogger_blog_id?: string, blogger_removed?: string, blogger_content?: string, blogger_label?: string, blogger_template?: string, show_footer?: boolean, footer_source?: string, song_handlers?: object }}
+ * @returns {{ favicon?: string, subtitle?: string, skip_paths?: string[], auto_sync?: { enabled?: boolean, schedule?: string }, footer?: { enabled?: boolean, source?: string }, blogger?: { sync?: boolean, blog_id?: string, removed?: string, content?: string, label?: string, template?: string }, song_handlers?: object }}
  */
 function readPoeticConfig(cwd) {
   const root = cwd || process.cwd();
@@ -54,10 +58,10 @@ function readPoeticConfig(cwd) {
   const parsed = yaml.load(fs.readFileSync(configPath, 'utf8'));
   const config = (parsed && typeof parsed === 'object') ? parsed : {};
 
-  if (typeof config.blogger_blog_id === 'number') {
+  if (config.blogger && typeof config.blogger.blog_id === 'number') {
     console.warn(
-      `Warning: blogger_blog_id was parsed as a YAML number and may have lost ` +
-      `precision. Quote it as a string in ${CONFIG_FILENAME}, e.g. blogger_blog_id: "${config.blogger_blog_id}".`
+      `Warning: blogger.blog_id was parsed as a YAML number and may have lost ` +
+      `precision. Quote it as a string in ${CONFIG_FILENAME}, e.g. blogger: { blog_id: "${config.blogger.blog_id}" }.`
     );
   }
 

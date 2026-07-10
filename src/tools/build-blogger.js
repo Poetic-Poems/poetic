@@ -27,7 +27,7 @@ const { readPoeticConfig } = require("./poetic-config");
  * Resolve the Blogger template path.
  *
  * Priority:
- *   1. config.blogger_template (if set)
+ *   1. config.blogger.template (if set)
  *   2. <publicDir>/blogger-template.html (if it exists)
  *   3. First <publicDir>/*.template.html found (backward-compat with old hardcoded name)
  *   4. Default: <publicDir>/blogger-template.html
@@ -38,8 +38,8 @@ const { readPoeticConfig } = require("./poetic-config");
  */
 function resolveTemplatePath(config, publicDir) {
   // 1. Explicit config key
-  if (config.blogger_template) {
-    return config.blogger_template;
+  if (config.blogger && config.blogger.template) {
+    return config.blogger.template;
   }
 
   // 2. Canonical name

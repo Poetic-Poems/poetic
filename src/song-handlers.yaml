@@ -18,8 +18,11 @@
 #   {value}                          the text after the service name (empty for a
 #                                    bare line such as "Audiomack")
 #   {slug} {title} {author} {date}   poem context
-#   {<config-key>}                   any scalar in .poetic-config.yaml, e.g.
-#                                    {audiomack_artist}
+#   {<top-level config key>}         any scalar at the top level of .poetic-config.yaml
+#   {<handler field>}                any scalar set on this handler itself — including
+#                                    ones added only by a consumer override, e.g. the
+#                                    builtin audiomack handler's {artist} token, which
+#                                    a consumer supplies via song_handlers.audiomack.artist
 # A fallback chain {a|b} resolves to the first token that is non-empty, so
 # {value|slug} means "the author's value, or the poem slug if none was given".
 #
@@ -36,7 +39,9 @@
 # can retune just `media_sizes.audio.height` without redeclaring `embed_url`.
 
 audiomack:
-  embed_url: "https://audiomack.com/embed/{audiomack_artist}/song/{value|slug}"
+  # {artist} has no builtin value — a consumer supplies it via
+  # song_handlers.audiomack.artist in .poetic-config.yaml.
+  embed_url: "https://audiomack.com/embed/{artist}/song/{value|slug}"
   button_label: "🎵 Load Audiomack Player"
   embed_height: "252px"
 

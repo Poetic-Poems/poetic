@@ -164,7 +164,7 @@ function buildAllPoems() {
 
   // Warn about stale HTML artefacts that have no corresponding YAML source.
   // Exclude framework-generated aggregates (index, all-poems), template files,
-  // and the configured footer_source file (when it lives directly in public/).
+  // and the configured footer.source file (when it lives directly in public/).
   const footerSourcePath = resolveFooterSourcePath(config, REPO_ROOT);
   const footerSourceBasename = path.dirname(footerSourcePath) === PUBLIC_DIR
     ? path.basename(footerSourcePath)

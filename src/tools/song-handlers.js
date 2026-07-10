@@ -15,8 +15,10 @@
  *   {value}                        - the text the author wrote after the service
  *                                    name (empty for a bare line, e.g. "Audiomack")
  *   {slug} {title} {author} {date} - poem context
- *   {<config-key>}                 - any scalar in .poetic-config.yaml, e.g.
- *                                    {audiomack_artist}
+ *   {<top-level config key>}       - any scalar at the top level of .poetic-config.yaml
+ *   {<handler field>}              - any scalar on the matched handler itself, e.g.
+ *                                    {artist} for the builtin audiomack handler, set
+ *                                    via song_handlers.audiomack.artist
  * A fallback chain {a|b|c} resolves to the first token that is non-empty.
  *
  * A handler that serves several kinds of media (e.g. mega: audio and video)
@@ -118,14 +120,23 @@ function audioValueString(value) {
   return (typeof inner === 'string') ? inner : '';
 }
 
-/** Build the {token} scope: scalar config values + poem context + author value. */
-function buildScope(value, ctx = {}, config = {}) {
+/**
+ * Build the {token} scope: top-level config scalars, then the matched
+ * handler's own scalar fields (e.g. `artist` merged in from
+ * song_handlers.audiomack.artist — see loadSongHandlers), then poem context,
+ * then the author value. Later sources win on key collision.
+ */
+function buildScope(value, ctx = {}, config = {}, handler = {}) {
   const scope = {};
-  for (const [k, v] of Object.entries(config)) {
-    if (v == null) continue;
-    const t = typeof v;
-    if (t === 'string' || t === 'number' || t === 'boolean') scope[k] = String(v);
-  }
+  const addScalars = (obj) => {
+    for (const [k, v] of Object.entries(obj)) {
+      if (v == null) continue;
+      const t = typeof v;
+      if (t === 'string' || t === 'number' || t === 'boolean') scope[k] = String(v);
+    }
+  };
+  addScalars(config);
+  addScalars(handler);
   for (const name of ['slug', 'title', 'author', 'date']) {
     if (ctx[name] != null) scope[name] = String(ctx[name]);
   }
@@ -275,7 +286,7 @@ function resolveSongs(audio, opts = {}) {
       );
       continue;
     }
-    const scope = buildScope(value, ctx, config);
+    const scope = buildScope(value, ctx, config, handler);
     const song = { service };
     if (handler.embed_url) {
       const { size, media } = resolveEmbedSize(value, handler, service);

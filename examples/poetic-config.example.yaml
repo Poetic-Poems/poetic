@@ -1,0 +1,77 @@
+# Exemplar .poetic-config.yaml — every option Poetic supports, documented and
+# commented out. Copy the section(s) you need into your repo's own
+# .poetic-config.yaml (at the repo root), uncomment, and fill in your values.
+#
+# Full reference: docs/BUILD.md and docs/BLOGGER.md in the poetic framework
+# repo (https://github.com/warwickallen/poetic).
+#
+# This file itself is framework-owned and kept in sync by
+# scripts/sync-framework.sh — do not edit your copy of it; edit your repo's
+# .poetic-config.yaml instead.
+
+# ── Site metadata ────────────────────────────────────────────────────────────
+
+# Filename (inside public/) of the browser-tab icon. Default: poetic-logo.svg
+# favicon: my-icon.png
+
+# Subtitle shown below the site title on index.html. Default: "My Poems"
+# subtitle: Poems by Jane Author
+
+# ── Framework sync ───────────────────────────────────────────────────────────
+
+# Paths to leave untouched by scripts/sync-framework.sh — e.g. to keep a
+# locally-modified copy of a framework file.
+# skip_paths:
+#   - public/poetic.css
+
+# Scheduled auto-sync via GitHub Actions (.github/workflows/sync-framework.yml).
+# Manual syncs (scripts/sync-framework.sh, or the workflow's "Run workflow"
+# button) always work regardless of this setting.
+# auto_sync:
+#   enabled:  true      # default: false (manual sync only)
+#   schedule: weekly    # hourly | daily | weekly (default: weekly)
+
+# ── Footer ────────────────────────────────────────────────────────────────────
+
+# footer:
+#   enabled: false                      # default: true
+#   source:  public/poetic-footer.html  # default shown
+
+# ── Blogger publishing (see docs/BLOGGER.md) ─────────────────────────────────
+
+# Publishes poems to a Blogger blog on every push to main via
+# .github/workflows/sync-blogger.yml. OAuth credentials (client id/secret,
+# refresh token) are GitHub Actions secrets, not stored here.
+# blogger:
+#   sync:     true                              # default: false
+#   blog_id:  "1234567890123456789"             # required when sync is true; quote it — it
+#                                                # exceeds Number.MAX_SAFE_INTEGER as a YAML number
+#   removed:  draft                             # draft | delete | keep (default: draft)
+#   content:  full                              # full | poem (default: full)
+#   label:    poem                              # Blogger label applied to managed posts (default: poem)
+#   template: public/blogger-template.html      # default shown
+
+# ── Song handlers (see docs/BUILD.md#custom-song-handlers) ──────────────────
+
+# Add config used by a builtin handler's URL template, and/or define new
+# handlers, and/or override parts of a builtin handler (deep-merged by name;
+# a null value deletes a key).
+# song_handlers:
+#
+#   # The builtin `audiomack` handler has no artist baked in — supply your
+#   # own slug here; its embed_url template resolves it as {artist}.
+#   audiomack:
+#     artist: your-audiomack-slug
+#
+#   # A new handler: at least one of link_url / embed_url is required.
+#   youtube:
+#     embed_url:    "https://www.youtube.com/embed/{value}"
+#     button_label: "▶ Load YouTube"
+#     link_url:     "https://youtu.be/{value}"
+#     link_label:   "watch on YouTube"
+#
+#   # Retune one size profile on the builtin `mega` handler without
+#   # redeclaring its embed_url.
+#   mega:
+#     media_sizes:
+#       audio: { aspect_ratio: null, height: "300px" }

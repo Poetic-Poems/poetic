@@ -72,6 +72,16 @@ Full spec: `docs/POEM-SYNTAX.md` and `poem-syntax.ebnf`.
 See `.github/workflows/release.yml`. Releases are tagged; consumer repos can pin to a tag via
 `.poetic-version`.
 
+## Exemplar config
+
+`examples/poetic-config.example.yaml` documents every `.poetic-config.yaml`
+option as a commented-out section, so a consumer can uncomment just the
+feature they want instead of hunting through docs. It is synced to consumers
+(the `examples/` path is framework-owned). Whenever a config key is added,
+renamed, or removed in `src/tools/poetic-config.js` or elsewhere, update this
+file in the same change — keep it aligned with the code and with
+`docs/BUILD.md` / `docs/BLOGGER.md`.
+
 ## Documentation principles
 
 - **`CHANGELOG.md`** is the only place for recording what changed and when.

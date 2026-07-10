@@ -98,7 +98,7 @@ public/
 ├── all-poems.html                       # Generated concatenated view
 ├── poetic.css                           # Framework CSS (synced from poetic)
 ├── poetic.js                            # Framework JS — shared Audiomack loader (synced)
-├── poetic-footer.html                   # Default footer content (synced; see footer_source)
+├── poetic-footer.html                   # Default footer content (synced; see footer.source)
 ├── custom.css                           # User CSS (never overwritten by sync)
 ├── fragments-and-unity.template.html    # Blogger template with injected CSS
 ├── poem1.html                           # Redirect stub → poem1/ (meta-refresh)
@@ -177,7 +177,9 @@ Set the Audiomack artist referenced by the builtin `audiomack` handler's URL
 template in `.poetic-config.yaml`:
 
 ```yaml
-audiomack_artist: saltysojourner
+song_handlers:
+  audiomack:
+    artist: saltysojourner
 ```
 
 ### Custom song handlers
@@ -229,8 +231,10 @@ resolved at build time:
 - `{value}` — the text the poem author wrote after the service name (empty for
   a bare line such as `Audiomack`)
 - `{slug}`, `{title}`, `{author}`, `{date}` — the poem's own context
-- any scalar key from `.poetic-config.yaml` — e.g. `{audiomack_artist}`, as
-  used by the builtin `audiomack` handler
+- any scalar key at the top level of `.poetic-config.yaml`
+- any scalar field set on the matched handler itself — e.g. `{artist}`, as
+  used by the builtin `audiomack` handler and set via
+  `song_handlers.audiomack.artist`
 
 A **fallback chain** `{a|b|c}` resolves to the first token in the list that is
 non-empty. For example, the builtin `audiomack` handler uses
@@ -354,34 +358,40 @@ User-specific build settings live in `.poetic-config.yaml` at the repo root. Thi
 
 Supported keys:
 
+Keys are grouped hierarchically by feature. A fully-commented reference of
+every key — copy the section you need and uncomment it — lives at
+[`examples/poetic-config.example.yaml`](../examples/poetic-config.example.yaml).
+
 | Key | Default | Description |
 |-----|---------|-------------|
 | `favicon` | `poetic-logo.svg` | Filename (inside `public/`) of the browser-tab icon |
 | `subtitle` | `My Poems` | Subtitle shown below the site title on `index.html` |
-| `audiomack_artist` | _(none)_ | Audiomack artist slug used for embedded audio players (e.g. `saltysojourner`) |
-| `song_handlers` | _(none)_ | Map of custom song-handler definitions (service name → `link_url`/`embed_url`/labels/size), deep-merged with the builtin `audiomack`/`suno`/`mega` handlers; see [Custom song handlers](#custom-song-handlers) |
 | `skip_paths` | _(none)_ | List of framework paths to skip during sync |
-| `auto_sync` | _(off)_ | Set to `true` to enable the hourly scheduled sync workflow |
-| `sync_schedule` | `weekly` | How often the scheduled sync runs: `hourly`, `daily`, or `weekly` |
-| `blogger_sync` | `false` | Set to `true` to enable automatic Blogger publishing via GitHub Actions |
-| `blogger_blog_id` | _(required when enabled)_ | Numeric Blogger blog ID (visible in the blog URL in Blogger settings) — quote it as a string; it exceeds `Number.MAX_SAFE_INTEGER` and loses precision as a YAML number |
-| `blogger_removed` | `draft` | What happens to a post when its source poem is removed: `draft`, `delete`, or `keep` |
-| `blogger_content` | `full` | Content posted to Blogger: `full` (complete styled HTML page) or `poem` (poem fragment only) |
-| `blogger_label` | `poem` | Blogger label applied to all managed posts |
-| `blogger_template` | `public/blogger-template.html` | Path to the Blogger XML theme template file injected by `npm run build:blogger` |
-| `show_footer` | `true` | Set to `false` to omit the footer from every built page |
-| `footer_source` | `public/poetic-footer.html` | Path to the HTML file whose contents are injected as the page footer |
+| `auto_sync.enabled` | _(off)_ | Set to `true` to enable the scheduled sync workflow |
+| `auto_sync.schedule` | `weekly` | How often the scheduled sync runs: `hourly`, `daily`, or `weekly` |
+| `footer.enabled` | `true` | Set to `false` to omit the footer from every built page |
+| `footer.source` | `public/poetic-footer.html` | Path to the HTML file whose contents are injected as the page footer |
+| `blogger.sync` | `false` | Set to `true` to enable automatic Blogger publishing via GitHub Actions |
+| `blogger.blog_id` | _(required when enabled)_ | Numeric Blogger blog ID (visible in the blog URL in Blogger settings) — quote it as a string; it exceeds `Number.MAX_SAFE_INTEGER` and loses precision as a YAML number |
+| `blogger.removed` | `draft` | What happens to a post when its source poem is removed: `draft`, `delete`, or `keep` |
+| `blogger.content` | `full` | Content posted to Blogger: `full` (complete styled HTML page) or `poem` (poem fragment only) |
+| `blogger.label` | `poem` | Blogger label applied to all managed posts |
+| `blogger.template` | `public/blogger-template.html` | Path to the Blogger XML theme template file injected by `npm run build:blogger` |
+| `song_handlers` | _(none)_ | Map of custom song-handler definitions (service name → `link_url`/`embed_url`/labels/size/handler-specific config), deep-merged with the builtin `audiomack`/`suno`/`mega` handlers; see [Custom song handlers](#custom-song-handlers) |
 
 Example:
 
 ```yaml
 favicon: my-icon.png
 subtitle: Warwick Allen's Poems
-audiomack_artist: saltysojourner
 skip_paths:
   - public/poetic-logo.svg
-auto_sync: true
-sync_schedule: hourly
+auto_sync:
+  enabled: true
+  schedule: hourly
+song_handlers:
+  audiomack:
+    artist: saltysojourner
 ```
 
 #### Favicon
@@ -416,13 +426,15 @@ Every page the build generates — individual poem pages, `index.html`, `all-poe
 Turn it off entirely:
 
 ```yaml
-show_footer: false
+footer:
+  enabled: false
 ```
 
-Or supply your own footer content by pointing `footer_source` at a file of your own (never overwritten by a framework sync, unlike the default `public/poetic-footer.html`):
+Or supply your own footer content by pointing `footer.source` at a file of your own (never overwritten by a framework sync, unlike the default `public/poetic-footer.html`):
 
 ```yaml
-footer_source: public/my-footer.html
+footer:
+  source: public/my-footer.html
 ```
 
 The footer source file is raw HTML, injected verbatim inside a `<footer class="poetic-footer">` wrapper. It may reference `%{base}` — the relative path prefix back to the site root (`''` on `index.html`/`all-poems.html`, `../` on one-directory-deep pages like individual poem pages and `raw/index.html`) — useful for linking an image or asset that lives in `public/`:
@@ -431,7 +443,7 @@ The footer source file is raw HTML, injected verbatim inside a `<footer class="p
 <img src="%{base}poetic-logo.svg" alt="Poetic logo">
 ```
 
-Rebuilding is idempotent: each build replaces the previously-inserted footer in place (identified by an HTML comment marker) rather than appending a new one, so `index.html` never accumulates duplicate footers across repeated builds, and toggling `show_footer` off removes an existing footer on the next build.
+Rebuilding is idempotent: each build replaces the previously-inserted footer in place (identified by an HTML comment marker) rather than appending a new one, so `index.html` never accumulates duplicate footers across repeated builds, and toggling `footer.enabled` off removes an existing footer on the next build.
 
 To keep the default footer file but prevent it being overwritten on the next framework sync, add it to `skip_paths`:
 

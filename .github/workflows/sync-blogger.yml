@@ -31,9 +31,27 @@ jobs:
       - name: Check feature flag
         id: precheck
         run: |
-          if [ ! -f .poetic-config.yaml ] || ! grep -qE '^blogger_sync:[[:space:]]*true[[:space:]]*$' .poetic-config.yaml; then
+          # Read a subkey nested one level under a top-level block, e.g. the
+          # `sync` in `blogger:\n  sync: true`. Mirrors the skip_paths
+          # block-scoping in scripts/sync-framework.sh.
+          yaml_subkey() {
+            awk -v block="$2" -v key="$3" '
+              $0 ~ "^"block":[[:space:]]*$" { in_block=1; next }
+              in_block && /^[^[:space:]]/ { in_block=0 }
+              in_block && $0 ~ "^[[:space:]]+"key":" {
+                sub("^[[:space:]]+"key":[[:space:]]*", "");
+                gsub(/^["'"'"']|["'"'"']$/, "");
+                print;
+                exit
+              }
+            ' "$1"
+          }
+
+          blogger_sync=""
+          [ -f .poetic-config.yaml ] && blogger_sync=$(yaml_subkey .poetic-config.yaml blogger sync)
+          if [ "$blogger_sync" != "true" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "Blogger sync disabled. Set blogger_sync: true in .poetic-config.yaml to enable."
+            echo "Blogger sync disabled. Set 'blogger: { sync: true }' in .poetic-config.yaml to enable."
             exit 0
           fi
           echo "skip=false" >> "$GITHUB_OUTPUT"

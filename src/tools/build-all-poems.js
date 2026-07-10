@@ -771,10 +771,10 @@ function main() {
   }
   // all-poems.html and index.html both live at the public/ root.
   const footerBlock = renderFooter(config, REPO_ROOT, { base: '' });
-  if (config.show_footer === false) {
-    console.log('Footer disabled via .poetic-config.yaml (show_footer: false)');
-  } else if (config.footer_source) {
-    console.log(`Using footer_source from .poetic-config.yaml: ${config.footer_source}`);
+  if (config.footer && config.footer.enabled === false) {
+    console.log('Footer disabled via .poetic-config.yaml (footer.enabled: false)');
+  } else if (config.footer && config.footer.source) {
+    console.log(`Using footer.source from .poetic-config.yaml: ${config.footer.source}`);
   }
 
   console.log("Step 1: Building all-poems.html...");

@@ -9,6 +9,35 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking: `.poetic-config.yaml` is now hierarchical.** Related keys are
+  grouped under a parent key instead of sharing a flat `foo_bar` prefix, and
+  the Audiomack artist slug moved from a standalone key to a field on its own
+  handler (any handler can now take config the same way). `favicon`,
+  `subtitle`, and `skip_paths` are unchanged, at the top level. Update your
+  `.poetic-config.yaml` by hand — there is no auto-migration. See
+  `examples/poetic-config.example.yaml` for a fully-commented reference of
+  every key in the new shape.
+
+  | Old (flat) key | New (nested) key |
+  |---|---|
+  | `auto_sync` | `auto_sync.enabled` |
+  | `sync_schedule` | `auto_sync.schedule` |
+  | `show_footer` | `footer.enabled` |
+  | `footer_source` | `footer.source` |
+  | `blogger_sync` | `blogger.sync` |
+  | `blogger_blog_id` | `blogger.blog_id` |
+  | `blogger_removed` | `blogger.removed` |
+  | `blogger_content` | `blogger.content` |
+  | `blogger_label` | `blogger.label` |
+  | `blogger_template` | `blogger.template` |
+  | `audiomack_artist` | `song_handlers.audiomack.artist` |
+
+  The `{audiomack_artist}` token in a custom `song_handlers` URL template is
+  now `{artist}` — any scalar field set on a handler (built-in or overridden)
+  is available as a token under its own name, not just top-level config keys.
+
 ### Added
 
 - **MEGA.nz builtin song handler (`Mega:`).** A public MEGA file link (its

@@ -3,10 +3,10 @@
 /**
  * Shared footer renderer for GitHub Pages output.
  *
- * `renderFooter` reads the file named by .poetic-config.yaml's `footer_source`
+ * `renderFooter` reads the file named by .poetic-config.yaml's `footer.source`
  * (default: public/poetic-footer.html) and wraps its contents in a marked
  * <footer class="poetic-footer"> block, or returns '' when the footer is
- * disabled (show_footer: false) or the source file is missing.
+ * disabled (footer.enabled: false) or the source file is missing.
  *
  * The footer source file may reference `%{base}` — the relative path prefix
  * to the site root ('' for root-level pages, '../' for one-level-deep pages
@@ -29,32 +29,32 @@ const FOOTER_START = '<!-- poetic:footer -->';
 const FOOTER_END = '<!-- /poetic:footer -->';
 
 /**
- * Resolve .poetic-config.yaml's `footer_source` (default: public/poetic-footer.html)
+ * Resolve .poetic-config.yaml's `footer.source` (default: public/poetic-footer.html)
  * to an absolute path, without checking whether it exists.
  *
  * @param {object} config - parsed .poetic-config.yaml
- * @param {string} repoRoot - directory footer_source is resolved against
+ * @param {string} repoRoot - directory footer.source is resolved against
  * @returns {string}
  */
 function resolveFooterSourcePath(config, repoRoot) {
-  const footerSource = config.footer_source || DEFAULT_FOOTER_SOURCE;
+  const footerSource = (config.footer && config.footer.source) || DEFAULT_FOOTER_SOURCE;
   return path.isAbsolute(footerSource) ? footerSource : path.join(repoRoot, footerSource);
 }
 
 /**
  * @param {object} config - parsed .poetic-config.yaml (see poetic-config.js)
- * @param {string} repoRoot - directory footer_source is resolved against
+ * @param {string} repoRoot - directory footer.source is resolved against
  * @param {{ base?: string }} [opts] - base: relative prefix to the site root
  * @returns {string} the marked <footer> block, or '' if disabled/missing
  */
 function renderFooter(config, repoRoot, opts = {}) {
-  if (config.show_footer === false) return '';
+  if (config.footer && config.footer.enabled === false) return '';
 
   const { base = '' } = opts;
   const footerPath = resolveFooterSourcePath(config, repoRoot);
 
   if (!fs.existsSync(footerPath)) {
-    console.warn(`Warning: footer_source file not found: ${footerPath}; skipping footer`);
+    console.warn(`Warning: footer.source file not found: ${footerPath}; skipping footer`);
     return '';
   }
 

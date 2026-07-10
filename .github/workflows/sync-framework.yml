@@ -2,7 +2,7 @@ name: Sync framework from poetic
 
 on:
   schedule:
-    - cron: '0 * * * *'   # Every hour (sync_schedule in .poetic-config.yaml determines when to actually run)
+    - cron: '0 * * * *'   # Every hour (auto_sync.schedule in .poetic-config.yaml determines when to actually run)
   workflow_dispatch:
     inputs:
       ref:
@@ -30,12 +30,30 @@ jobs:
             exit 0
           fi
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            if [ ! -f .poetic-config.yaml ] || ! grep -qE '^auto_sync:[[:space:]]*true[[:space:]]*$' .poetic-config.yaml; then
+            # Read a subkey nested one level under a top-level block, e.g. the
+            # `enabled` in `auto_sync:\n  enabled: true`. Mirrors the skip_paths
+            # block-scoping in scripts/sync-framework.sh.
+            yaml_subkey() {
+              awk -v block="$2" -v key="$3" '
+                $0 ~ "^"block":[[:space:]]*$" { in_block=1; next }
+                in_block && /^[^[:space:]]/ { in_block=0 }
+                in_block && $0 ~ "^[[:space:]]+"key":" {
+                  sub("^[[:space:]]+"key":[[:space:]]*", "");
+                  gsub(/^["'"'"']|["'"'"']$/, "");
+                  print;
+                  exit
+                }
+              ' "$1"
+            }
+
+            auto_sync_enabled=""
+            [ -f .poetic-config.yaml ] && auto_sync_enabled=$(yaml_subkey .poetic-config.yaml auto_sync enabled)
+            if [ "$auto_sync_enabled" != "true" ]; then
               echo "skip=true" >> "$GITHUB_OUTPUT"
-              echo "Scheduled auto-sync is not enabled. Create .poetic-config.yaml with 'auto_sync: true' to enable it."
+              echo "Scheduled auto-sync is not enabled. Set 'auto_sync: { enabled: true }' in .poetic-config.yaml to enable it."
               exit 0
             fi
-            sync_schedule=$(grep -E '^sync_schedule:' .poetic-config.yaml 2>/dev/null | sed -E 's/^sync_schedule:[[:space:]]*//; s/[[:space:]]*$//; s/^["'"'"']//; s/["'"'"']$//')
+            sync_schedule=$(yaml_subkey .poetic-config.yaml auto_sync schedule)
             sync_schedule="${sync_schedule:-weekly}"
             case "$sync_schedule" in
               hourly)

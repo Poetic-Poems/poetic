@@ -76,51 +76,50 @@ test('resolveConfig: defaults when config is empty', () => {
   assert.strictEqual(opts.label, 'poem');
   assert.strictEqual(opts.removed, 'draft');
   assert.strictEqual(opts.content, 'full');
-  assert.strictEqual(opts.audiomackArtist, '');
   assert.strictEqual(opts.hasCredentials, false);
 });
 
-test('resolveConfig: enabled=true when blogger_sync=true', () => {
-  const opts = resolveConfig({ blogger_sync: true }, {}, null);
+test('resolveConfig: enabled=true when blogger.sync=true', () => {
+  const opts = resolveConfig({ blogger: { sync: true } }, {}, null);
   assert.strictEqual(opts.enabled, true);
 });
 
 test('resolveConfig: enabled=false for any value other than the boolean true', () => {
-  assert.strictEqual(resolveConfig({ blogger_sync: 'true' }, {}, null).enabled, false);
-  assert.strictEqual(resolveConfig({ blogger_sync: 'yes' }, {}, null).enabled, false);
-  assert.strictEqual(resolveConfig({ blogger_sync: 1 }, {}, null).enabled, false);
-  assert.strictEqual(resolveConfig({ blogger_sync: '' }, {}, null).enabled, false);
+  assert.strictEqual(resolveConfig({ blogger: { sync: 'true' } }, {}, null).enabled, false);
+  assert.strictEqual(resolveConfig({ blogger: { sync: 'yes' } }, {}, null).enabled, false);
+  assert.strictEqual(resolveConfig({ blogger: { sync: 1 } }, {}, null).enabled, false);
+  assert.strictEqual(resolveConfig({ blogger: { sync: '' } }, {}, null).enabled, false);
 });
 
-test('resolveConfig: picks up blogger_blog_id', () => {
-  const opts = resolveConfig({ blogger_blog_id: '1234567890' }, {}, null);
+test('resolveConfig: picks up blogger.blog_id', () => {
+  const opts = resolveConfig({ blogger: { blog_id: '1234567890' } }, {}, null);
   assert.strictEqual(opts.blogId, '1234567890');
 });
 
-test('resolveConfig: picks up blogger_label', () => {
-  const opts = resolveConfig({ blogger_label: 'verses' }, {}, null);
+test('resolveConfig: picks up blogger.label', () => {
+  const opts = resolveConfig({ blogger: { label: 'verses' } }, {}, null);
   assert.strictEqual(opts.label, 'verses');
 });
 
 test('resolveConfig: valid removed values are accepted', () => {
-  assert.strictEqual(resolveConfig({ blogger_removed: 'draft' }, {}, null).removed, 'draft');
-  assert.strictEqual(resolveConfig({ blogger_removed: 'delete' }, {}, null).removed, 'delete');
-  assert.strictEqual(resolveConfig({ blogger_removed: 'keep' }, {}, null).removed, 'keep');
+  assert.strictEqual(resolveConfig({ blogger: { removed: 'draft' } }, {}, null).removed, 'draft');
+  assert.strictEqual(resolveConfig({ blogger: { removed: 'delete' } }, {}, null).removed, 'delete');
+  assert.strictEqual(resolveConfig({ blogger: { removed: 'keep' } }, {}, null).removed, 'keep');
 });
 
 test('resolveConfig: invalid removed falls back to "draft"', () => {
-  assert.strictEqual(resolveConfig({ blogger_removed: 'archive' }, {}, null).removed, 'draft');
-  assert.strictEqual(resolveConfig({ blogger_removed: '' }, {}, null).removed, 'draft');
+  assert.strictEqual(resolveConfig({ blogger: { removed: 'archive' } }, {}, null).removed, 'draft');
+  assert.strictEqual(resolveConfig({ blogger: { removed: '' } }, {}, null).removed, 'draft');
 });
 
 test('resolveConfig: valid content values are accepted', () => {
-  assert.strictEqual(resolveConfig({ blogger_content: 'full' }, {}, null).content, 'full');
-  assert.strictEqual(resolveConfig({ blogger_content: 'poem' }, {}, null).content, 'poem');
+  assert.strictEqual(resolveConfig({ blogger: { content: 'full' } }, {}, null).content, 'full');
+  assert.strictEqual(resolveConfig({ blogger: { content: 'poem' } }, {}, null).content, 'poem');
 });
 
 test('resolveConfig: invalid content falls back to "full"', () => {
-  assert.strictEqual(resolveConfig({ blogger_content: 'text' }, {}, null).content, 'full');
-  assert.strictEqual(resolveConfig({ blogger_content: '' }, {}, null).content, 'full');
+  assert.strictEqual(resolveConfig({ blogger: { content: 'text' } }, {}, null).content, 'full');
+  assert.strictEqual(resolveConfig({ blogger: { content: '' } }, {}, null).content, 'full');
 });
 
 test('resolveConfig: hasCredentials true when all three vars present', () => {
@@ -142,11 +141,6 @@ test('resolveConfig: hasCredentials true when missing env vars are filled in fro
   const fixturePath = path.join(__dirname, 'fixtures', 'blogger-credentials.json');
   const opts = resolveConfig({}, { BLOGGER_CLIENT_ID: 'x' }, fixturePath);
   assert.strictEqual(opts.hasCredentials, true);
-});
-
-test('resolveConfig: audiomackArtist from audiomack_artist config key', () => {
-  const opts = resolveConfig({ audiomack_artist: 'myband' }, {}, null);
-  assert.strictEqual(opts.audiomackArtist, 'myband');
 });
 
 // ── extractSlug ───────────────────────────────────────────────────────────────

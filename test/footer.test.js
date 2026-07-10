@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Tests for the Poetic footer feature: the `show_footer` / `footer_source`
+ * Tests for the Poetic footer feature: the `footer.enabled` / `footer.source`
  * .poetic-config.yaml keys, and the shared renderFooter/upsertFooter helpers
  * used by every GitHub Pages page the framework builds (individual poem
  * pages, index.html, all-poems.html, and public/raw/index.html).
@@ -51,31 +51,31 @@ test('renderFooter: default config renders the default public/poetic-footer.html
   assert.match(block, /Built with <a href="https:\/\/x\.test">Poetic<\/a>/);
 });
 
-test('renderFooter: show_footer: false disables the footer entirely', () => {
+test('renderFooter: footer.enabled: false disables the footer entirely', () => {
   const repoRoot = tmpRepo({ 'public/poetic-footer.html': '<p>Built with Poetic</p>' });
-  const block = renderFooter({ show_footer: false }, repoRoot, { base: '' });
+  const block = renderFooter({ footer: { enabled: false } }, repoRoot, { base: '' });
   assert.strictEqual(block, '');
 });
 
 test('renderFooter: any value other than the boolean false leaves the footer enabled', () => {
   const repoRoot = tmpRepo({ 'public/poetic-footer.html': '<p>x</p>' });
   for (const value of [true, 'false', 'no', 0, '']) {
-    const block = renderFooter({ show_footer: value }, repoRoot, { base: '' });
-    assert.notStrictEqual(block, '', `show_footer=${JSON.stringify(value)} must not disable the footer`);
+    const block = renderFooter({ footer: { enabled: value } }, repoRoot, { base: '' });
+    assert.notStrictEqual(block, '', `footer.enabled=${JSON.stringify(value)} must not disable the footer`);
   }
 });
 
-test('renderFooter: footer_source redirects to a consumer-owned custom file', () => {
+test('renderFooter: footer.source redirects to a consumer-owned custom file', () => {
   const repoRoot = tmpRepo({
     'public/poetic-footer.html': '<p>Default footer — should not be used</p>',
     'public/my-footer.html': '<p>My custom footer</p>',
   });
-  const block = renderFooter({ footer_source: 'public/my-footer.html' }, repoRoot, { base: '' });
+  const block = renderFooter({ footer: { source: 'public/my-footer.html' } }, repoRoot, { base: '' });
   assert.match(block, /My custom footer/);
   assert.doesNotMatch(block, /Default footer/);
 });
 
-test('renderFooter: a missing footer_source file yields an empty string (no throw)', () => {
+test('renderFooter: a missing footer.source file yields an empty string (no throw)', () => {
   const repoRoot = tmpRepo({});
   assert.doesNotThrow(() => {
     const block = renderFooter({}, repoRoot, { base: '' });
@@ -172,7 +172,7 @@ test('generateIndexHtml + upsertFooter: disabling the footer removes it from a p
   const first = upsertFooter(generateIndexHtml(dir, 'poetic-logo.svg', 'My Poems'), footerBlock);
   fs.writeFileSync(path.join(dir, 'index.html'), first, 'utf8');
 
-  // Rebuild with show_footer=false (footerBlock computed as '' by the caller).
+  // Rebuild with footer.enabled=false (footerBlock computed as '' by the caller).
   const second = upsertFooter(generateIndexHtml(dir, 'poetic-logo.svg', 'My Poems'), '');
   assert.doesNotMatch(second, /poetic-footer/);
   assert.doesNotMatch(second, /poetic:footer/);

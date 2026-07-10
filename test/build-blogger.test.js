@@ -26,11 +26,11 @@ function touch(filePath, content = '') {
 // ---------------------------------------------------------------------------
 
 describe('resolveTemplatePath', () => {
-  it('uses config.blogger_template when set', () => {
+  it('uses config.blogger.template when set', () => {
     const tmpDir = makeTempDir();
     const customPath = path.join(tmpDir, 'my-custom-template.html');
     touch(customPath);
-    const result = resolveTemplatePath({ blogger_template: customPath }, tmpDir);
+    const result = resolveTemplatePath({ blogger: { template: customPath } }, tmpDir);
     assert.equal(result, customPath);
     fs.rmSync(tmpDir, { recursive: true });
   });

@@ -47,7 +47,7 @@ test('renderFragment: produces a bare HTML fragment (no DOCTYPE / html / head / 
   const poemData = loadPoemData(yamlPath);
   assert.ok(poemData, 'loadPoemData should return data');
 
-  const html = renderFragment(poemData, { config: { audiomack_artist: 'testartist' } });
+  const html = renderFragment(poemData, { config: { song_handlers: { audiomack: { artist: 'testartist' } } } });
 
   assert.ok(!html.includes('<!DOCTYPE'), 'fragment must not contain DOCTYPE');
   assert.ok(!html.includes('<html'), 'fragment must not contain <html>');
@@ -59,7 +59,7 @@ test('renderFragment: produces a bare HTML fragment (no DOCTYPE / html / head / 
 test('renderFragment: Audiomack embed button uses data-embed-src/data-title and has NO inline onclick', () => {
   const { yamlPath } = writeTempYaml(FIXTURE_YAML);
   const poemData = loadPoemData(yamlPath);
-  const html = renderFragment(poemData, { config: { audiomack_artist: 'myartist' } });
+  const html = renderFragment(poemData, { config: { song_handlers: { audiomack: { artist: 'myartist' } } } });
 
   assert.ok(html.includes('class="song-embed-btn"'), 'must have song-embed-btn class');
   assert.ok(html.includes('song-embed--audiomack'), 'must have song-embed--audiomack wrapper class');
@@ -85,7 +85,7 @@ test('renderFragment: Audiomack embed button uses data-embed-src/data-title and 
 test('renderFragment: NO inline loadAudiomackPlayer function', () => {
   const { yamlPath } = writeTempYaml(FIXTURE_YAML);
   const poemData = loadPoemData(yamlPath);
-  const html = renderFragment(poemData, { config: { audiomack_artist: 'myartist' } });
+  const html = renderFragment(poemData, { config: { song_handlers: { audiomack: { artist: 'myartist' } } } });
 
   assert.ok(
     !html.includes('function loadAudiomackPlayer'),
@@ -238,7 +238,7 @@ audio:
 test('renderPage: produces a full <!DOCTYPE html> document', () => {
   const { yamlPath } = writeTempYaml(FIXTURE_YAML);
   const poemData = loadPoemData(yamlPath);
-  const html = renderPage(poemData, { favicon: 'poetic-logo.svg', config: { audiomack_artist: 'myartist' } });
+  const html = renderPage(poemData, { favicon: 'poetic-logo.svg', config: { song_handlers: { audiomack: { artist: 'myartist' } } } });
 
   assert.ok(html.includes('<!DOCTYPE html>') || html.includes('<!doctype html>'), 'must have DOCTYPE');
   assert.ok(html.includes('<html'), 'must have <html>');
@@ -249,7 +249,7 @@ test('renderPage: produces a full <!DOCTYPE html> document', () => {
 test('renderPage: links poetic.css, custom.css, poetic.js with ../ prefix', () => {
   const { yamlPath } = writeTempYaml(FIXTURE_YAML);
   const poemData = loadPoemData(yamlPath);
-  const html = renderPage(poemData, { favicon: 'poetic-logo.svg', config: { audiomack_artist: 'myartist' } });
+  const html = renderPage(poemData, { favicon: 'poetic-logo.svg', config: { song_handlers: { audiomack: { artist: 'myartist' } } } });
 
   assert.ok(html.includes('../poetic.css'), 'must link ../poetic.css');
   assert.ok(html.includes('../custom.css'), 'must link ../custom.css');
@@ -259,7 +259,7 @@ test('renderPage: links poetic.css, custom.css, poetic.js with ../ prefix', () =
 test('renderPage: title element contains poem title', () => {
   const { yamlPath } = writeTempYaml(FIXTURE_YAML);
   const poemData = loadPoemData(yamlPath);
-  const html = renderPage(poemData, { favicon: 'poetic-logo.svg', config: { audiomack_artist: 'myartist' } });
+  const html = renderPage(poemData, { favicon: 'poetic-logo.svg', config: { song_handlers: { audiomack: { artist: 'myartist' } } } });
 
   assert.ok(html.includes('<title>Test Poem</title>'), 'must contain <title>Test Poem</title>');
 });
@@ -267,7 +267,7 @@ test('renderPage: title element contains poem title', () => {
 test('renderPage: favicon uses ../ prefix (already public/-stripped)', () => {
   const { yamlPath } = writeTempYaml(FIXTURE_YAML);
   const poemData = loadPoemData(yamlPath);
-  const html = renderPage(poemData, { favicon: 'my-icon.png', config: { audiomack_artist: '' } });
+  const html = renderPage(poemData, { favicon: 'my-icon.png', config: { song_handlers: { audiomack: { artist: '' } } } });
 
   assert.ok(html.includes('../my-icon.png'), 'favicon must use ../ prefix');
   assert.ok(!html.includes('public/my-icon.png'), 'favicon must not include public/ prefix');
@@ -276,7 +276,7 @@ test('renderPage: favicon uses ../ prefix (already public/-stripped)', () => {
 test('renderPage: Audiomack button has NO inline loadAudiomackPlayer function', () => {
   const { yamlPath } = writeTempYaml(FIXTURE_YAML);
   const poemData = loadPoemData(yamlPath);
-  const html = renderPage(poemData, { favicon: 'poetic-logo.svg', config: { audiomack_artist: 'myartist' } });
+  const html = renderPage(poemData, { favicon: 'poetic-logo.svg', config: { song_handlers: { audiomack: { artist: 'myartist' } } } });
 
   assert.ok(
     !html.includes('function loadAudiomackPlayer'),
@@ -286,11 +286,15 @@ test('renderPage: Audiomack button has NO inline loadAudiomackPlayer function', 
 
 // ── readPoeticConfig ──────────────────────────────────────────────────────────
 
-test('readPoeticConfig: parses audiomack_artist key', () => {
+test('readPoeticConfig: parses a nested song_handlers key', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-cfg-'));
-  fs.writeFileSync(path.join(dir, '.poetic-config.yaml'), 'audiomack_artist: testband\nfavicon: test.svg\n', 'utf8');
+  fs.writeFileSync(
+    path.join(dir, '.poetic-config.yaml'),
+    'song_handlers:\n  audiomack:\n    artist: testband\nfavicon: test.svg\n',
+    'utf8'
+  );
   const config = readPoeticConfig(dir);
-  assert.strictEqual(config.audiomack_artist, 'testband');
+  assert.strictEqual(config.song_handlers.audiomack.artist, 'testband');
   assert.strictEqual(config.favicon, 'test.svg');
 });
 
