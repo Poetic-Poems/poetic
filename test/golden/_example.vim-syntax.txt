@@ -85,28 +85,28 @@
 
 [{Synopsis}  # the analysis synopsis (optional)]=poemAnalysisLabel
 
-[A one-paragraph synopsis with ]=poemAnalysis [_]=markdownItalicDelimiter [emphasis]=markdownItalic [_]=markdownItalicDelimiter [ and a smart---dash.]=poemAnalysis
+[A one-paragraph synopsis with _emphasis_ and a smart---dash.]=poemAnalysis
 
 [{Full}  # the full analysis, also GitHub-Flavoured Markdown]=poemAnalysisLabel
 
-[#]=markdownH1Delimiter [ Top-Level Heading]=markdownH1
+[# Top-Level Heading]=poemAnalysis
 
-[A paragraph beneath the heading, with ]=poemAnalysis [**]=markdownBoldDelimiter [bold]=markdownBold [**]=markdownBoldDelimiter [ and ]=poemAnalysis [`]=markdownCodeDelimiter [inline code]=markdownCode [`]=markdownCodeDelimiter [.]=poemAnalysis
+[A paragraph beneath the heading, with **bold** and `inline code`.]=poemAnalysis
 
-[##]=markdownH2Delimiter [ Sub-Heading]=markdownH2
+[## Sub-Heading]=poemAnalysis
 
 [An unordered list, with nesting:]=poemAnalysis
 
-[-]=markdownListMarker [ alpha]=poemAnalysis
-[-]=markdownListMarker [ bravo]=poemAnalysis
-[    -]=markdownListMarker [ bravo-one]=poemAnalysis
-[    -]=markdownListMarker [ bravo-two]=poemAnalysis
-[-]=markdownListMarker [ charlie]=poemAnalysis
+[- alpha]=poemAnalysis
+[- bravo]=poemAnalysis
+[    - bravo-one]=poemAnalysis
+[    - bravo-two]=poemAnalysis
+[- charlie]=poemAnalysis
 
 [An ordered list:]=poemAnalysis
 
-[1.]=markdownOrderedListMarker [ first]=poemAnalysis
-[2.]=markdownOrderedListMarker [ second]=poemAnalysis
+[1. first]=poemAnalysis
+[2. second]=poemAnalysis
 
 [A table:]=poemAnalysis
 
@@ -117,13 +117,13 @@
 
 [A blockquote containing ~~strikethrough~~:]=poemAnalysis
 
-[> ]=markdownBlockquote [To strive, to seek, to find.]=poemAnalysis
+[> To strive, to seek, to find.]=poemAnalysis
 
 [A fenced code block:]=poemAnalysis
 
-[```]=markdownCodeDelimiter
-[let answer = 42;]=markdownCode
-[```]=markdownCodeDelimiter
+[```]=poemAnalysis
+[let answer = 42;]=poemAnalysis
+[```]=poemAnalysis
 
 [====]=poemEndMarkerMark [  # end of analysis]=poemEndMarkerLineTrailing
 
