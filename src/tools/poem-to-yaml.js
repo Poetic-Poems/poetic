@@ -1738,12 +1738,24 @@ function parsePoemFile(poemFilePath, options = {}) {
   return new PoemParser(content).parse();
 }
 
+// Canonical order for the top-level result keys, independent of which one
+// happened to be assigned first during parsing (e.g. `directives` may be
+// populated by a preamble directive before `title` is parsed). Keys not
+// listed here (all keys within nested mappings) keep their insertion order,
+// since the comparator returns 0 for any pair it doesn't recognise and
+// Array.prototype.sort is stable.
+const TOP_LEVEL_KEY_ORDER = [
+  'title', 'author', 'date', 'versions', 'audio', 'postscript', 'analysis',
+  'labels', 'directives',
+];
+
 function convertPoemToYaml(poemFilePath, options = {}) {
   const data = parsePoemFile(poemFilePath, options);
 
   return yaml.dump(data, {
     lineWidth: -1, // Don't wrap lines
     noRefs: true,  // Don't use YAML references
+    sortKeys: (a, b) => TOP_LEVEL_KEY_ORDER.indexOf(a) - TOP_LEVEL_KEY_ORDER.indexOf(b),
   });
 }
 
