@@ -398,4 +398,5 @@ module.exports = {
   resolveSongs,
   hasResolvableSongs,
   substituteTemplate,
+  BUILTIN_HANDLERS_PATH,
 };

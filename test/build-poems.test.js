@@ -76,6 +76,52 @@ test('buildAllPoems writes public/<slug>.html as a redirect stub to ./<slug>/', 
   assert.match(html, /url=\.\/test-poem\//);
 });
 
+test('buildAllPoems does not rewrite an up-to-date poem\'s output files on a second run', (t) => {
+  const { poemsDir, publicDir } = tmpDirs(t);
+  fs.writeFileSync(path.join(poemsDir, 'test-poem.yaml'), FIXTURE_YAML, 'utf8');
+
+  buildAllPoems({ poemsDir, publicDir });
+
+  const pagePath = path.join(publicDir, 'test-poem', 'index.html');
+  const redirectPath = path.join(publicDir, 'test-poem.html');
+  const pageMtimeBefore = fs.statSync(pagePath).mtimeMs;
+  const redirectMtimeBefore = fs.statSync(redirectPath).mtimeMs;
+
+  buildAllPoems({ poemsDir, publicDir });
+
+  assert.strictEqual(
+    fs.statSync(pagePath).mtimeMs, pageMtimeBefore,
+    'index.html should not be rewritten when the source is unchanged'
+  );
+  assert.strictEqual(
+    fs.statSync(redirectPath).mtimeMs, redirectMtimeBefore,
+    'redirect stub should not be rewritten when the source is unchanged'
+  );
+});
+
+test('buildAllPoems regenerates a poem\'s output files once the source YAML changes', (t) => {
+  const { poemsDir, publicDir } = tmpDirs(t);
+  const yamlPath = path.join(poemsDir, 'test-poem.yaml');
+  fs.writeFileSync(yamlPath, FIXTURE_YAML, 'utf8');
+
+  buildAllPoems({ poemsDir, publicDir });
+
+  const pagePath = path.join(publicDir, 'test-poem', 'index.html');
+  const pageMtimeBefore = fs.statSync(pagePath).mtimeMs;
+
+  // Bump the source's mtime into the future so it's unambiguously newer,
+  // regardless of filesystem mtime-resolution granularity.
+  const future = (Date.now() + 60_000) / 1000;
+  fs.utimesSync(yamlPath, future, future);
+
+  buildAllPoems({ poemsDir, publicDir });
+
+  assert.ok(
+    fs.statSync(pagePath).mtimeMs > pageMtimeBefore,
+    'index.html should be regenerated once its source YAML changes'
+  );
+});
+
 test('buildAllPoems skips a poem missing a required field and reports it as an error (process exits non-zero)', (t) => {
   // Runs the real CLI entry point as a subprocess (rather than calling
   // buildAllPoems() in-process) because a validation error makes it call

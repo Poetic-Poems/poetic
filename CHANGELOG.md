@@ -81,6 +81,19 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Incremental (mtime-based) rebuilds.** `poem-to-raw`, `build:yaml`,
+  `build:poems`, and the `all-poems.html`/`index.html` step each skip
+  regenerating an output whose sources (the poem file itself, plus shared
+  inputs like `.shared.poem`, underscore-prefixed YAML partials, the Pug
+  templates, `.poetic-config.yaml`, `src/song-handlers.yaml`, and the footer
+  source) haven't changed since it was last built, via a shared
+  `src/tools/needs-rebuild.js` helper. Pass `--force` (or set
+  `POETIC_FORCE_REBUILD=1`) to force a full rebuild regardless of
+  modification times. `scripts/sync-framework.sh` also now skips checking out
+  a framework-owned path whose content already matches the target commit, so
+  a no-op sync doesn't bump every file's modification time and defeat this
+  optimisation on the next build. See [Incremental
+  rebuilds](docs/BUILD.md#incremental-rebuilds) in `docs/BUILD.md`.
 - **Configurable site title.** A new top-level `title` key in
   `.poetic-config.yaml` sets the `<title>` and `<h1>` shown on `index.html`
   and `all-poems.html` (default: `My Poems`). Previously the framework's own

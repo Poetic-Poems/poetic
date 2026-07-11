@@ -69,6 +69,10 @@ The Blogger template script:
 
 The `poem-to-raw` step extracts the plain-text body of each `.poem` source file to the `raw/` directory at the repository root, and writes a browsable `public/raw/index.html` linking to those files on GitHub. It parses each poem through the same canonical engine as the YAML/HTML pipeline (`src/tools/poem-to-yaml.js`), so variables — including multi-line definitions, `${name}` references, `${name:-default}` fallbacks, `\${...}` escaping, `.shared.poem` variables, and `%{...}` context variables — are handled identically across outputs. The engine's inline HTML markup is then flattened to plain text, common HTML entities are normalised to their Unicode equivalents, section labels and opaque embedded blocks are dropped, and partial files (names beginning with `_` or `.`) are skipped. Run it standalone with `npm run poem-to-raw` or let the main `build` sequence invoke it automatically.
 
+#### Incremental rebuilds
+
+Every step in `npm run build` (`poem-to-raw`, `build:yaml`, `build:poems`, and the `all-poems.html`/`index.html` step) skips regenerating an output whose sources haven't changed since it was last written, using each source's and output's modification time (`src/tools/needs-rebuild.js`). "Sources" includes not just a poem's own `.poem`/`.yaml` file but everything that can affect its rendering: `.shared.poem`, underscore-prefixed shared YAML partials (the `$ref` convention), the Pug templates, `.poetic-config.yaml`, `src/song-handlers.yaml`, and the configured footer source file. Pass `--force` to any individual build script (or set `POETIC_FORCE_REBUILD=1` for the whole `npm run build` chain) to bypass this and regenerate everything regardless of modification times.
+
 ### Workflow for Updates
 
 When you add new poems or update existing ones:

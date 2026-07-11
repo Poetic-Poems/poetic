@@ -172,6 +172,24 @@ for path in "${FRAMEWORK_PATHS[@]}"; do
     echo "  synced  $path (self, synced first)"
     continue
   fi
+  # If the working tree already matches the target commit for this path,
+  # skip the checkout entirely rather than overwriting it with an identical
+  # copy. `git checkout -- <path>` writes unconditionally, which would bump
+  # every synced file's mtime on every run regardless of whether its content
+  # actually changed — and consumer build scripts use mtimes to skip
+  # regenerating output whose sources haven't changed (see docs/BUILD.md), so
+  # a no-op sync would otherwise force a full rebuild downstream for nothing.
+  # Comparing against the working tree (not just the previously-synced
+  # commit) also means a path that has locally drifted from what's synced
+  # still gets corrected here, exactly as an unconditional checkout would.
+  # Guard with rev-parse first: `git diff --quiet` reports "no difference"
+  # for a path absent on both sides, which would otherwise mask the (not in
+  # poetic) warning below for a stale/typo'd FRAMEWORK_PATHS entry.
+  if git rev-parse --verify --quiet "${POETIC_COMMIT}:${path}" >/dev/null \
+      && git diff --quiet "$POETIC_COMMIT" -- "$path" 2>/dev/null; then
+    echo "  unchanged $path"
+    continue
+  fi
   if git checkout "$POETIC_COMMIT" -- "$path" 2>/dev/null; then
     echo "  synced  $path"
   else
