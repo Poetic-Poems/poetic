@@ -2,7 +2,6 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert');
-const yaml = require('js-yaml');
 
 const { renderGfm } = require('../src/tools/markdown');
 const { PoemParser } = require('../src/tools/poem-to-yaml');

@@ -110,7 +110,7 @@ test('G: raw block substitution - <<< ... >>> with ${var} renders substituted va
 test('H: context vars untouched - %{title} left literal in poem-to-yaml output', () => {
   const result = parsePoem(['{Verse}', 'This is %{title}'], ['']);
   const segment = result.versions[0].segments[0];
-  assert.match(segment.lines, /\%\{title\}/);
+  assert.match(segment.lines, /%\{title\}/);
 });
 
 // ── I: Context vars (render stage) ──────────────────────────────────────────
@@ -164,7 +164,7 @@ test('J: resolveContextVars - input is not mutated', () => {
   const originalContent = poemData.postscript[0].content;
   resolveContextVars(poemData);
   assert.strictEqual(poemData.postscript[0].content, originalContent);
-  assert.match(poemData.postscript[0].content, /\%\{slug\}/);
+  assert.match(poemData.postscript[0].content, /%\{slug\}/);
 });
 
 test('J: resolveContextVars - Date values pass through unchanged', () => {
@@ -227,7 +227,7 @@ test('resolveContextVars handles nested arrays correctly', () => {
   assert.strictEqual(resolved.versions[0].segments[0].content, 'slug=test');
   assert.strictEqual(resolved.versions[1].segments[0].content, 'slug=test');
   // Verify input unchanged
-  assert.match(poemData.versions[0].segments[0].content, /\%\{slug\}/);
+  assert.match(poemData.versions[0].segments[0].content, /%\{slug\}/);
 });
 
 test('variable in markdown block also gets substituted', () => {

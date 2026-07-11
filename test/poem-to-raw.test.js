@@ -8,7 +8,6 @@ const {
   htmlToPlainText,
   decodeEntities,
   collapseAlternatives,
-  segmentToText,
   renderPoemText,
   buildIndex,
 } = require('../src/tools/poem-to-raw');

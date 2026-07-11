@@ -16,14 +16,6 @@ Where `<id>` is a literal "TD" then the date followed by a zero-padded
 sequential number (starting at 1 for the the first entry of a day). I.e.:
 **TD*YYMMDDNN***
 
-## TD26071108 No linter; commit-format check is opt-in only
-
-No ESLint/formatter config exists (vestigial `eslint-disable` comments in
-`serve-static.js` reference a tool that isn't installed), and Conventional
-Commits are enforced only by the opt-in local hook with no CI backstop. Fix:
-add a minimal-ratchet linter + `.editorconfig` + a CI commit-format check.
-(project-review-2026-07-11: F-CODE-05, F-TOOL-01, R-10.)
-
 ## TD26071109 js-yaml stuck on v4; v5 changes timestamp-quoting for edge-case date strings
 
 Attempted bumping `js-yaml` from `^4.1.0` to `^5.2.1` (2026-07-11). `npm test`

@@ -317,7 +317,6 @@ const server = http.createServer((req, res) => {
   } catch (err) {
     res.writeHead(500, { "Content-Type": "text/plain; charset=utf-8" });
     res.end("Internal Server Error");
-    // eslint-disable-next-line no-console
     console.error(err);
   }
 });
@@ -326,13 +325,10 @@ server.listen(PORT, HOST, () => {
   const isLoopback = HOST === "127.0.0.1" || HOST === "::1";
   const displayHost = isLoopback || HOST === "0.0.0.0" ? "localhost" : HOST;
   const url = `http://${displayHost}:${PORT}`;
-  // eslint-disable-next-line no-console
   console.log(`Serving ${ROOT_DIR} at ${url} (bound to ${HOST})`);
   if (isLoopback) {
-    // eslint-disable-next-line no-console
     console.log("Loopback only; use --host 0.0.0.0 to expose on your LAN.");
   }
-  // eslint-disable-next-line no-console
   console.log(
     "Usage: node tools/serve-static.js --port 9000 --dir public --host 127.0.0.1"
   );

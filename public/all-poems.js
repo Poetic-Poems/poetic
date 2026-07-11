@@ -41,7 +41,7 @@ function sortTable(columnIndex, sortType) {
         const aVal = a.cells[columnIndex].textContent.trim();
         const bVal = b.cells[columnIndex].textContent.trim();
 
-        let comparison = 0;
+        let comparison;
 
         if (sortType === 'date') {
             // parseDateForSorting is loaded globally from date-utils.js.

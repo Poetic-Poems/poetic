@@ -1,0 +1,133 @@
+'use strict';
+
+/**
+ * ESLint flat config.
+ *
+ * Two source populations, two global sets:
+ *   - src/tools/**, scripts/**, test/**, and this file itself are CommonJS
+ *     Node sources (require/module.exports, process, __dirname, ...).
+ *   - public/*.js are plain <script>-tag browser scripts (window, document,
+ *     ...) served as-is — see build-all-poems.js and docs/BUILD.md.
+ *
+ * Starts from @eslint/js's recommended rules, relaxed to match the existing
+ * hand-written style rather than restyling the codebase:
+ *   - console is allowed (these are CLI tools and browser scripts, not a
+ *     library that should stay quiet).
+ *   - no max-len.
+ *   - eqeqeq is scoped to "smart" because `x != null` (matching both null
+ *     and undefined in one check) is an established idiom here — see e.g.
+ *     poem-render.js, song-handlers.js, poetic.js.
+ *   - no-constant-condition ignores loops, because `while (true) { ... break
+ *     ...; }` / `do { ... } while (true);` are used deliberately where the
+ *     exit condition is easier to express as an explicit break than as a
+ *     loop-header expression — see poem-to-yaml.js.
+ *   - no-unused-vars ignores identifiers named `_` (args, catch bindings,
+ *     destructured vars), matching the codebase's existing convention for
+ *     "deliberately discarded" — see e.g. serve-static.js, build-blogger.js.
+ */
+
+const js = require('@eslint/js');
+
+// Node-hosted globals not already covered by ECMAScript itself (Array,
+// JSON, Promise, etc. need no declaration; these are runtime-provided).
+const nodeGlobals = {
+  process: 'readonly',
+  Buffer: 'readonly',
+  console: 'readonly',
+  __dirname: 'readonly',
+  __filename: 'readonly',
+  module: 'writable',
+  exports: 'writable',
+  require: 'readonly',
+  global: 'readonly',
+  setTimeout: 'readonly',
+  clearTimeout: 'readonly',
+  setInterval: 'readonly',
+  clearInterval: 'readonly',
+  setImmediate: 'readonly',
+  URL: 'readonly',
+  URLSearchParams: 'readonly',
+  fetch: 'readonly',
+};
+
+// Browser-hosted globals used by public/*.js.
+const browserGlobals = {
+  window: 'readonly',
+  document: 'readonly',
+  console: 'readonly',
+  history: 'readonly',
+  location: 'readonly',
+  URLSearchParams: 'readonly',
+  setTimeout: 'readonly',
+  clearTimeout: 'readonly',
+  getComputedStyle: 'readonly',
+  // date-utils.js is required as a Node CommonJS module AND served
+  // unbundled as a browser <script> (see its own file-header comment), so
+  // it needs the CommonJS export globals too even under the browser config.
+  module: 'writable',
+  exports: 'writable',
+};
+
+const relaxedRules = {
+  'no-console': 'off',
+  eqeqeq: ['error', 'smart'],
+  'no-constant-condition': ['error', { checkLoops: false }],
+  'no-unused-vars': [
+    'error',
+    {
+      args: 'after-used',
+      argsIgnorePattern: '^_',
+      varsIgnorePattern: '^_',
+      caughtErrors: 'all',
+      caughtErrorsIgnorePattern: '^_',
+    },
+  ],
+};
+
+module.exports = [
+  js.configs.recommended,
+  {
+    ignores: [
+      'node_modules/**',
+      'public/raw/**',
+      'test/fixtures/**',
+      'test/golden/**',
+      'src/poems/**',
+    ],
+  },
+  {
+    files: [
+      'src/tools/**/*.js',
+      'scripts/**/*.js',
+      'test/**/*.js',
+      'eslint.config.js',
+    ],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'commonjs',
+      globals: nodeGlobals,
+    },
+    rules: relaxedRules,
+  },
+  {
+    files: ['public/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+      globals: browserGlobals,
+    },
+    rules: relaxedRules,
+  },
+  {
+    // all-poems.js calls parseDateForSorting() from date-utils.js, loaded as
+    // a preceding <script> tag rather than a module import (see
+    // build-all-poems.js, which emits both tags in that order). Declared
+    // separately from browserGlobals so date-utils.js itself — the file that
+    // defines the function — doesn't also get it as an ambient global, which
+    // would trip no-redeclare.
+    files: ['public/all-poems.js'],
+    languageOptions: {
+      globals: { parseDateForSorting: 'readonly' },
+    },
+  },
+];

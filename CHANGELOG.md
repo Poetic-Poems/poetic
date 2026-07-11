@@ -94,8 +94,60 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   default (`autoplay; fullscreen; picture-in-picture; encrypted-media` +
   `allowfullscreen`). See [Embed permissions](docs/BUILD.md#embed-permissions)
   in `docs/BUILD.md`. Resolves TD26071002.
+- **ESLint (flat config) as the project's first devDependency, plus
+  `.editorconfig`.** `eslint.config.js` lints the CommonJS Node sources
+  (`src/tools/`, `test/`, `scripts/`) and the browser scripts (`public/*.js`)
+  separately, each with the right globals, starting from `@eslint/js`'s
+  recommended rules relaxed to match existing style rather than restyling
+  the codebase: console is allowed (these are CLI tools and browser
+  scripts); `eqeqeq` is scoped to `"smart"` so the established `x != null`
+  idiom still passes; `no-constant-condition` ignores loops, for the
+  `while (true) { ... break; }` idiom used in `poem-to-yaml.js`; and
+  `no-unused-vars` ignores `_`-prefixed names, matching the existing
+  "deliberately discarded" convention (e.g. `catch (_)`). `npm run lint`
+  runs it; CI runs it in `build-poems.yml` alongside the trailing-whitespace
+  check. Fixed the real findings it surfaced — dead code, unused
+  variables/labels, and useless regex escapes in `poem-to-yaml.js`,
+  `sync-blogger.js`, `song-handlers.js`, `all-poems.js`, and two test files —
+  and removed the vestigial `eslint-disable-next-line no-console` comments in
+  `serve-static.js`, which referenced a rule that wasn't installed and is now
+  allowed outright. `.editorconfig` documents the same 2-space/LF/final-
+  newline/trim-trailing-whitespace convention `npm run check` already
+  enforces, opting `.poem` and `.md` files out of trailing-whitespace
+  trimming since both have meaningful trailing whitespace (a forced line
+  break, and a Markdown hard break, respectively). Both files are added to
+  `FRAMEWORK_PATHS` in `sync-framework.sh` and sync to consumers — they
+  already receive `src/tools/` and `test/`, so linting there is coherent,
+  and the devDependency reaches them automatically via the already-synced
+  `package.json`.
+- **CI backstop for Conventional Commits.** A new
+  `.github/workflows/commit-format.yml` runs on every pull request —
+  unfiltered by path, since commit hygiene isn't specific to any one part of
+  the tree — and validates every commit's subject line, so the check now
+  applies even when a contributor's clone never enabled the opt-in local
+  hook (`git config core.hooksPath .githooks`). The Conventional Commits
+  pattern is extracted from `.githooks/commit-msg` into
+  `.githooks/check-commit-format.sh`, shared by both the hook and the new CI
+  job so there is one source of truth for the regex. Not synced to
+  consumers: Conventional Commits is this repo's own convention (see
+  the "Commit messages" section of `README.md`), not one imposed on poem-
+  collection repos. Resolves TD26071108.
 
 ### Changed
+
+- **`scripts/sync-framework.sh` now propagates upstream deletions.** Previously
+  the script only overlaid framework files (`git checkout <commit> -- <path>`),
+  so a file the framework *removed* upstream lived on in every consumer repo
+  forever. After the checkout pass it now stages a removal for each
+  framework-owned path deleted between the previously synced commit and the
+  target commit (`git diff --diff-filter=D`), announced with a `deleted …`
+  line alongside the existing `synced`/`skipped` output. Deletion is
+  conservative — a path is removed only when it is under the framework path
+  list, was deleted upstream between the two synced commits, and is not in
+  `skip_paths`; a path merely absent at the target commit (e.g. a consumer's
+  own file under a shared framework directory) is never touched. On a first
+  sync, or when the previously synced commit is unavailable locally (rewritten
+  history), deletion is skipped and the run says so. Resolves TD26071107.
 
 - **`all-poems.html`/`index.html` client-side JS moved to `public/` assets.**
   The sort/filter script for `all-poems.html` and the poem-grid renderer for
@@ -123,6 +175,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   machines on your network. `http://localhost:8080` continues to work exactly
   as before. Pass `--host 0.0.0.0` (or set `HOST=0.0.0.0`) to expose it on
   your LAN for the occasional cross-device test.
+
+### Removed
+
+- **Two dead one-off migration tools.** `src/tools/convert-html-to-yaml.js`
+  and `src/tools/update-analysis-format.js` were single-use scripts anchored on
+  a `poems/` directory layout the framework no longer uses (poems live under
+  `src/poems/poem/`); the latter's own comment noted it "was used to migrate
+  existing YAML files". They are deleted, and — now that `sync-framework.sh`
+  propagates upstream deletions — consumers stop carrying them on their next
+  sync.
 
 ### Security
 
@@ -162,20 +224,6 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   handler (any handler can now take config the same way). `favicon`,
   `subtitle`, and `skip_paths` are unchanged, at the top level. Update your
   `.poetic-config.yaml` by hand — there is no auto-migration. See
-- **`scripts/sync-framework.sh` now propagates upstream deletions.** Previously
-  the script only overlaid framework files (`git checkout <commit> -- <path>`),
-  so a file the framework *removed* upstream lived on in every consumer repo
-  forever. After the checkout pass it now stages a removal for each
-  framework-owned path deleted between the previously synced commit and the
-  target commit (`git diff --diff-filter=D`), announced with a `deleted …`
-  line alongside the existing `synced`/`skipped` output. Deletion is
-  conservative — a path is removed only when it is under the framework path
-  list, was deleted upstream between the two synced commits, and is not in
-  `skip_paths`; a path merely absent at the target commit (e.g. a consumer's
-  own file under a shared framework directory) is never touched. On a first
-  sync, or when the previously synced commit is unavailable locally (rewritten
-  history), deletion is skipped and the run says so. Resolves TD26071107.
-
   `examples/poetic-config.example.yaml` for a fully-commented reference of
   every key in the new shape.
 
@@ -203,16 +251,6 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `<id>#<key>` identifier) becomes an inline, lazy-loaded player that plays
   **both audio and video** files, with full-screen and picture-in-picture, on
   GitHub Pages and Blogger.
-### Removed
-
-- **Two dead one-off migration tools.** `src/tools/convert-html-to-yaml.js`
-  and `src/tools/update-analysis-format.js` were single-use scripts anchored on
-  a `poems/` directory layout the framework no longer uses (poems live under
-  `src/poems/poem/`); the latter's own comment noted it "was used to migrate
-  existing YAML files". They are deleted, and — now that `sync-framework.sh`
-  propagates upstream deletions — consumers stop carrying them on their next
-  sync.
-
 - **Configurable player size — per handler and per song.** Handlers declare a
   size with `embed_height` / `embed_aspect_ratio`, or, for multi-media handlers,
   `default_media` + a `media_sizes` map of per-type profiles. Authors override

@@ -125,12 +125,14 @@ fi
 
 FRAMEWORK_PATHS=(
   .claude/skills
+  .editorconfig
   .github/workflows/build-poems.yml
   .github/workflows/sync-blogger.yml
   .github/workflows/sync-framework.yml
   LICENCE
   docs
   editors
+  eslint.config.js
   examples
   package.json
   package-lock.json
@@ -182,8 +184,6 @@ OLD_COMMIT=$(grep '^commit=' "$VERSION_FILE" 2>/dev/null | cut -d= -f2 || true)
 printf 'channel=%s\nref=%s\ncommit=%s\n' "$current_channel" "$POETIC_REF" "$POETIC_COMMIT" > "$VERSION_FILE"
 git add "$VERSION_FILE"
 
-# Build a commit body from the upstream commit messages between the previously
-# synced commit and this one, restricted to framework-owned paths. Falls back
 # Propagate upstream deletions. `git checkout <commit> -- <path>` overlays files
 # but never removes ones deleted upstream, so a framework file the poetic repo
 # has since deleted would otherwise live on in the consumer forever. When the
@@ -216,6 +216,8 @@ else
   done < <(git diff --name-only --diff-filter=D "$OLD_COMMIT" "$POETIC_COMMIT" -- "${FRAMEWORK_PATHS[@]}" 2>/dev/null || true)
 fi
 
+# Build a commit body from the upstream commit messages between the previously
+# synced commit and this one, restricted to framework-owned paths. Falls back
 # to a note (rather than failing) if the previous commit isn't in the local
 # object database — e.g. first-ever sync, or upstream history was rewritten.
 COMMIT_BODY=""

@@ -186,7 +186,7 @@ function applyValuePatterns(scope, handler) {
     let re;
     try {
       re = new RegExp(entry.match);
-    } catch (err) {
+    } catch (_) {
       console.warn(`Warning: song handler has an invalid value_patterns regex "${entry.match}" — ignoring it.`);
       continue;
     }

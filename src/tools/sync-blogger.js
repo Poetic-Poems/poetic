@@ -315,12 +315,9 @@ function extractContent(fragmentHtml, mode) {
     html = html.replace(/<button class="analysis[^"]*" id="show-analysis--[^"]*"[^>]*>[\s\S]*?<\/button>/g, '');
     // Remove analysis div: <div class="analysis" id="analysis--…">…</div>
     // This div contains nested divs and buttons, so we need a broader match
-    html = html.replace(/<div class="analysis" id="analysis--[^"]*">[\s\S]*<\/div><\/div><\/div>/, (m) => {
-      // Find the analysis div start and remove everything up to the final closing </div></div>
-      return '';
-    });
+    html = html.replace(/<div class="analysis" id="analysis--[^"]*">[\s\S]*<\/div><\/div><\/div>/, '');
     return html;
-  } catch (e) {
+  } catch (_) {
     // Best-effort: return original on any failure
     return fragmentHtml;
   }

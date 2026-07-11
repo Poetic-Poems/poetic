@@ -1,0 +1,23 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.poem]
+# Trailing spaces are meaningful in .poem syntax (they signal a forced line
+# break) — do not strip them. Matches scripts/remove-trailing-spaces.sh,
+# which skips .poem files entirely.
+trim_trailing_whitespace = false
+
+[*.md]
+# A line ending in exactly two spaces is a Markdown hard line break.
+# scripts/remove-trailing-spaces.sh canonicalizes .md files (strips exactly
+# one trailing space, leaves exactly two, collapses three-or-more down to
+# two) rather than always stripping — an editor can't replicate that
+# nuance, so leave trailing whitespace alone here and rely on the script.
+trim_trailing_whitespace = false

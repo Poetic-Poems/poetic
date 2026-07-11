@@ -210,7 +210,7 @@ class PoemParser {
     const n = str.length;
     let value = '';
 
-    outer: while (true) {
+    while (true) {
       const c = str[i];
 
       if (c === undefined || c === ',' || c === ')' || /\s/.test(c)) {
@@ -677,6 +677,10 @@ class PoemParser {
   /**
    * Expect a specific marker (e.g., ==== or ----)
    */
+  // `name` documents which marker each call site expects (e.g.
+  // 'end-of-poem'); kept for call-site readability, not yet threaded into a
+  // failure message.
+  // eslint-disable-next-line no-unused-vars -- see comment above
   expectMarker(marker, name) {
     this.skipBlankLines();
     const line = this.peek();
@@ -1294,7 +1298,7 @@ class PoemParser {
         if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].$ref) {
           return { '$ref': parsed[0].$ref };
         }
-      } catch (e) {
+      } catch (_) {
         // If not valid YAML, fall through to return as literal content
       }
     }
@@ -1475,7 +1479,7 @@ class PoemParser {
     // Process escapes first
     const escapes = new Map();
     let escapeIndex = 0;
-    text = text.replace(/\\([_*~\[`"&'\-<>=$\\/{}])/g, (match, char) => {
+    text = text.replace(/\\([_*~[`"&'\-<>=$\\/{}])/g, (match, char) => {
       const placeholder = `\x00ESCAPE${escapeIndex++}\x00`;
       escapes.set(placeholder, char);
       return placeholder;
@@ -1499,8 +1503,8 @@ class PoemParser {
         return `<span>${content}</span>`;
       }
 
-      // Validate class name with regex: /^\w(?:[\w\.-]*\w)?$/
-      const classNameRegex = /^\w(?:[\w\.-]*\w)?$/;
+      // Validate class name with regex: /^\w(?:[\w.-]*\w)?$/
+      const classNameRegex = /^\w(?:[\w.-]*\w)?$/;
       if (!classNameRegex.test(className)) {
         console.warn(`Warning: Invalid span class name: "${className}"`);
         return match; // Leave unchanged
@@ -1513,7 +1517,7 @@ class PoemParser {
     });
 
     // Basic formatting (Markdown-style emphasis: ** = strong, * = em)
-    text = text.replace(/\~([^~]+)\~/g, '<s>$1</s>'); // Strikethrough
+    text = text.replace(/~([^~]+)~/g, '<s>$1</s>'); // Strikethrough
     // Strong (double markers) must run before emphasis (single markers)
     text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); // Strong
     text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>'); // Strong (underscore)

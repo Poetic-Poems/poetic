@@ -11,6 +11,8 @@ on:
       - 'test/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'eslint.config.js'
+      - '.editorconfig'
       - '.github/workflows/**'
       - '.poetic-config.yaml'
   pull_request:
@@ -23,6 +25,8 @@ on:
       - 'test/**'
       - 'package.json'
       - 'package-lock.json'
+      - 'eslint.config.js'
+      - '.editorconfig'
       - '.github/workflows/**'
       - '.poetic-config.yaml'
   workflow_dispatch:
@@ -74,6 +78,9 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Lint
+        run: npm run lint
 
       - name: Check for trailing whitespace
         run: npm run check
