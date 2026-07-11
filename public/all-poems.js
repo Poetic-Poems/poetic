@@ -2,6 +2,13 @@
 // not hand-edit. Requires date-utils.js (parseDateForSorting) to be loaded
 // first; both scripts are added with `defer` in document order by
 // build-all-poems.js, so load order is guaranteed.
+//
+// Sortable headers are real <button> elements nested inside each <th
+// class="sortable"> (see build-all-poems.js); the browser gives buttons
+// native keyboard support (Tab to focus, Enter/Space to activate), so no
+// custom key handling is needed here. Click wiring uses addEventListener
+// rather than inline onclick, and aria-sort is kept in sync on the <th> —
+// the ARIA-correct place for it — whenever the sort changes.
 let currentSort = { column: -1, direction: 'asc' };
 
 function sortTable(columnIndex, sortType) {
@@ -17,12 +24,15 @@ function sortTable(columnIndex, sortType) {
     }
     currentSort.column = columnIndex;
 
-    // Update header styling
+    // Update header styling + aria-sort
     const headers = table.getElementsByTagName('th');
     for (let i = 0; i < headers.length; i++) {
-        headers[i].className = 'sortable';
         if (i === columnIndex) {
             headers[i].className = currentSort.direction === 'asc' ? 'sort-asc' : 'sort-desc';
+            headers[i].setAttribute('aria-sort', currentSort.direction === 'asc' ? 'ascending' : 'descending');
+        } else {
+            headers[i].className = 'sortable';
+            headers[i].setAttribute('aria-sort', 'none');
         }
     }
 
@@ -54,6 +64,20 @@ function sortTable(columnIndex, sortType) {
     // Re-append sorted rows
     rows.forEach(row => tbody.appendChild(row));
 }
+
+// Wire each header's sort <button> via addEventListener (not inline onclick).
+function initSortButtons() {
+    const table = document.getElementById('poemTable');
+    if (!table) return;
+    const buttons = table.querySelectorAll('thead .sort-button');
+    buttons.forEach((button) => {
+        const columnIndex = Number(button.dataset.column);
+        const sortType = button.dataset.sortType;
+        button.addEventListener('click', () => sortTable(columnIndex, sortType));
+    });
+}
+
+initSortButtons();
 
 // Back to Top functionality
 const backToTopButton = document.createElement('button');

@@ -194,9 +194,9 @@ function concatenateAllHtmlFiles(
             <table class="toc-table" id="poemTable">
                 <thead>
                     <tr>
-                        <th class="sortable" onclick="sortTable(0, 'title')">Poem Title</th>
-                        <th class="sortable" onclick="sortTable(1, 'date')">Poem Date</th>
-                        <th class="sortable" onclick="sortTable(2, 'audio')">🎵 Audio</th>
+                        <th class="sortable" aria-sort="none"><button type="button" class="sort-button" data-column="0" data-sort-type="title">Poem Title</button></th>
+                        <th class="sortable" aria-sort="none"><button type="button" class="sort-button" data-column="1" data-sort-type="date">Poem Date</button></th>
+                        <th class="sortable" aria-sort="none"><button type="button" class="sort-button" data-column="2" data-sort-type="audio">🎵 Audio</button></th>
                     </tr>
                 </thead>
                 <tbody id="poemTableBody">`;

@@ -59,6 +59,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   exits non-zero; `$ref` cycles are detected and raise a clear error naming
   the referencing file and the cycle instead of recursing forever. Site
   publishers now see CI fail instead of a partially-broken site deploying.
+- **`all-poems.html`'s table-of-contents column headers are keyboard- and
+  screen-reader-accessible.** Each sortable header's click handler was a bare
+  `onclick="sortTable(...)"` on the `<th>` itself, with no `tabindex`, key
+  handling, or `aria-sort` — keyboard and screen-reader users could not sort
+  the poem table. Each `<th class="sortable">` now wraps a real `<button>`
+  (native Tab focus and Enter/Space activation, wired via `addEventListener`
+  in `public/all-poems.js` instead of inline `onclick`), and the active
+  column's `<th>` now carries `aria-sort="ascending"`/`"descending"`
+  (`"none"` otherwise), updated on every sort. Mouse behaviour, the visual
+  sort indicators (↕/↑/↓), and header styling are unchanged.
 
 ### Added
 

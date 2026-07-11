@@ -388,26 +388,48 @@ h2.poem-title {
 .toc-table th {
   background: #f8f9fa;
   color: #333;
-  cursor: pointer;
   font-weight: 600;
+  padding: 0;
   user-select: none;
 }
 
-.toc-table th:hover {
+/* The sort <button> fills the whole <th> so the clickable/keyboard-focusable
+   area matches the previous whole-header onclick target exactly (no visual
+   or interaction regression for mouse users). */
+.toc-table th .sort-button {
+  background: none;
+  border: none;
+  box-sizing: border-box;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font: inherit;
+  padding: 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.toc-table th .sort-button:hover {
   background: #e9ecef;
 }
 
-.toc-table th.sortable::after {
+.toc-table th .sort-button:focus-visible {
+  outline: 2px solid #007AFF;
+  outline-offset: -2px;
+}
+
+.toc-table th.sortable .sort-button::after {
   content: " ↕";
   opacity: 0.5;
 }
 
-.toc-table th.sort-asc::after {
+.toc-table th.sort-asc .sort-button::after {
   content: " ↑";
   opacity: 1;
 }
 
-.toc-table th.sort-desc::after {
+.toc-table th.sort-desc .sort-button::after {
   content: " ↓";
   opacity: 1;
 }
