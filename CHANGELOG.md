@@ -83,6 +83,25 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   output against 1.15.4 for this framework's beautify options before landing
   the bump; publishers should not see any formatting change in generated
   poem pages.
+- **Dev server binds to localhost by default.** `serve-static.js`
+  (`npm start` / `npm run build:all`) now listens on `127.0.0.1` instead of
+  all interfaces, so the local preview is no longer reachable from other
+  machines on your network. `http://localhost:8080` continues to work exactly
+  as before. Pass `--host 0.0.0.0` (or set `HOST=0.0.0.0`) to expose it on
+  your LAN for the occasional cross-device test.
+
+### Security
+
+- **Tightened dev-server path containment.** The traversal guards in
+  `serve-static.js` now compare the resolved path against the served root plus
+  a path separator, so a sibling directory whose name merely extends the root
+  (e.g. `publicX` beside `public`) can no longer satisfy the check. The
+  join/containment logic is factored into `src/tools/path-guard.js` and unit
+  tested.
+- **Blogger auth flow now uses OAuth `state` and PKCE.** `blogger-auth.js`
+  sends a random `state` value plus an S256 PKCE challenge on the consent URL
+  and rejects the loopback callback if the returned `state` does not match,
+  following RFC 8252 for native-app OAuth.
 
 ## [5.1.0] — 2026-07-10
 

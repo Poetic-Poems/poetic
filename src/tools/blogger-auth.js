@@ -34,6 +34,7 @@ const http = require('http');
 const readline = require('readline');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { URL, URLSearchParams } = require('url');
 
 const BLOGGER_SCOPE = 'https://www.googleapis.com/auth/blogger';
@@ -66,9 +67,34 @@ function prompt(rl, question) {
   return new Promise(resolve => rl.question(question, resolve));
 }
 
+// ── CSRF state + PKCE (RFC 8252 / RFC 7636) ───────────────────────────────────
+
+function base64UrlEncode(buf) {
+  return buf
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+// Opaque value echoed back on the redirect; guards against a forged callback.
+function generateState() {
+  return base64UrlEncode(crypto.randomBytes(16));
+}
+
+// S256 PKCE pair: the verifier stays local, only its SHA-256 hash is sent to
+// the authorization endpoint, so an intercepted code cannot be redeemed alone.
+function generatePkce() {
+  const verifier = base64UrlEncode(crypto.randomBytes(32));
+  const challenge = base64UrlEncode(
+    crypto.createHash('sha256').update(verifier).digest()
+  );
+  return { verifier, challenge };
+}
+
 // ── Token exchange ────────────────────────────────────────────────────────────
 
-async function exchangeCodeForTokens({ clientId, clientSecret, code, redirectUri }) {
+async function exchangeCodeForTokens({ clientId, clientSecret, code, redirectUri, codeVerifier }) {
   const body = new URLSearchParams({
     client_id: clientId,
     client_secret: clientSecret,
@@ -76,6 +102,9 @@ async function exchangeCodeForTokens({ clientId, clientSecret, code, redirectUri
     redirect_uri: redirectUri,
     grant_type: 'authorization_code',
   });
+  if (codeVerifier) {
+    body.set('code_verifier', codeVerifier);
+  }
 
   const response = await fetch(TOKEN_URL, {
     method: 'POST',
@@ -108,13 +137,14 @@ async function lookupBlogId(blogUrl, accessToken) {
 
 // ── Loopback server ───────────────────────────────────────────────────────────
 
-function waitForCode(port) {
+function waitForCode(port, expectedState) {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
       try {
         const requestUrl = new URL(req.url, `http://localhost:${port}`);
         const code = requestUrl.searchParams.get('code');
         const error = requestUrl.searchParams.get('error');
+        const returnedState = requestUrl.searchParams.get('state');
 
         if (error) {
           res.writeHead(400, { 'Content-Type': 'text/html' });
@@ -125,6 +155,16 @@ function waitForCode(port) {
         }
 
         if (code) {
+          // CSRF guard: reject a callback whose state does not match the value
+          // we generated for this request.
+          if (expectedState && returnedState !== expectedState) {
+            res.writeHead(400, { 'Content-Type': 'text/html' });
+            res.end('<html><body><h1>Authorization failed</h1><p>State mismatch — possible CSRF. You may close this window.</p></body></html>');
+            server.close();
+            reject(new Error('State parameter mismatch — aborting (possible CSRF).'));
+            return;
+          }
+
           res.writeHead(200, { 'Content-Type': 'text/html' });
           res.end('<html><body><h1>Authorization successful!</h1><p>You may close this window and return to the terminal.</p></body></html>');
           server.close();
@@ -201,6 +241,10 @@ After running:
   const port = cliArgs.port;
   const redirectUri = `http://localhost:${port}`;
 
+  // CSRF state + PKCE challenge for this authorization request (RFC 8252).
+  const state = generateState();
+  const { verifier: codeVerifier, challenge: codeChallenge } = generatePkce();
+
   // Build consent URL
   const consentUrl = new URL(AUTH_URL);
   consentUrl.searchParams.set('client_id', clientId);
@@ -209,6 +253,9 @@ After running:
   consentUrl.searchParams.set('scope', BLOGGER_SCOPE);
   consentUrl.searchParams.set('access_type', 'offline');
   consentUrl.searchParams.set('prompt', 'consent');
+  consentUrl.searchParams.set('state', state);
+  consentUrl.searchParams.set('code_challenge', codeChallenge);
+  consentUrl.searchParams.set('code_challenge_method', 'S256');
 
   console.log('\n─────────────────────────────────────────────────────────');
   console.log('Step 1: Open the following URL in your browser and sign in:');
@@ -219,7 +266,7 @@ After running:
 
   let code;
   try {
-    code = await waitForCode(port);
+    code = await waitForCode(port, state);
   } catch (err) {
     console.error(`Error receiving authorization code: ${err.message}`);
     rl.close();
@@ -231,7 +278,7 @@ After running:
 
   let tokens;
   try {
-    tokens = await exchangeCodeForTokens({ clientId, clientSecret, code, redirectUri });
+    tokens = await exchangeCodeForTokens({ clientId, clientSecret, code, redirectUri, codeVerifier });
   } catch (err) {
     console.error(`Error exchanging code: ${err.message}`);
     rl.close();
@@ -305,4 +352,11 @@ if (require.main === module) {
   });
 }
 
-module.exports = { parseArgs, waitForCode, exchangeCodeForTokens, lookupBlogId };
+module.exports = {
+  parseArgs,
+  waitForCode,
+  exchangeCodeForTokens,
+  lookupBlogId,
+  generateState,
+  generatePkce,
+};

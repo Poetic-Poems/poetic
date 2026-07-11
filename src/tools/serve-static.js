@@ -14,9 +14,10 @@ const { readPoeticConfig } = require("./poetic-config");
 const { renderFooter, upsertFooter } = require("./footer");
 const { concatenateAllHtmlFiles } = require("./build-all-poems");
 const { REPO_ROOT } = require("./repo-root");
+const { safeJoin, isWithinRoot } = require("./path-guard");
 
 function parseArgs(argv) {
-  const args = { port: undefined, dir: undefined };
+  const args = { port: undefined, dir: undefined, host: undefined };
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--port" || arg === "-p") {
@@ -29,15 +30,23 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg.startsWith("--dir=")) {
       args.dir = arg.split("=")[1];
+    } else if (arg === "--host" || arg === "-H") {
+      args.host = argv[i + 1];
+      i += 1;
+    } else if (arg.startsWith("--host=")) {
+      args.host = arg.split("=")[1];
     }
   }
   return args;
 }
 
-const { port: cliPort, dir: cliDir } = parseArgs(process.argv);
+const { port: cliPort, dir: cliDir, host: cliHost } = parseArgs(process.argv);
 const PORT = Number(
   cliPort || process.env.PORT || process.env.npm_config_port || 8080
 );
+// Bind to loopback by default so the dev server is not exposed to the LAN.
+// Pass --host 0.0.0.0 (or HOST=0.0.0.0) for the rare LAN-testing case.
+const HOST = cliHost || process.env.HOST || "127.0.0.1";
 const ROOT_DIR = path.resolve(
   process.cwd(),
   cliDir || process.env.DIR || "public"
@@ -74,11 +83,6 @@ const MIME_TYPES = {
 function getContentType(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   return MIME_TYPES[ext] || "application/octet-stream";
-}
-
-function safeJoin(base, target) {
-  const targetPath = path.normalize(target).replace(/^([/\\])+/, "");
-  return path.join(base, targetPath);
 }
 
 function fileExists(filePath) {
@@ -220,7 +224,7 @@ const server = http.createServer((req, res) => {
       let dirPath = safeJoin(ROOT_DIR, pathname);
 
       // Prevent path traversal
-      if (!dirPath.startsWith(ROOT_DIR)) {
+      if (!isWithinRoot(ROOT_DIR, dirPath)) {
         res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
         res.end("Forbidden");
         return;
@@ -269,7 +273,7 @@ const server = http.createServer((req, res) => {
     let filePath = safeJoin(ROOT_DIR, pathname);
 
     // Prevent path traversal
-    if (!filePath.startsWith(ROOT_DIR)) {
+    if (!isWithinRoot(ROOT_DIR, filePath)) {
       res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
       res.end("Forbidden");
       return;
@@ -318,10 +322,18 @@ const server = http.createServer((req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  const url = `http://localhost:${PORT}`;
+server.listen(PORT, HOST, () => {
+  const isLoopback = HOST === "127.0.0.1" || HOST === "::1";
+  const displayHost = isLoopback || HOST === "0.0.0.0" ? "localhost" : HOST;
+  const url = `http://${displayHost}:${PORT}`;
   // eslint-disable-next-line no-console
-  console.log(`Serving ${ROOT_DIR} at ${url}`);
+  console.log(`Serving ${ROOT_DIR} at ${url} (bound to ${HOST})`);
+  if (isLoopback) {
+    // eslint-disable-next-line no-console
+    console.log("Loopback only; use --host 0.0.0.0 to expose on your LAN.");
+  }
   // eslint-disable-next-line no-console
-  console.log("Usage: node tools/serve-static.js --port 9000 --dir public");
+  console.log(
+    "Usage: node tools/serve-static.js --port 9000 --dir public --host 127.0.0.1"
+  );
 });
