@@ -79,7 +79,9 @@ BLOGGER_CLIENT_SECRET=your-client-secret \
 npm run blogger:auth
 ```
 
-The helper (`src/tools/blogger-auth.js`) opens a browser URL, prompts you to approve access, and writes the resulting credentials to `.blogger-credentials.json` (which is git-ignored). Copy the `refresh_token` value from that file.
+The helper (`src/tools/blogger-auth.js`) opens a browser URL, prompts you to approve access, and — if you confirm the prompt to save — writes the resulting credentials to `.blogger-credentials.json` (which is git-ignored, and written with file mode `0600` since it holds a refresh token with full blog write access). Copy the `refresh_token` value from that file to store as a GitHub secret (step 5).
+
+`src/tools/sync-blogger.js` also reads `.blogger-credentials.json` directly as a fallback for any of the three `BLOGGER_*` env vars that isn't set, so once the file exists you can run `npm run sync:blogger -- --dry-run` locally without exporting anything.
 
 ### 5. Store GitHub secrets
 

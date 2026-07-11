@@ -7,7 +7,6 @@
  *
  * Exports (pure, no network/fs):
  *   parseArgs(argv)                                  - parse CLI flags
- *   resolveConfig(config, env)                       - apply defaults + validate
  *   extractSlug(post)                                - recover a poem's slug from post content
  *   mapBySlug(posts)                                 - Map<slug, post>
  *   bloggerAcceptableLabels(labels)                  - filter poem labels to Blogger-acceptable ones
@@ -17,8 +16,11 @@
  *   selectRemoved(posts, currentSlugs, label)        - posts to draft/delete
  *   extractContent(fragmentHtml, mode)               - strip audio/analysis for 'poem' mode
  *
+ * Config resolution (reads the credentials file from disk; no network):
+ *   resolveConfig(config, env, credentialsPath)      - apply defaults + validate + resolve credentials
+ *
  * Network (require an access token):
- *   getAccessToken(env)
+ *   getAccessToken(credentials)
  *   listAllPosts(blogId, token)
  *   createPost(blogId, token, post)
  *   updatePost(blogId, token, postId, post)
@@ -59,11 +61,6 @@ function parseArgs(argv) {
   return { dryRun, only };
 }
 
-// Module-level credential variables, populated by resolveConfig.
-let clientId     = undefined;
-let clientSecret = undefined;
-let refreshToken = undefined;
-
 /**
  * Resolve and validate Blogger config, applying defaults.
  *
@@ -74,7 +71,12 @@ let refreshToken = undefined;
  *   `.blogger-credentials.json` resolved against the process's CWD; pass
  *   `null` to disable the file fallback entirely (e.g. for hermetic tests
  *   that must not pick up a real credentials file left on disk).
- * @returns {{ enabled: boolean, blogId: string|undefined, label: string, removed: string, content: string, hasCredentials: boolean }}
+ *
+ *   The file may use either the top-level-keys shape written by
+ *   blogger-auth.js (`{ client_id, client_secret, refresh_token }`) or the
+ *   nested Google client-secrets shape (`{ installed: { client_id, ... } }`).
+ *   Top-level keys win if both are present.
+ * @returns {{ enabled: boolean, blogId: string|undefined, label: string, removed: string, content: string, hasCredentials: boolean, clientId: string|undefined, clientSecret: string|undefined, refreshToken: string|undefined }}
  */
 function resolveConfig(config, env, credentialsPath = path.resolve('.blogger-credentials.json')) {
   const blogger = config.blogger || {};
@@ -98,20 +100,25 @@ function resolveConfig(config, env, credentialsPath = path.resolve('.blogger-cre
   if (credentialsPath && fs.existsSync(credentialsPath)) {
     try {
       const raw = fs.readFileSync(credentialsPath, 'utf8');
-      fileCredentials = JSON.parse(raw)?.installed ?? {};
+      const parsed = JSON.parse(raw) || {};
+      const nested = parsed.installed || {};
+      fileCredentials = {
+        client_id: parsed.client_id ?? nested.client_id,
+        client_secret: parsed.client_secret ?? nested.client_secret,
+        refresh_token: parsed.refresh_token ?? nested.refresh_token,
+      };
     } catch {
       // File exists but is unreadable or malformed; proceed without it.
     }
   }
 
-  // Write to the module-level variables.
-  clientId     = env.BLOGGER_CLIENT_ID     || fileCredentials.client_id;
-  clientSecret = env.BLOGGER_CLIENT_SECRET || fileCredentials.client_secret;
-  refreshToken = env.BLOGGER_REFRESH_TOKEN || fileCredentials.refresh_token;
+  const clientId     = env.BLOGGER_CLIENT_ID     || fileCredentials.client_id;
+  const clientSecret = env.BLOGGER_CLIENT_SECRET || fileCredentials.client_secret;
+  const refreshToken = env.BLOGGER_REFRESH_TOKEN || fileCredentials.refresh_token;
 
   const hasCredentials = !!(clientId && clientSecret && refreshToken);
 
-  return { enabled, blogId, label, removed, content, hasCredentials };
+  return { enabled, blogId, label, removed, content, hasCredentials, clientId, clientSecret, refreshToken };
 }
 
 /**
@@ -334,19 +341,33 @@ async function assertOk(response, context) {
 }
 
 /**
+ * fetch() with a single retry after a short delay if the response is 429 or 5xx.
+ *
+ * @param {string} url
+ * @param {object} [init] - fetch init options
+ * @returns {Promise<Response>}
+ */
+async function fetchWithRetry(url, init) {
+  const response = await fetch(url, init);
+  if (response.status !== 429 && response.status < 500) return response;
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return fetch(url, init);
+}
+
+/**
  * Obtain a fresh access token using a stored refresh token.
  *
- * @param {object} env - environment variables
+ * @param {{ clientId: string, clientSecret: string, refreshToken: string }} credentials
  * @returns {Promise<string>} access_token
  */
-async function getAccessToken(env) {
+async function getAccessToken({ clientId, clientSecret, refreshToken }) {
   const body = new URLSearchParams({
     client_id: clientId,
     client_secret: clientSecret,
     refresh_token: refreshToken,
     grant_type: 'refresh_token',
   });
-  const response = await fetch(TOKEN_URL, {
+  const response = await fetchWithRetry(TOKEN_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
@@ -378,7 +399,7 @@ async function listAllPosts(blogId, token) {
     url.searchParams.append('status', 'draft');
     if (pageToken) url.searchParams.set('pageToken', pageToken);
 
-    const response = await fetch(url.toString(), {
+    const response = await fetchWithRetry(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
     });
     await assertOk(response, 'listAllPosts');
@@ -398,7 +419,7 @@ async function listAllPosts(blogId, token) {
  * @returns {Promise<object>}
  */
 async function createPost(blogId, token, post) {
-  const response = await fetch(`${BLOGGER_API}/blogs/${blogId}/posts/`, {
+  const response = await fetchWithRetry(`${BLOGGER_API}/blogs/${blogId}/posts/`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -420,7 +441,7 @@ async function createPost(blogId, token, post) {
  * @returns {Promise<object>}
  */
 async function updatePost(blogId, token, postId, post) {
-  const response = await fetch(`${BLOGGER_API}/blogs/${blogId}/posts/${postId}`, {
+  const response = await fetchWithRetry(`${BLOGGER_API}/blogs/${blogId}/posts/${postId}`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -441,7 +462,7 @@ async function updatePost(blogId, token, postId, post) {
  * @returns {Promise<object>}
  */
 async function revertPost(blogId, token, postId) {
-  const response = await fetch(`${BLOGGER_API}/blogs/${blogId}/posts/${postId}/revert`, {
+  const response = await fetchWithRetry(`${BLOGGER_API}/blogs/${blogId}/posts/${postId}/revert`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -458,7 +479,7 @@ async function revertPost(blogId, token, postId) {
  * @returns {Promise<void>}
  */
 async function deletePost(blogId, token, postId) {
-  const response = await fetch(`${BLOGGER_API}/blogs/${blogId}/posts/${postId}`, {
+  const response = await fetchWithRetry(`${BLOGGER_API}/blogs/${blogId}/posts/${postId}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -487,13 +508,18 @@ async function main() {
     }
 
     if (!opts.hasCredentials) {
-      const missing = ['BLOGGER_CLIENT_ID', 'BLOGGER_CLIENT_SECRET', 'BLOGGER_REFRESH_TOKEN']
-        .filter(k => !process.env[k]);
-      console.log(`Blogger sync: missing environment variable(s): ${missing.join(', ')}`);
+      const missing = [];
+      if (!opts.clientId) missing.push('BLOGGER_CLIENT_ID');
+      if (!opts.clientSecret) missing.push('BLOGGER_CLIENT_SECRET');
+      if (!opts.refreshToken) missing.push('BLOGGER_REFRESH_TOKEN');
+      console.log(
+        `Blogger sync: missing environment variable(s): ${missing.join(', ')} ` +
+        '(also checked .blogger-credentials.json).'
+      );
       return;
     }
 
-    const token = await getAccessToken(process.env);
+    const token = await getAccessToken(opts);
     const posts = await listAllPosts(opts.blogId, token);
     const bySlug = mapBySlug(posts);
 

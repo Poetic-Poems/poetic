@@ -11,6 +11,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 
 const {
   parseArgs,
@@ -141,6 +143,66 @@ test('resolveConfig: hasCredentials true when missing env vars are filled in fro
   const fixturePath = path.join(__dirname, 'fixtures', 'blogger-credentials.json');
   const opts = resolveConfig({}, { BLOGGER_CLIENT_ID: 'x' }, fixturePath);
   assert.strictEqual(opts.hasCredentials, true);
+});
+
+test('resolveConfig: reads credentials from top-level keys in credentials file', () => {
+  const tmpPath = path.join(os.tmpdir(), `blogger-creds-toplevel-${process.pid}-${Date.now()}.json`);
+  try {
+    const credData = {
+      client_id: 'toplevel-client-id',
+      client_secret: 'toplevel-client-secret',
+      refresh_token: 'toplevel-refresh-token',
+      note: 'Test credentials'
+    };
+    fs.writeFileSync(tmpPath, JSON.stringify(credData));
+    const opts = resolveConfig({}, {}, tmpPath);
+    assert.strictEqual(opts.hasCredentials, true);
+    assert.strictEqual(opts.clientId, 'toplevel-client-id');
+    assert.strictEqual(opts.clientSecret, 'toplevel-client-secret');
+    assert.strictEqual(opts.refreshToken, 'toplevel-refresh-token');
+  } finally {
+    fs.rmSync(tmpPath, { force: true });
+  }
+});
+
+test('resolveConfig: reads credentials from nested installed object in credentials file', () => {
+  const fixturePath = path.join(__dirname, 'fixtures', 'blogger-credentials.json');
+  const opts = resolveConfig({}, {}, fixturePath);
+  assert.strictEqual(opts.clientId, 'fixture-client-id');
+  assert.strictEqual(opts.clientSecret, 'fixture-client-secret');
+  assert.strictEqual(opts.refreshToken, 'fixture-refresh-token');
+  assert.strictEqual(opts.hasCredentials, true);
+});
+
+test('resolveConfig: top-level keys take precedence over nested installed object', () => {
+  const tmpPath = path.join(os.tmpdir(), `blogger-creds-both-${process.pid}-${Date.now()}.json`);
+  try {
+    const credData = {
+      client_id: 'toplevel-id',
+      client_secret: 'toplevel-secret',
+      refresh_token: 'toplevel-token',
+      installed: {
+        client_id: 'nested-id',
+        client_secret: 'nested-secret',
+        refresh_token: 'nested-token'
+      }
+    };
+    fs.writeFileSync(tmpPath, JSON.stringify(credData));
+    const opts = resolveConfig({}, {}, tmpPath);
+    assert.strictEqual(opts.clientId, 'toplevel-id');
+    assert.strictEqual(opts.clientSecret, 'toplevel-secret');
+    assert.strictEqual(opts.refreshToken, 'toplevel-token');
+  } finally {
+    fs.rmSync(tmpPath, { force: true });
+  }
+});
+
+test('resolveConfig: env vars override file credentials independently', () => {
+  const fixturePath = path.join(__dirname, 'fixtures', 'blogger-credentials.json');
+  const opts = resolveConfig({}, { BLOGGER_CLIENT_ID: 'env-id' }, fixturePath);
+  assert.strictEqual(opts.clientId, 'env-id');
+  assert.strictEqual(opts.clientSecret, 'fixture-client-secret');
+  assert.strictEqual(opts.refreshToken, 'fixture-refresh-token');
 });
 
 // ── extractSlug ───────────────────────────────────────────────────────────────

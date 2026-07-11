@@ -276,7 +276,7 @@ After running:
       refresh_token: refreshToken,
       note: 'Local dev only — do NOT commit this file. Add these as GitHub Actions secrets instead.',
     };
-    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2) + '\n', 'utf8');
+    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 });
     console.log(`Saved to ${CREDENTIALS_FILE}`);
     console.log('Make sure .blogger-credentials.json is in .gitignore!');
   }

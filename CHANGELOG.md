@@ -11,6 +11,17 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`sync-blogger.js` now reads credentials saved by `blogger-auth.js`.**
+  `blogger-auth.js` saves `.blogger-credentials.json` with top-level keys
+  (`client_id`, `client_secret`, `refresh_token`); `sync-blogger.js` only read
+  the nested Google client-secrets `installed` shape, so a file saved by the
+  auth helper was silently ignored and sync reported "missing environment
+  variable(s)" with the file sitting right there. `resolveConfig` now accepts
+  either shape (top-level keys win if both are present) and returns the
+  resolved credentials directly instead of writing them to module-level
+  variables; the missing-credentials message now also mentions the
+  credentials file. `blogger-auth.js` now writes the credentials file with
+  mode `0600`, since it holds a refresh token with full blog write access.
 - **Build failures no longer degrade silently.** Several failure paths used
   to log a message and let the pipeline exit 0, publishing a degraded site:
   a `.poem` that failed conversion during `poem-to-yaml.js --all` simply

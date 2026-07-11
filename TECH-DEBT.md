@@ -33,17 +33,6 @@ published page, and `$ref` cycles crash with a stack overflow instead of a clear
 message. Fix: count errors and exit non-zero; add a `$ref` cycle guard.
 (project-review-2026-07-11: F-ARCH-02, F-UX-02, F-ARCH-05, R-03.)
 
-## TD26071104 blogger-auth and sync-blogger disagree on the credentials-file format
-
-`blogger-auth.js` saves `.blogger-credentials.json` with top-level keys;
-`sync-blogger.js` reads only the nested `installed` shape
-(sync-blogger.js:101), so a saved file is silently ignored and the local
-file-based sync flow is broken. No test round-trips the seam (all resolveConfig
-tests pass `credentialsPath: null`). Fix: accept both shapes, return credentials
-from resolveConfig instead of module globals, write the file 0600, add a
-round-trip test. (project-review-2026-07-11: F-CODE-06, F-CODE-04, F-TEST-02,
-R-04.)
-
 ## TD26071105 Embedded client JS is untested and unlintable
 
 ~370 lines of client-side JS live in template literals in
