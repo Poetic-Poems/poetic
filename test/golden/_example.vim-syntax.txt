@@ -1,7 +1,7 @@
 [<<#]=poemComment
 [This is the canonical example poem: it exercises every syntax feature and]=poemComment
 [doubles as the golden test fixture. This comment block (and the preamble]=poemComment
-[variable definitions below) never appear in the output.]=poemComment
+[variable definitions and directive below) never appear in the output.]=poemComment
 [#>>]=poemComment
 
 [={author_name}=]=poemVariableDef [A Poet]=poemVariableValue
@@ -10,6 +10,8 @@
 [Sing it once, sing it twice]=poemMultiLineVarDef
 [Sing the words of paradise]=poemMultiLineVarDef
 [=>>]=poemMultiLineVarDef
+
+[%example.preamble]=poemDirective [ ]=- [key:value]=poemDirectiveAttr [  ]=- [# a directive declared in the Preamble, before the title]=poemDirectiveComment
 
 [Example Poem]=poemTitle
 [${author_name}]=poemVariableRef
@@ -26,7 +28,7 @@
 
 [{]=poemSegmentLabelDelim [Stanza 2]=poemSegmentLabelLineOnly [}]=poemSegmentLabelDelim
 [A ]=- [[link]=poemLink [|]=poemLinkPipe [example.com]]=poemLink [ and a ]=- [/.highlight{highlighted span}]=poemSpan [,]=-
-[with escaped ]=- [\*]=poemEscaped [asterisks]=- [\*]=poemEscaped [ and a literal ]=- [\-\-\-]=poemEscaped [ triple-hyphen.]=-
+[with escaped ]=- [\*]=poemEscaped [asterisks]=- [\*]=poemEscaped [, a literal ]=- [\-\-\-]=poemEscaped [ triple-hyphen, and an escaped ]=- [\%]=poemEscaped [ percent sign.]=-
 [First line, with a hard line break here,]=- [  ]=poemTrailingSpaces
 [and the line that follows it.]=-
 

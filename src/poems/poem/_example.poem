@@ -1,7 +1,7 @@
 <<#
 This is the canonical example poem: it exercises every syntax feature and
 doubles as the golden test fixture. This comment block (and the preamble
-variable definitions below) never appear in the output.
+variable definitions and directive below) never appear in the output.
 #>>
 
 ={author_name}=A Poet
@@ -10,6 +10,8 @@ variable definitions below) never appear in the output.
 Sing it once, sing it twice
 Sing the words of paradise
 =>>
+
+%example.preamble key:value  # a directive declared in the Preamble, before the title
 
 Example Poem
 ${author_name}
@@ -26,7 +28,7 @@ an en--dash, an em---dash, an ampersand &, an apostrophe's tail.
 
 {Stanza 2}
 A [link|example.com] and a /.highlight{highlighted span},
-with escaped \*asterisks\* and a literal \-\-\- triple-hyphen.
+with escaped \*asterisks\*, a literal \-\-\- triple-hyphen, and an escaped \% percent sign.
 First line, with a hard line break here,  
 and the line that follows it.
 
