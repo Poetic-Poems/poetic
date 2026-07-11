@@ -81,6 +81,7 @@ function makeUpstream(base) {
   initRepo(dir);
   write(dir, 'docs/GUIDE.md', 'upstream guide v1\n');
   write(dir, 'package.json', '{"name":"upstream"}\n');
+  write(dir, 'package-lock.json', '{"name":"upstream","lockfileVersion":3}\n');
   write(dir, 'src/tools/tool.js', '// upstream tool v1\n');
   const commit = commitAll(dir, 'chore: upstream v1');
   return { dir, commit };
@@ -132,6 +133,13 @@ test('syncs framework paths and records the ref/commit (default ref from .poetic
 
   assert.strictEqual(readFile(cons, 'docs/GUIDE.md'), 'upstream guide v1\n');
   assert.strictEqual(readFile(cons, 'src/tools/tool.js'), '// upstream tool v1\n');
+
+  // package-lock.json must sync alongside package.json; otherwise a dependency
+  // bump upstream leaves the consumer's lockfile stale and `npm ci` fails.
+  assert.strictEqual(
+    readFile(cons, 'package-lock.json'),
+    '{"name":"upstream","lockfileVersion":3}\n'
+  );
 
   const ver = readFile(cons, '.poetic-version');
   assert.match(ver, /^channel=releases$/m, 'channel should be preserved');

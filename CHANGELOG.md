@@ -11,6 +11,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`sync-framework.sh` now syncs `package-lock.json`.** The framework-owned
+  paths list copied `package.json` but not the lockfile, so a dependency bump
+  upstream (e.g. `js-beautify` 1.x → 2.x) reached consumers as a
+  `package.json` change with a stale `package-lock.json`, and their CI failed
+  at `npm ci` with "can only install packages when your package.json and
+  package-lock.json … are in sync". Both files now sync together.
+
 - **`sync-blogger.js` now reads credentials saved by `blogger-auth.js`.**
   `blogger-auth.js` saves `.blogger-credentials.json` with top-level keys
   (`client_id`, `client_secret`, `refresh_token`); `sync-blogger.js` only read

@@ -133,6 +133,7 @@ FRAMEWORK_PATHS=(
   editors
   examples
   package.json
+  package-lock.json
   poem-syntax.ebnf
   public/all-poems.js
   public/index.js
