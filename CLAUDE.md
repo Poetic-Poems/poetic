@@ -72,11 +72,16 @@ Full spec: `docs/POEM-SYNTAX.md` and `poem-syntax.ebnf`.
 
 `main` is protected: it does not accept direct commits or pushes, from anyone
 or anything, including maintainers and AI agents. Every change goes through a
-pull request, and the repo only allows squash merging — so a pull request's
-title becomes the single commit that lands on `main`. Write that title in
-Conventional Commits format (see "Commit messages" below); the individual
-commits on the branch are discarded when squashed, so only the title needs to
-conform.
+pull request. A repo ruleset scoped to the default branch restricts merges
+into `main` to squash only (other branches allow any merge method) — so a
+pull request's title becomes the subject line of the single commit that
+lands on `main`.
+Write that title in Conventional Commits format (see "Commit messages"
+below); the individual commits on the branch are discarded when squashed, so
+only the title needs to conform. The squash commit's body is pre-filled from
+the pull request's description (GitHub repo setting `squash_merge_commit_message:
+PR_BODY`), so a filled-in PR description carries through to `main`'s history —
+write one whenever the change needs more context than the title alone gives.
 
 ## Release process
 
