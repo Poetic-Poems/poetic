@@ -51,7 +51,7 @@ across these four poems:
 
 When poems are created or updated in the
 [Fragments & Unity repository][Fragments & Unity - source], the Poetic framework
-automatically publishes those changes to the [Framgents & Unity Blogger site].
+automatically publishes those changes to the [Fragments & Unity Blogger site].
 
 [At The End of Myself]:
 https://warwick-allen.github.io/fragments-and-unity/all-poems.html#poem-at-the-end-of-myself
@@ -77,7 +77,7 @@ https://warwick-allen.github.io/fragments-and-unity/all-poems.html
 [Fragments & Unity - source]:
 https://github.com/Warwick-Allen/fragments-and-unity/#fragments--unity--poems-by-warwick-allen
 
-[Framgents & Unity Blogger site]:
+[Fragments & Unity Blogger site]:
 https://fragments-and-unity.blogspot.com/
 
 [My Shepherd (2026)]:
@@ -207,7 +207,7 @@ src/
 │   └── yaml/         # Generated YAML (and _shared.yaml for shared content)
 ├── templates/        # Pug HTML template
 └── tools/            # Build scripts
-public/               # Generated HTML (git-ignored by default)
+public/               # Generated HTML (git-ignored); tracked framework assets (CSS, JS, footer, logos)
 docs/                 # Documentation
 editors/vim/          # Vim syntax highlighting
 examples/             # Worked examples
