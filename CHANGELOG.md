@@ -9,6 +9,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [6.0.0] — 2026-07-12
+
 ### Added
 
 - **Line continuation with a trailing backslash.** A line ending in a backslash
@@ -23,13 +25,17 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`\?` is now reserved.** The escape prefix `\?` raises a build error, keeping
   it free for a future extended-escape family; write `\\?` for a literal
   backslash followed by `?`.
-- **Directives may now be declared in the Preamble.** A directive line
-  (`%name key:value …`) may appear before the header, as well as in the
+- **Breaking: directives may now be declared in the Preamble.** A directive
+  line (`%name key:value …`) may appear before the header, as well as in the
   Metadata section, so a directive that changes how the rest of the poem is
   parsed can be seen early, before the content it affects. When directives
   are declared in both places, they are collected into one `directives` list
   in source order — Preamble directives first, then Metadata directives —
-  and are not de-duplicated.
+  and are not de-duplicated. Because the preamble is now scanned for
+  directives, a poem whose title previously began with an unescaped `%`
+  (e.g. `%Intro`) is now silently parsed as a Preamble directive instead of
+  a title line, shifting the header down by one line — use the new `\%`
+  escape (below) to keep a literal `%` at the start of a title.
 - **`\%` is a new escaped character.** `\%` decodes to a literal `%` in the
   poem body, labels, and the title, so a title may start with `%` (e.g.
   `\%Intro` → title `%Intro`) without its line being read as a Preamble
