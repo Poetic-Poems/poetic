@@ -9,6 +9,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [5.2.0] — 2026-07-12
+
 ### Added
 
 - **Line continuation with a trailing backslash.** A line ending in a backslash
