@@ -6,6 +6,7 @@ node_modules
 src/poems/yaml/*.yaml
 public/*.html
 public/raw/*.html
+public/date-utils.js
 
 !src/poems/yaml/_*.yaml
 !public/poetic-footer.html

@@ -61,6 +61,25 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `allowfullscreen`). See [Embed permissions](docs/BUILD.md#embed-permissions)
   in `docs/BUILD.md`. Resolves TD26071002.
 
+### Changed
+
+- **`all-poems.html`/`index.html` client-side JS moved to `public/` assets.**
+  The sort/filter script for `all-poems.html` and the poem-grid renderer for
+  `index.html` used to be generated as large inline `<script>` blobs by
+  `build-all-poems.js`. They now live in `public/all-poems.js` and
+  `public/index.js`, loaded via `<script src>` like `poetic.js`. `index.html`
+  carries its poem list as a `<script type="application/json" id="poem-data">`
+  data island that `index.js` reads at runtime, instead of an interpolated
+  `const allPoems = [...]` literal; a previously-built `index.html` still
+  carrying the old inline format is migrated to the new one automatically on
+  its next build. `date-utils.js` is now dependency-free enough to load
+  directly as a browser `<script>` as well as a Node module — it's copied
+  verbatim to `public/date-utils.js` at build time (single source of truth,
+  no hand-maintained second copy), and `all-poems.js` calls its
+  `parseDateForSorting()` for the sortable date column instead of carrying a
+  duplicate implementation. `build-poems.js` and `build-all-poems.js` also
+  gained direct tests. Resolves TD26071105.
+
 ## [5.1.0] — 2026-07-10
 
 ### Added

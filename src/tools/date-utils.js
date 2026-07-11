@@ -1,5 +1,13 @@
 /**
- * Date utility functions for converting between yyyy-mm-dd and display formats
+ * Date utility functions for converting between yyyy-mm-dd and display formats.
+ *
+ * Dependency-free by design: this file is required as a Node CommonJS module
+ * (build scripts) AND copied verbatim to public/date-utils.js at build time
+ * (see build-all-poems.js) so it can also be loaded in the browser via a
+ * plain <script src="date-utils.js"> tag (public/all-poems.js calls
+ * parseDateForSorting() for its table sort). Do not add `require`/`fs`/
+ * `process` or any other Node-only dependency here — it must keep working
+ * unbundled in both environments.
  */
 
 /**
@@ -116,8 +124,12 @@ function parseDateForSorting(dateStr) {
   return new Date(0); // fallback for invalid dates
 }
 
-module.exports = {
-  formatDateForDisplay,
-  parseDateForSorting,
-  toISODate
-};
+// Guarded so this file can also be loaded as a plain browser <script> (where
+// `module` is undefined) — see the file header comment.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    formatDateForDisplay,
+    parseDateForSorting,
+    toISODate
+  };
+}

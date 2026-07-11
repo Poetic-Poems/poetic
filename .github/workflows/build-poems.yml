@@ -100,6 +100,9 @@ jobs:
           cp public/all-poems.html deployment/
           cp public/poetic.css deployment/
           cp public/poetic.js deployment/
+          cp public/date-utils.js deployment/
+          cp public/all-poems.js deployment/
+          cp public/index.js deployment/
           [ -f public/custom.css ] && cp public/custom.css deployment/
           # Copy image assets to root so favicon hrefs resolve from root-level HTML files
           find public -maxdepth 1 -type f \( -name "*.svg" -o -name "*.png" -o -name "*.ico" -o -name "*.webp" \) -exec cp {} deployment/ \;

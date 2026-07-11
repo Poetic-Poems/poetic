@@ -20,9 +20,14 @@ const POEMS_DIR = path.join(REPO_ROOT, "src", "poems", "yaml");
 const PUBLIC_DIR = path.join(REPO_ROOT, "public");
 
 /**
- * Process all YAML files in the poems directory
+ * Process all YAML files in the poems directory.
+ *
+ * @param {object} [options]
+ * @param {string} [options.poemsDir] - Override POEMS_DIR (tests only; the
+ *   npm run build / CLI entry point below always uses the default).
+ * @param {string} [options.publicDir] - Override PUBLIC_DIR (tests only).
  */
-function buildAllPoems() {
+function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
   // Clear ref cache at the start of each build
   clearRefCache();
 
@@ -37,24 +42,24 @@ function buildAllPoems() {
   const footerBlock = renderFooter(config, REPO_ROOT, { base: '../' });
 
   // Ensure directories exist
-  if (!fs.existsSync(POEMS_DIR)) {
-    console.error(`Error: Poems directory not found: ${POEMS_DIR}`);
+  if (!fs.existsSync(poemsDir)) {
+    console.error(`Error: Poems directory not found: ${poemsDir}`);
     process.exit(1);
   }
 
-  if (!fs.existsSync(PUBLIC_DIR)) {
-    fs.mkdirSync(PUBLIC_DIR, { recursive: true });
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
   }
 
   // Get all YAML files
   const yamlFiles = fs
-    .readdirSync(POEMS_DIR)
+    .readdirSync(poemsDir)
     .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
     .filter((file) => !file.startsWith("YAML-SCHEMA"))
     .filter((file) => !file.startsWith("_")); // Skip files beginning with underscore
 
   if (yamlFiles.length === 0) {
-    console.warn(`Warning: No YAML files found in ${POEMS_DIR}`);
+    console.warn(`Warning: No YAML files found in ${poemsDir}`);
     return;
   }
 
@@ -67,7 +72,7 @@ function buildAllPoems() {
 
   // Process each YAML file
   for (const yamlFile of yamlFiles) {
-    const yamlPath = path.join(POEMS_DIR, yamlFile);
+    const yamlPath = path.join(poemsDir, yamlFile);
     const poemData = readPoemFile(yamlPath);
 
     if (!poemData) {
@@ -128,7 +133,7 @@ function buildAllPoems() {
       continue;
     }
 
-    const slugDir = path.join(PUBLIC_DIR, slug);
+    const slugDir = path.join(publicDir, slug);
     const pageFile = path.join(slugDir, 'index.html');
     try {
       fs.mkdirSync(slugDir, { recursive: true });
@@ -149,7 +154,7 @@ function buildAllPoems() {
     }
 
     // ── 2. Redirect stub: public/<slug>.html → ./<slug>/ ──────────────────
-    const redirectFile = path.join(PUBLIC_DIR, `${slug}.html`);
+    const redirectFile = path.join(publicDir, `${slug}.html`);
     const redirectHtml = `<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8">\n<link rel="canonical" href="./${slug}/">\n<meta http-equiv="refresh" content="0; url=./${slug}/"></head>\n<body><p>This poem has moved to <a href="./${slug}/">${slug}/</a>.</p></body></html>`;
     try {
       fs.writeFileSync(redirectFile, redirectHtml, "utf8");
@@ -166,10 +171,10 @@ function buildAllPoems() {
   // Exclude framework-generated aggregates (index, all-poems), template files,
   // and the configured footer.source file (when it lives directly in public/).
   const footerSourcePath = resolveFooterSourcePath(config, REPO_ROOT);
-  const footerSourceBasename = path.dirname(footerSourcePath) === PUBLIC_DIR
+  const footerSourceBasename = path.dirname(footerSourcePath) === publicDir
     ? path.basename(footerSourcePath)
     : null;
-  const htmlFiles = fs.readdirSync(PUBLIC_DIR)
+  const htmlFiles = fs.readdirSync(publicDir)
     .filter(f => f.endsWith('.html') && !f.includes('.template.') && f !== 'index.html' && f !== 'all-poems.html' && f !== footerSourceBasename);
   for (const htmlFile of htmlFiles) {
     const slug = htmlFile.slice(0, -5);

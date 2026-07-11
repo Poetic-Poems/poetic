@@ -134,6 +134,8 @@ FRAMEWORK_PATHS=(
   examples
   package.json
   poem-syntax.ebnf
+  public/all-poems.js
+  public/index.js
   public/poetic-footer.html
   public/poetic-logo.svg
   public/poetic.css

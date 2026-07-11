@@ -16,17 +16,6 @@ Where `<id>` is a literal "TD" then the date followed by a zero-padded
 sequential number (starting at 1 for the the first entry of a day). I.e.:
 **TD*YYMMDDNN***
 
-## TD26071105 Embedded client JS is untested and unlintable
-
-~370 lines of client-side JS live in template literals in
-`build-all-poems.js` (all-poems script ~208-489; RENDER_POEMS_SCRIPT ~502-575),
-duplicating date logic from `date-utils.js`, patched into previously built
-index.html files by a greedy self-heal regex (~698-701). The generators
-(`build-poems.js`, `build-all-poems.js`) have no direct tests. Fix: extract the
-scripts to `public/` assets loaded via `<script src>`, pass poem data as JSON,
-and add generator tests. (project-review-2026-07-11: F-CODE-01, F-TEST-01,
-R-05.)
-
 ## TD26071107 sync-framework.sh never deletes upstream-removed files; dead tools ship
 
 `git checkout <commit> -- <path>` overlays but never deletes, so framework

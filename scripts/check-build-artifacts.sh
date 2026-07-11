@@ -14,6 +14,7 @@ required_files=(
     "public/index.html"
     "public/all-poems.html"
     "public/poetic.css"
+    "public/date-utils.js"
 )
 
 missing=0
