@@ -146,6 +146,7 @@ FRAMEWORK_PATHS=(
   scripts/check-build-artifacts.sh
   scripts/edit-poem
   scripts/get-tech-debt-record.pl
+  scripts/next-tech-debt-id.pl
   scripts/remove-trailing-spaces.sh
   scripts/setup-linux.sh
   scripts/sync-framework.sh

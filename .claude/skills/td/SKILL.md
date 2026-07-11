@@ -54,21 +54,34 @@ it has the full description and the suggested fix, and instruct it to:
 
 1. Read this repo's `CLAUDE.md` first and follow its conventions (Conventional
    Commits, the CHANGELOG/as-built-docs policy, and the tech-debt policy).
-2. Implement the fix described in the record's `body`.
-3. Run the relevant checks for the area it touched (e.g. `npm test`,
+2. Before doing anything else, follow `TECH-DEBT.md`'s "Claiming an item"
+   workflow: confirm the record's Ledger row is `open` (not `in-progress`)
+   and skim open pull requests for its ID — if it looks already claimed,
+   stop and report that instead of duplicating work. Otherwise flip its
+   Ledger row to `in-progress`, commit, push a branch, and open a **draft**
+   pull request right away (the Ledger-flip commit can be the PR's first
+   commit).
+3. Implement the fix described in the record's `body`, pushing further
+   commits to the same branch/PR.
+4. Run the relevant checks for the area it touched (e.g. `npm test`,
    `npm run build`, `npm run check`, `npm run check:build`; on WSL/Linux via
    `./scripts/setup-linux.sh`).
-4. On success, remove the resolved entry from `TECH-DEBT.md` — delete the whole
+5. On success, remove the resolved entry from `TECH-DEBT.md` — delete the whole
    `## <id> <title>` section (locate it by the `## <id>` heading rather than by
-   the reported line numbers, which drift once editing starts). If the record's
-   body notes references to its ID elsewhere (e.g. in code comments), remove
-   those too, per `CLAUDE.md`'s tech-debt policy.
-5. Add a `[Unreleased]` `CHANGELOG.md` entry if the change is visible to poem
+   the reported line numbers, which drift once editing starts) — and flip its
+   Ledger row to `resolved`, filling in `Resolved` (today's date) and `Ref`
+   (the PR number). If the record's body notes references to its ID
+   elsewhere (e.g. in code comments), remove those too, per `CLAUDE.md`'s
+   tech-debt policy.
+6. Add a `[Unreleased]` `CHANGELOG.md` entry if the change is visible to poem
    authors or site publishers (skip it for routine/patch-level fixes, per that
    file's own header).
-6. **Not** commit or push unless the user has asked — instead report exactly
-   what changed and a suggested Conventional Commit subject.
+7. Push the final commits and mark the draft PR ready for review — per
+   `CLAUDE.md`'s branch workflow, agents work autonomously up to the PR
+   stage without pausing to ask first. If verification fails and the agent
+   can't resolve it, flip the Ledger row back to `open`, close the draft PR,
+   and report what blocked it instead of leaving a stale claim in place.
 
 The agent's final message comes back as the tool result and is not shown to the
-user, so relay its outcome (what it changed, test results, the suggested commit
-message, and anything it left for the user to decide).
+user, so relay its outcome (what it changed, test results, the PR URL, and
+anything it left for the user to decide).

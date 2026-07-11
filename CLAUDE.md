@@ -142,6 +142,14 @@ refer to that entry in other places (e.g., code comments), note that reference
 in the `TECH-DEBT.md` entry, so whoever addresses that item knows to also remove
 the references.
 
+`TECH-DEBT.md` ends with a permanent Ledger table recording every ID ever
+allocated, so a removed entry's ID is never reused. Get a new entry's ID from
+`scripts/next-tech-debt-id.pl` rather than counting by hand, and add a Ledger
+row (`open`) alongside the new entry. When picking up an existing open item,
+follow the "Claiming an item" workflow at the top of `TECH-DEBT.md` — flip its
+Ledger row to `in-progress` and open a draft PR immediately, so the claim is
+visible to other agents/developers before the fix lands.
+
 ## Key docs
 
 | File | Contents |
