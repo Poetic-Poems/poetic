@@ -12,7 +12,7 @@ const path = require("path");
 const { slugFromFile } = require("./slugify");
 const { formatDateForDisplay } = require("./date-utils");
 const { readPoeticConfig, CONFIG_FILENAME } = require("./poetic-config");
-const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles, PAGE_TEMPLATE } = require("./poem-render");
+const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles, refFilesForPoem, PAGE_TEMPLATE } = require("./poem-render");
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
 const { needsRebuild, forceRebuildRequested } = require("./needs-rebuild");
@@ -66,16 +66,10 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
 
   const force = forceRebuildRequested();
   const configPath = path.join(REPO_ROOT, CONFIG_FILENAME);
-  // Underscore-prefixed YAML files are shared partials pulled in via $ref
-  // (see poem-render.js's listPoemYamlFiles, which excludes them from the
-  // standalone-poem list above) — treat them as an implicit dependency of
-  // every poem, alongside the page template and other framework-wide inputs
-  // that affect every rendered page. A poem's own $ref to a file *without*
-  // the underscore convention is a known, accepted gap — see TECH-DEBT.md
-  // TD26071111.
-  const partialYamlPaths = fs.readdirSync(poemsDir)
-    .filter((f) => (f.endsWith('.yaml') || f.endsWith('.yml')) && f.startsWith('_'))
-    .map((f) => path.join(poemsDir, f));
+  // Framework-wide inputs that affect every rendered page. A poem's own $ref
+  // targets are resolved per poem below (refFilesForPoem), so only genuinely
+  // global inputs belong here — the page template, the built-in song handlers,
+  // and the config/footer when present.
   const globalInputs = [
     PAGE_TEMPLATE,
     BUILTIN_HANDLERS_PATH,
@@ -116,7 +110,13 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
     const pageFile = path.join(slugDir, 'index.html');
     const redirectFile = path.join(publicDir, `${slug}.html`);
 
-    const inputs = [yamlPath, ...partialYamlPaths, ...globalInputs];
+    // This poem's real dependencies: its own YAML plus every file it
+    // transitively $refs (resolved from the source, so a $ref to any file —
+    // underscore-prefixed partial or not, same directory or elsewhere —
+    // correctly invalidates this poem when edited). A missing $ref target is
+    // included too, so needsRebuild() keeps rebuilding until it is repaired.
+    const refTargets = refFilesForPoem(yamlPath);
+    const inputs = [yamlPath, ...refTargets, ...globalInputs];
     if (!needsRebuild([pageFile, redirectFile], inputs, { force })) {
       builtSlugs.add(slug);
       successCount++;

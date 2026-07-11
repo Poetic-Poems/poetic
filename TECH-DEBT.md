@@ -40,27 +40,6 @@ requests for its ID. Then:
 If a claim is abandoned (the draft PR is closed without merging), flip the
 row back to `open`.
 
-## TD26071111 Incremental-rebuild dependency tracking is approximate
-
-The mtime-based rebuild skip (`src/tools/needs-rebuild.js`, wired into
-`poem-to-yaml.js`, `build-poems.js`, `build-all-poems.js`, and
-`poem-to-raw.js`) makes two simplifying assumptions instead of full
-dependency-graph tracking. (1) A poem's `$ref` targets are assumed to be
-underscore-prefixed YAML partials in the same directory
-(`build-poems.js`'s `partialYamlPaths`) — a `$ref` to a non-underscore-prefixed
-file is invisible to the staleness check, so editing such a file alone won't
-invalidate poems that reference it. (2) A directory passed as an input (e.g.
-`poemsDir` in `build-all-poems.js`, to catch poems being added/removed) relies
-on the OS bumping the directory's own mtime when a direct child changes,
-which isn't guaranteed on every filesystem or by every sync/copy tool. Both
-are accepted trade-offs, not bugs — the correct general fix is real
-dependency-graph tracking (parsing every poem's actual `$ref` targets, and/or
-recording a manifest of known source files instead of relying on directory
-mtimes), which is more complex than this codebase's scale currently
-justifies. Revisit only if either gap causes an actual stale-build incident.
-Referenced from a comment in `build-poems.js` (next to `partialYamlPaths`) —
-remove that reference too when this is resolved.
-
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, or resolved — is
@@ -87,4 +66,4 @@ a body above.
 | TD26071108 | No linter; commit-format check is opt-in only | resolved | 2026-07-11 | cf0bf26 |
 | TD26071109 | js-yaml stuck on v4; v5 changes timestamp-quoting for edge-case date strings | resolved | 2026-07-11 | 7c4c29a |
 | TD26071110 | build-check-fallback.yml's path list is a hand-maintained mirror | resolved | 2026-07-11 | #10 |
-| TD26071111 | Incremental-rebuild dependency tracking is approximate | open | | |
+| TD26071111 | Incremental-rebuild dependency tracking is approximate | resolved | 2026-07-12 | #14 |

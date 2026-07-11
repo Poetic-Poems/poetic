@@ -29,7 +29,7 @@ const { slugFromFile } = require('./slugify');
 const { formatDateForDisplay } = require('./date-utils');
 const { readPoeticConfig, CONFIG_FILENAME } = require('./poetic-config');
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require('./footer');
-const { needsRebuild, forceRebuildRequested } = require('./needs-rebuild');
+const { needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested } = require('./needs-rebuild');
 
 // Named HTML entities the engine (and Markdown) can emit, mapped to Unicode.
 const NAMED_ENTITIES = {
@@ -246,18 +246,17 @@ function main() {
   const footerSourcePath = resolveFooterSourcePath(config, repoTop);
   const configPath = path.join(repoTop, CONFIG_FILENAME);
   const indexOutputPath = path.join(publicRawDir, 'index.html');
-  // Include every file in poemDir, not just the directory itself: an
-  // existing poem's content being edited in place doesn't bump the parent
-  // directory's own mtime (only an add/remove/rename does), so the two
-  // together are needed to catch both an edit and an add/remove.
-  const poemDirEntries = fs.readdirSync(poemDir).map((f) => path.join(poemDir, f));
-  const indexInputs = [
-    poemDir,
-    ...poemDirEntries,
+  const manifestPath = path.join(publicRawDir, '.raw-index.manifest.json');
+  // The index lists every poem, so its source set is every file in poemDir.
+  // A poem added to / removed from that set is detected by comparing the set
+  // against a sidecar manifest (see needsRebuildAggregate) rather than the
+  // directory's own mtime, which not every filesystem or sync tool bumps.
+  const sources = fs.readdirSync(poemDir).map((f) => path.join(poemDir, f));
+  const extraInputs = [
     ...(fs.existsSync(configPath) ? [configPath] : []),
     ...(fs.existsSync(footerSourcePath) ? [footerSourcePath] : []),
   ];
-  if (!needsRebuild(indexOutputPath, indexInputs, { force })) {
+  if (!needsRebuildAggregate(indexOutputPath, sources, { manifestPath, baseDir: poemDir, extraInputs, force })) {
     console.log('⏭  public/raw/index.html is up to date, skipping.');
     return;
   }
@@ -267,6 +266,7 @@ function main() {
     upsertFooter(buildIndex(entries, githubRepoSlug(repoTop)), footerBlock),
     'utf8'
   );
+  recordManifest(manifestPath, sources, poemDir);
 }
 
 if (require.main === module) main();
