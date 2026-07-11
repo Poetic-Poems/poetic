@@ -7,6 +7,7 @@
  *   loadPoemData(yamlPath)                          - read YAML, resolve refs, set slug + date
  *   renderFragment(poemData, { config })            - compile poem.pug fragment
  *   renderPage(poemData, { favicon, subtitle, config }) - compile poem-page.pug full doc
+ *   listPoemYamlFiles(dir)                          - list poem YAML basenames in a directory
  */
 
 const fs = require('fs');
@@ -212,6 +213,27 @@ function resolveRefs(data, basePath = POEMS_DIR, visited = new Set()) {
 }
 
 /**
+ * List poem YAML source basenames in `dir`.
+ *
+ * Accepts both `.yaml` and `.yml` extensions; excludes files whose basename
+ * starts with `YAML-SCHEMA` (the schema reference doc, not a poem) and files
+ * whose basename starts with `_` (shared partials referenced via $ref, not
+ * standalone poems). Returns basenames in `fs.readdirSync`'s platform order —
+ * callers that need a stable order (e.g. for deterministic display) should
+ * `.sort()` the result themselves.
+ *
+ * @param {string} dir - directory to scan (e.g. src/poems/yaml)
+ * @returns {string[]} basenames (not full paths)
+ */
+function listPoemYamlFiles(dir) {
+  return fs
+    .readdirSync(dir)
+    .filter((file) => file.endsWith('.yaml') || file.endsWith('.yml'))
+    .filter((file) => !file.startsWith('YAML-SCHEMA'))
+    .filter((file) => !file.startsWith('_'));
+}
+
+/**
  * Read and parse a YAML poem file, resolving $ref references.
  *
  * @param {string} filePath - Absolute path to the .yaml file
@@ -300,5 +322,5 @@ function renderPage(poemData, opts = {}) {
 
 module.exports = {
   resolveRefs, readPoemFile, clearRefCache, loadPoemData, renderFragment, renderPage,
-  substituteContextVars, resolveContextVars, CONTEXT_VAR_NAMES,
+  substituteContextVars, resolveContextVars, CONTEXT_VAR_NAMES, listPoemYamlFiles,
 };

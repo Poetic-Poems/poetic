@@ -11,6 +11,23 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`sync-blogger.js` now finds `.yml` poems and excludes `YAML-SCHEMA*`.**
+  The "list poem YAML files" filter (accept `.yaml`/`.yml`, exclude
+  `YAML-SCHEMA*` and `_`-prefixed files) was duplicated across
+  `build-poems.js`, `build-all-poems.js` (twice), and `sync-blogger.js`, and
+  had diverged in `sync-blogger.js`: it only matched `.yaml` and did not
+  exclude `YAML-SCHEMA*`. All four call sites now share one
+  `listPoemYamlFiles()` helper in `poem-render.js`. This changes
+  `sync-blogger.js` behaviour: a poem source saved as `.yml` now syncs to
+  Blogger like any `.yaml` poem, and a `YAML-SCHEMA.yaml`/`YAML-SCHEMA.yml`
+  file (if present in `src/poems/yaml/`) is no longer sent to Blogger as a
+  post.
+- **`sync-blogger.js` now anchors on the repo root, not the invoking shell's
+  working directory.** `YAML_DIR` and the `.poetic-config.yaml` lookup were
+  built from `process.cwd()`, so running the script from any directory other
+  than the repo root resolved the wrong paths — every other build tool
+  anchors on `REPO_ROOT` (`src/tools/repo-root.js`) for this reason.
+  `sync-blogger.js` now does the same.
 - **`sync-framework.sh` now syncs `package-lock.json`.** The framework-owned
   paths list copied `package.json` but not the lockfile, so a dependency bump
   upstream (e.g. `js-beautify` 1.x → 2.x) reached consumers as a

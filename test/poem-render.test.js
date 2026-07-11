@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { renderFragment, renderPage, loadPoemData, resolveRefs, readPoemFile, clearRefCache } = require('../src/tools/poem-render');
+const { renderFragment, renderPage, loadPoemData, resolveRefs, readPoemFile, clearRefCache, listPoemYamlFiles } = require('../src/tools/poem-render');
 const { readPoeticConfig } = require('../src/tools/poetic-config');
 
 // Minimal poem YAML fixture ─ exercises the Audiomack audio path
@@ -498,4 +498,51 @@ test('readPoemFile: a $ref cycle is caught and reported, returning null instead 
   });
   const result = readPoemFile(paths['cyclic.yaml']);
   assert.strictEqual(result, null, 'readPoemFile should return null (not throw / crash) on a $ref cycle');
+});
+
+// ── listPoemYamlFiles ────────────────────────────────────────────────────────
+
+function writeFixtureDir(basenames) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-yaml-files-'));
+  for (const name of basenames) {
+    fs.writeFileSync(path.join(dir, name), '', 'utf8');
+  }
+  return dir;
+}
+
+test('listPoemYamlFiles: accepts both .yaml and .yml, excludes YAML-SCHEMA* and _-prefixed files', () => {
+  const dir = writeFixtureDir([
+    'a-poem.yaml',
+    'b-poem.yml',
+    'YAML-SCHEMA.yaml',
+    'YAML-SCHEMA.yml',
+    '_shared.yaml',
+    '_partial.yml',
+    'notes.txt',
+  ]);
+
+  const result = listPoemYamlFiles(dir).sort();
+
+  assert.deepStrictEqual(result, ['a-poem.yaml', 'b-poem.yml']);
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('listPoemYamlFiles: returns basenames, not full paths', () => {
+  const dir = writeFixtureDir(['only-poem.yaml']);
+
+  const result = listPoemYamlFiles(dir);
+
+  assert.deepStrictEqual(result, ['only-poem.yaml']);
+  assert.ok(!result[0].includes(path.sep), 'result must be a bare basename, not a full path');
+
+  fs.rmSync(dir, { recursive: true, force: true });
+});
+
+test('listPoemYamlFiles: returns an empty array when the directory has no matching files', () => {
+  const dir = writeFixtureDir(['YAML-SCHEMA.yaml', '_shared.yaml', 'readme.md']);
+
+  assert.deepStrictEqual(listPoemYamlFiles(dir), []);
+
+  fs.rmSync(dir, { recursive: true, force: true });
 });

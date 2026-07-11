@@ -33,9 +33,10 @@
 const fs = require('fs');
 const path = require('path');
 const { readPoeticConfig } = require('./poetic-config');
-const { readPoemFile, loadPoemData, renderFragment } = require('./poem-render');
+const { readPoemFile, loadPoemData, renderFragment, listPoemYamlFiles } = require('./poem-render');
+const { REPO_ROOT } = require('./repo-root');
 
-const YAML_DIR = path.join(process.cwd(), 'src', 'poems', 'yaml');
+const YAML_DIR = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
 const BLOGGER_API = 'https://www.googleapis.com/blogger/v3';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
@@ -494,7 +495,7 @@ async function deletePost(blogId, token, postId) {
 async function main() {
   try {
     const args = parseArgs(process.argv.slice(2));
-    const rawConfig = readPoeticConfig();
+    const rawConfig = readPoeticConfig(REPO_ROOT);
     const opts = resolveConfig(rawConfig, process.env);
 
     if (!opts.enabled) {
@@ -530,10 +531,8 @@ async function main() {
 
     const currentSlugs = new Set();
 
-    // Read all YAML files, skipping _* basenames
-    const yamlFiles = fs.readdirSync(YAML_DIR)
-      .filter(f => !f.startsWith('_') && f.endsWith('.yaml'))
-      .map(f => path.join(YAML_DIR, f));
+    // Read all poem YAML files (see poem-render.js's listPoemYamlFiles for the filter rules)
+    const yamlFiles = listPoemYamlFiles(YAML_DIR).map(f => path.join(YAML_DIR, f));
 
     for (const yamlPath of yamlFiles) {
       // Read raw file for ISO date (before loadPoemData mutates it)

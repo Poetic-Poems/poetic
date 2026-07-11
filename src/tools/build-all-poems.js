@@ -15,7 +15,7 @@ const yaml = require("js-yaml");
 const { slugFromFile } = require("./slugify");
 const { parseDateForSorting, formatDateForDisplay, toISODate } = require("./date-utils");
 const { readPoeticConfig } = require("./poetic-config");
-const { loadPoemData, renderFragment } = require("./poem-render");
+const { loadPoemData, renderFragment, listPoemYamlFiles } = require("./poem-render");
 const { hasResolvableSongs } = require("./song-handlers");
 const { renderFooter, upsertFooter } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
@@ -60,11 +60,7 @@ function concatenateAllHtmlFiles(
   try {
     const siteTitle = escapeAmpersand(config.title || "My Poems");
     // Read YAML files from the poems directory for metadata
-    const yamlFiles = fs
-      .readdirSync(poemsDir)
-      .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
-      .filter((file) => !file.startsWith("YAML-SCHEMA"))
-      .filter((file) => !file.startsWith("_")); // Skip files beginning with underscore
+    const yamlFiles = listPoemYamlFiles(poemsDir);
 
     if (yamlFiles.length === 0) {
       return {
@@ -277,12 +273,7 @@ function generateIndexHtml(
 ) {
   try {
     // Read YAML files from the poems directory for metadata
-    const yamlFiles = fs
-      .readdirSync(poemsDir)
-      .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
-      .filter((file) => !file.startsWith("YAML-SCHEMA"))
-      .filter((file) => !file.startsWith("_")) // Skip files beginning with underscore
-      .sort(); // Sort alphabetically for consistent ordering
+    const yamlFiles = listPoemYamlFiles(poemsDir).sort(); // Sort alphabetically for consistent ordering
 
     // Extract poem data from YAML files
     const poemData = [];

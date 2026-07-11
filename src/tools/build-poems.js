@@ -12,7 +12,7 @@ const path = require("path");
 const { slugFromFile } = require("./slugify");
 const { formatDateForDisplay } = require("./date-utils");
 const { readPoeticConfig } = require("./poetic-config");
-const { resolveRefs, readPoemFile, clearRefCache, renderPage } = require("./poem-render");
+const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles } = require("./poem-render");
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
 
@@ -52,11 +52,7 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
   }
 
   // Get all YAML files
-  const yamlFiles = fs
-    .readdirSync(poemsDir)
-    .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
-    .filter((file) => !file.startsWith("YAML-SCHEMA"))
-    .filter((file) => !file.startsWith("_")); // Skip files beginning with underscore
+  const yamlFiles = listPoemYamlFiles(poemsDir);
 
   if (yamlFiles.length === 0) {
     console.warn(`Warning: No YAML files found in ${poemsDir}`);
