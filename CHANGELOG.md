@@ -79,6 +79,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `parseDateForSorting()` for the sortable date column instead of carrying a
   duplicate implementation. `build-poems.js` and `build-all-poems.js` also
   gained direct tests. Resolves TD26071105.
+- **`js-beautify` upgraded to 2.x.** Verified byte-for-byte identical HTML
+  output against 1.15.4 for this framework's beautify options before landing
+  the bump; publishers should not see any formatting change in generated
+  poem pages.
 
 ## [5.1.0] — 2026-07-10
 
