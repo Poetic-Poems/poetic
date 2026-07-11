@@ -15,11 +15,11 @@ const yaml = require("js-yaml");
 const { slugFromFile } = require("./slugify");
 const { parseDateForSorting, formatDateForDisplay, toISODate } = require("./date-utils");
 const { readPoeticConfig, CONFIG_FILENAME } = require("./poetic-config");
-const { loadPoemData, renderFragment, listPoemYamlFiles, FRAGMENT_TEMPLATE } = require("./poem-render");
+const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, FRAGMENT_TEMPLATE } = require("./poem-render");
 const { hasResolvableSongs, BUILTIN_HANDLERS_PATH } = require("./song-handlers");
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
-const { needsRebuild, forceRebuildRequested } = require("./needs-rebuild");
+const { needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested } = require("./needs-rebuild");
 const beautify = require("js-beautify");
 
 // Matches the HTML entity style already used elsewhere in these generated
@@ -496,24 +496,27 @@ function main() {
   const configPath = path.join(REPO_ROOT, CONFIG_FILENAME);
   const allPoemsOutputPath = path.join(publicDir, "all-poems.html");
   const indexPath = path.join(publicDir, "index.html");
+  const manifestPath = path.join(publicDir, ".all-poems.manifest.json");
   // all-poems.html/index.html are aggregates over every poem, so — unlike
-  // build-poems.js's per-poem check — every file in the poems directory is a
-  // valid input here: any poem being added, removed, or edited legitimately
-  // invalidates both outputs. The directory itself is *also* included: an
-  // existing file being edited in place doesn't change its parent
-  // directory's own mtime (only an add/remove/rename does), so the file
-  // list alone would miss a removal, and the directory alone would miss an
-  // in-place content edit — each covers what the other can't.
-  const yamlDirEntries = fs.readdirSync(poemsDir).map((f) => path.join(poemsDir, f));
-  const aggregateInputs = [
-    poemsDir,
-    ...yamlDirEntries,
+  // build-poems.js's per-poem check — the whole source set is relevant: any
+  // poem (or shared partial) being added, removed, or edited legitimately
+  // invalidates both outputs. That source set is every file in the poems
+  // directory, plus every file those poems transitively $ref (so an external,
+  // non-underscore-prefixed reference target counts too). Additions and
+  // removals within the set are detected by comparing it against a sidecar
+  // manifest (see needsRebuildAggregate), not by the directory's own mtime —
+  // which not every filesystem or sync tool updates.
+  const dirEntries = fs.readdirSync(poemsDir).map((f) => path.join(poemsDir, f));
+  const refTargets = listPoemYamlFiles(poemsDir)
+    .flatMap((f) => refFilesForPoem(path.join(poemsDir, f)));
+  const sources = [...new Set([...dirEntries, ...refTargets])];
+  const extraInputs = [
     FRAGMENT_TEMPLATE,
     BUILTIN_HANDLERS_PATH,
     ...(fs.existsSync(configPath) ? [configPath] : []),
     ...(fs.existsSync(footerSourcePath) ? [footerSourcePath] : []),
   ];
-  if (!needsRebuild([allPoemsOutputPath, indexPath], aggregateInputs, { force })) {
+  if (!needsRebuildAggregate([allPoemsOutputPath, indexPath], sources, { manifestPath, baseDir: poemsDir, extraInputs, force })) {
     console.log("⏭  all-poems.html and index.html are up to date, skipping.");
     return;
   }
@@ -557,6 +560,10 @@ function main() {
     console.error("❌ Skipped index.html update due to errors (see warning above)");
     indexErrorCount = 1;
   }
+
+  // Record the source set we just built from, so the next run can detect any
+  // poem added to / removed from it without relying on the directory's mtime.
+  recordManifest(manifestPath, sources, poemsDir);
 
   console.log(
     `\n📊 Processed ${

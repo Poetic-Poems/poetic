@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { renderFragment, renderPage, loadPoemData, resolveRefs, readPoemFile, clearRefCache, listPoemYamlFiles } = require('../src/tools/poem-render');
+const { renderFragment, renderPage, loadPoemData, resolveRefs, readPoemFile, clearRefCache, listPoemYamlFiles, collectRefFiles, refFilesForPoem } = require('../src/tools/poem-render');
 const { readPoeticConfig } = require('../src/tools/poetic-config');
 
 // Minimal poem YAML fixture ─ exercises the Audiomack audio path
@@ -498,6 +498,60 @@ test('readPoemFile: a $ref cycle is caught and reported, returning null instead 
   });
   const result = readPoemFile(paths['cyclic.yaml']);
   assert.strictEqual(result, null, 'readPoemFile should return null (not throw / crash) on a $ref cycle');
+});
+
+// ── collectRefFiles / refFilesForPoem (incremental-rebuild dependency tracking)
+
+test('collectRefFiles: returns the actual $ref target files, including non-underscore-prefixed ones', () => {
+  const { paths } = writeTempRefFiles({
+    'refs.yaml': 'note:\n  content: hello\n',
+  });
+  const data = { postscript: [{ $ref: 'refs.yaml#/note' }] };
+  const found = collectRefFiles(data, path.dirname(paths['refs.yaml']));
+  assert.deepStrictEqual(found, [paths['refs.yaml']],
+    'a plain (non _-prefixed) $ref target must be discovered');
+});
+
+test('collectRefFiles: follows chained refs transitively (A -> B -> C)', () => {
+  const { dir, paths } = writeTempRefFiles({
+    'a.yaml': 'first:\n  $ref: b.yaml#/second\n',
+    'b.yaml': 'second:\n  $ref: c.yaml#/third\n',
+    'c.yaml': 'third:\n  content: done\n',
+  });
+  const data = { $ref: 'a.yaml#/first' };
+  const found = collectRefFiles(data, dir).sort();
+  assert.deepStrictEqual(found, [paths['a.yaml'], paths['b.yaml'], paths['c.yaml']].sort(),
+    'every file in the ref chain must be reported');
+});
+
+test('collectRefFiles: a $ref cycle terminates (no stack overflow) and still reports the files', () => {
+  const { dir, paths } = writeTempRefFiles({
+    'x.yaml': '$ref: y.yaml\n',
+    'y.yaml': '$ref: x.yaml\n',
+  });
+  const data = { $ref: 'x.yaml' };
+  const found = collectRefFiles(data, dir).sort();
+  assert.deepStrictEqual(found, [paths['x.yaml'], paths['y.yaml']].sort());
+});
+
+test('collectRefFiles: a missing $ref target is still recorded (so creating it will invalidate the build)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-ref-missing-'));
+  const data = { postscript: [{ $ref: 'not-there.yaml#/x' }] };
+  const found = collectRefFiles(data, dir);
+  assert.deepStrictEqual(found, [path.join(dir, 'not-there.yaml')]);
+});
+
+test('refFilesForPoem: reads a poem YAML and returns its transitive $ref target paths', () => {
+  const { dir, paths } = writeTempRefFiles({
+    'poem.yaml': 'title: P\nauthor: A\ndate: 2020-01-01\npostscript:\n  - $ref: shared.yaml#/note\n',
+    'shared.yaml': 'note:\n  content: shared\n',
+  });
+  assert.deepStrictEqual(refFilesForPoem(paths['poem.yaml']), [path.join(dir, 'shared.yaml')]);
+});
+
+test('refFilesForPoem: returns [] for an unparseable/missing poem file (caller re-reports the error)', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-ref-bad-'));
+  assert.deepStrictEqual(refFilesForPoem(path.join(dir, 'nope.yaml')), []);
 });
 
 // ── listPoemYamlFiles ────────────────────────────────────────────────────────

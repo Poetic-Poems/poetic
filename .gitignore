@@ -7,6 +7,8 @@ src/poems/yaml/*.yaml
 public/*.html
 public/raw/*.html
 public/date-utils.js
+public/.all-poems.manifest.json
+public/raw/.raw-index.manifest.json
 
 !src/poems/yaml/_*.yaml
 !public/poetic-footer.html

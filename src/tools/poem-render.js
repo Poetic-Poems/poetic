@@ -213,6 +213,78 @@ function resolveRefs(data, basePath = POEMS_DIR, visited = new Set()) {
 }
 
 /**
+ * Collect the absolute paths of every file a poem transitively depends on via
+ * `$ref`, so the incremental-rebuild check can treat them as inputs.
+ *
+ * Walks `data` for every `{ $ref: "<file>#<jsonPath>" }` node, resolves
+ * `<file>` against `basePath` exactly as resolveRefs() does, and recurses into
+ * each referenced file — using that file's own directory as the next basePath,
+ * so a chained ref resolves relative to the file that declares it. The poem's
+ * own file is not included. A referenced file that is missing or unparseable
+ * is still recorded (so creating or repairing it invalidates the build) but is
+ * not recursed into. `seen` guards against ref cycles and repeated work.
+ *
+ * @param {*} data - parsed (unresolved) YAML data
+ * @param {string} [basePath] - directory `$ref` file paths resolve against
+ * @param {Set<string>} [seen] - internal cycle/visited guard
+ * @returns {string[]} deduplicated absolute paths of referenced files
+ */
+function collectRefFiles(data, basePath = POEMS_DIR, seen = new Set()) {
+  const found = new Set();
+
+  function walk(node, base) {
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item, base);
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+
+    // A $ref node is replaced wholesale by its target (siblings are ignored),
+    // mirroring resolveRefs — so follow the ref and don't walk its siblings.
+    if (typeof node.$ref === 'string') {
+      const [filePath] = node.$ref.split('#');
+      const fullPath = path.resolve(base, filePath);
+      found.add(fullPath);
+      if (seen.has(fullPath)) return;
+      seen.add(fullPath);
+      let refData;
+      try {
+        refData = yaml.load(fs.readFileSync(fullPath, 'utf8'));
+      } catch {
+        return; // missing/unparseable: recorded above, nothing to recurse into
+      }
+      walk(refData, path.dirname(fullPath));
+      return;
+    }
+
+    for (const value of Object.values(node)) walk(value, base);
+  }
+
+  walk(data, basePath);
+  return [...found];
+}
+
+/**
+ * Read a poem YAML file and return the absolute paths of every file it
+ * transitively depends on via `$ref` (its own path excluded). Returns `[]`
+ * when the file can't be read or parsed — the caller's own read then surfaces
+ * the error, and the poem's own stale mtime still forces a rebuild. See
+ * collectRefFiles() for the traversal semantics.
+ *
+ * @param {string} yamlPath - absolute path to a poem's YAML source
+ * @returns {string[]}
+ */
+function refFilesForPoem(yamlPath) {
+  let data;
+  try {
+    data = yaml.load(fs.readFileSync(yamlPath, 'utf8'));
+  } catch {
+    return [];
+  }
+  return collectRefFiles(data, path.dirname(yamlPath));
+}
+
+/**
  * List poem YAML source basenames in `dir`.
  *
  * Accepts both `.yaml` and `.yml` extensions; excludes files whose basename
@@ -323,5 +395,6 @@ function renderPage(poemData, opts = {}) {
 module.exports = {
   resolveRefs, readPoemFile, clearRefCache, loadPoemData, renderFragment, renderPage,
   substituteContextVars, resolveContextVars, CONTEXT_VAR_NAMES, listPoemYamlFiles,
+  collectRefFiles, refFilesForPoem,
   FRAGMENT_TEMPLATE, PAGE_TEMPLATE,
 };

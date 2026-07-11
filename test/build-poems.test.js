@@ -122,6 +122,54 @@ test('buildAllPoems regenerates a poem\'s output files once the source YAML chan
   );
 });
 
+test('buildAllPoems rebuilds a poem when a non-underscore-prefixed $ref target it depends on changes (real dependency tracking)', (t) => {
+  const { poemsDir, publicDir } = tmpDirs(t);
+
+  // A $ref target that is NOT an underscore-prefixed same-directory partial:
+  // it lives in a subdirectory (so it is never itself listed as a standalone
+  // poem) and has no leading underscore — exactly the case the old
+  // partialYamlPaths heuristic could not see.
+  const sharedDir = path.join(poemsDir, 'shared');
+  fs.mkdirSync(sharedDir);
+  const refTarget = path.join(sharedDir, 'refs.yaml');
+  fs.writeFileSync(refTarget, 'note:\n  label: Note\n  content: original note\n', 'utf8');
+
+  const yamlPath = path.join(poemsDir, 'ref-poem.yaml');
+  fs.writeFileSync(yamlPath, `title: Ref Poem
+author: Test Author
+date: 2021-03-09
+versions:
+  - segments:
+      - lines: "Body line\\n"
+postscript:
+  - $ref: shared/refs.yaml#/note
+`, 'utf8');
+
+  buildAllPoems({ poemsDir, publicDir });
+
+  const pagePath = path.join(publicDir, 'ref-poem', 'index.html');
+  assert.ok(fs.existsSync(pagePath), `${pagePath} should have been generated`);
+  assert.match(fs.readFileSync(pagePath, 'utf8'), /original note/,
+    'the built page should render the referenced content');
+  const pageMtimeBefore = fs.statSync(pagePath).mtimeMs;
+
+  // Edit ONLY the $ref target (the poem's own YAML is untouched) and bump its
+  // mtime into the future so it is unambiguously newer than the built page.
+  fs.writeFileSync(refTarget, 'note:\n  label: Note\n  content: updated note\n', 'utf8');
+  const future = (Date.now() + 60_000) / 1000;
+  fs.utimesSync(refTarget, future, future);
+
+  buildAllPoems({ poemsDir, publicDir });
+
+  const html = fs.readFileSync(pagePath, 'utf8');
+  assert.ok(
+    fs.statSync(pagePath).mtimeMs > pageMtimeBefore,
+    'the poem page must be regenerated when a $ref target it depends on changes'
+  );
+  assert.match(html, /updated note/,
+    'the regenerated page must reflect the edited $ref content');
+});
+
 test('buildAllPoems skips a poem missing a required field and reports it as an error (process exits non-zero)', (t) => {
   // Runs the real CLI entry point as a subprocess (rather than calling
   // buildAllPoems() in-process) because a validation error makes it call

@@ -11,6 +11,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Incremental rebuilds now track a poem's real `$ref` dependencies and
+  detect poems added or removed reliably.** The build's staleness check no
+  longer assumes a poem's `$ref` targets are underscore-prefixed partials in
+  the same directory — it follows each poem's actual (transitive) `$ref`
+  targets, so editing a referenced file — including one that is not
+  underscore-prefixed or lives in a subdirectory — now correctly rebuilds the
+  poems that reference it. The aggregate pages (`index.html`, `all-poems.html`,
+  and the raw index) no longer rely on the source directory's own mtime to
+  notice a poem being added or removed; they compare a recorded manifest of
+  the source set instead, so additions and removals are detected on every
+  filesystem and sync tool. Both were previously best-effort approximations
+  that could skip a needed rebuild.
 - **Doc-only pull requests no longer hang on the required `build` check.**
   `build-poems.yml`'s `build` job is a required status check, but the
   workflow only triggered on its `paths:` list, so a PR touching only e.g.
