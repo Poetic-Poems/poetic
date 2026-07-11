@@ -38,6 +38,25 @@ thrown from `convertMarkup()` (WYSIWYG poem body and labels) and `scanShellWord(
 and highlighted by `editors/vim/syntax/poem.vim`. Update all of these together
 when the escape family lands.
 
+## TD26071202 Preamble grammar omits comment blocks despite the prose
+
+`docs/POEM-SYNTAX.md` §0 and the `preamble_item` production
+(`poem-syntax.ebnf`) disagree with the surrounding prose about comment blocks.
+The prose lists comment blocks (`<<# ... #>>`) as valid Preamble content, and a
+`comment_block` production is defined (`poem-syntax.ebnf`), but that production
+is not referenced by `preamble_item` — nor, in fact, by any other structural
+production. Comment blocks are admitted only by semantic constraint 13 ("comment
+blocks can appear anywhere"), so the formal grammar's `preamble` does not
+actually derive them even though the parser strips them globally
+(`removeCommentBlocks()` in `src/tools/poem-to-yaml.js`). To resolve: wire
+`comment_block` into the productions where comment blocks are permitted (at
+minimum `preamble_item`, and wherever the "anywhere" allowance should be
+grammatical rather than prose-only), so the EBNF matches §0 and the
+implementation.
+
+Pre-existing drift surfaced while adding `directive_line` to `preamble_item`
+for the preamble-directives change (PR #16).
+
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -84,3 +103,4 @@ a body above.
 | TD26071110 | build-check-fallback.yml's path list is a hand-maintained mirror | resolved | 2026-07-11 | #10 |
 | TD26071111 | Incremental-rebuild dependency tracking is approximate | resolved | 2026-07-12 | #14 |
 | TD26071201 | `\?` escape prefix is reserved but not yet implemented | open | | |
+| TD26071202 | Preamble grammar omits comment blocks despite the prose | open | | |
