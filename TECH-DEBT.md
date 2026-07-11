@@ -22,22 +22,6 @@ so the Ledger (not memory or scrollback) is the source of truth for the next
 free ID. Compute it with `scripts/next-tech-debt-id.pl` rather than counting
 by hand.
 
-## TD26071201 `\?` escape prefix is reserved but not yet implemented
-
-The two-character sequence `\?` is reserved as the prefix for a future
-extended-escape family (for example a later `\?u1234` for a Unicode code point).
-`?` was chosen because it is not a legal Windows filename character. Until that
-family is designed and implemented, Poetic raises a hard error on any `\?` it
-interprets, so the syntax stays free for the future form (a literal backslash
-then `?` is written `\\?`). To resolve: define the extended-escape grammar under
-`\?` and replace the error with decoding.
-
-Referenced in code by `reservedEscapeError()` in `src/tools/poem-to-yaml.js`,
-thrown from `convertMarkup()` (WYSIWYG poem body and labels) and `scanShellWord()`
-(parameter values). Also described in `docs/POEM-SYNTAX.md` and `poem-syntax.ebnf`
-and highlighted by `editors/vim/syntax/poem.vim`. Update all of these together
-when the escape family lands.
-
 ## TD26071202 Preamble grammar omits comment blocks despite the prose
 
 `docs/POEM-SYNTAX.md` §0 and the `preamble_item` production
@@ -77,11 +61,17 @@ row back to `open`.
 
 ## Ledger
 
-Every tech-debt ID ever allocated — open, in-progress, or resolved — is
-listed here forever, in ID order. This is what makes numbering unambiguous:
+Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
+is listed here forever, in ID order. This is what makes numbering unambiguous:
 the next free ID for a given date is one more than the highest `NN` seen
 below for that date, regardless of whether the corresponding entry still has
 a body above.
+
+A row can also close as `not-debt`: the item was filed here but turned out, on
+reflection, not to be a deferred cost at all (e.g. deliberately reserved
+syntax awaiting a future feature). Its `## <id>` section is removed like a
+resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
+`Ref` column instead points to wherever the content moved.
 
 | ID | Title | Status | Resolved | Ref |
 |----|-------|--------|----------|-----|
@@ -102,5 +92,5 @@ a body above.
 | TD26071109 | js-yaml stuck on v4; v5 changes timestamp-quoting for edge-case date strings | resolved | 2026-07-11 | 7c4c29a |
 | TD26071110 | build-check-fallback.yml's path list is a hand-maintained mirror | resolved | 2026-07-11 | #10 |
 | TD26071111 | Incremental-rebuild dependency tracking is approximate | resolved | 2026-07-12 | #14 |
-| TD26071201 | `\?` escape prefix is reserved but not yet implemented | open | | |
+| TD26071201 | `\?` escape prefix is reserved but not yet implemented | not-debt | | docs/POEM-SYNTAX.md |
 | TD26071202 | Preamble grammar omits comment blocks despite the prose | open | | |
