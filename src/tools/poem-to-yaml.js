@@ -174,7 +174,7 @@ class PoemParser {
 
   /**
    * The `\?` escape prefix is reserved for a future extended-escape family and
-   * is not yet implemented (see TECH-DEBT TD26071201). Until then it is a hard
+   * is not yet implemented (see docs/POEM-SYNTAX.md). Until then it is a hard
    * error wherever Poetic interprets its own escapes — the WYSIWYG poem body and
    * labels (convertMarkup) and parameter values (scanShellWord). `\\?` (an
    * escaped backslash, then a literal `?`) is the way to write a literal `\?`.
@@ -183,7 +183,7 @@ class PoemParser {
     return new Error(
       "Reserved syntax: '\\?' is reserved but not yet implemented " +
       "(the '\\?' escape prefix is reserved for a future extended-escape family; " +
-      "see TECH-DEBT TD26071201). Write '\\\\?' for a literal backslash then '?'."
+      "see docs/POEM-SYNTAX.md). Write '\\\\?' for a literal backslash then '?'."
     );
   }
 
@@ -1631,8 +1631,9 @@ class PoemParser {
    * Convert inline markup to HTML
    */
   convertMarkup(text) {
-    // `\?` is reserved for a future extended-escape family (TD26071201) and is
-    // an error until it is implemented. Only an ODD backslash run before `?`
+    // `\?` is reserved for a future extended-escape family (see
+    // docs/POEM-SYNTAX.md) and is an error until it is implemented. Only an
+    // ODD backslash run before `?`
     // triggers it; `\\?` (even) is a literal `\` then `?`, decoded by the escape
     // table below.
     for (const m of text.matchAll(/(\\+)\?/g)) {

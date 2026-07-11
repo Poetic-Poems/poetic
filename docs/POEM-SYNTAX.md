@@ -962,14 +962,22 @@ stage. This escape also applies in the title (see [Title
 (mandatory)](#fields) above), even though the title does not otherwise go
 through this inline dialect.
 
-`\?` is **reserved** for a future extended-escape family and is not a normal
-escape: wherever Poetic interprets its own escapes (the poem body and labels
-above, and [parameter values](#value-scanning-quotes-and-backslashes)), a `\?`
-raises a build error instead of decoding to anything. Write `\\?` for a literal
-backslash followed by `?` (the escaped backslash decodes to `\`, and the `?`
-is then just a plain character). This reservation does not reach inside raw
-`<<<...>>>` blocks or the Markdown analysis/postscript sections, which have
-their own escaping.
+`\?` is **reserved** for a future extended-escape family (for example a later
+`\?u1234` for a Unicode code point) and is not a normal escape: wherever
+Poetic interprets its own escapes (the poem body and labels above, and
+[parameter values](#value-scanning-quotes-and-backslashes)), a `\?` raises a
+build error instead of decoding to anything, so the syntax stays free for that
+future form. `?` was chosen for this because it is not a legal Windows
+filename character. Write `\\?` for a literal backslash followed by `?` (the
+escaped backslash decodes to `\`, and the `?` is then just a plain character).
+This reservation does not reach inside raw `<<<...>>>` blocks or the Markdown
+analysis/postscript sections, which have their own escaping.
+
+The error is raised by `reservedEscapeError()` in `src/tools/poem-to-yaml.js`,
+called from `convertMarkup()` (poem body and labels) and `scanShellWord()`
+(parameter values); the reservation is also encoded in `poem-syntax.ebnf` and
+highlighted by `editors/vim/syntax/poem.vim`. Update all of these together
+when the extended-escape family is designed and implemented.
 
 ### Markup Rules
 
