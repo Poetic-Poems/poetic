@@ -22,6 +22,22 @@ so the Ledger (not memory or scrollback) is the source of truth for the next
 free ID. Compute it with `scripts/next-tech-debt-id.pl` rather than counting
 by hand.
 
+## TD26071201 `\?` escape prefix is reserved but not yet implemented
+
+The two-character sequence `\?` is reserved as the prefix for a future
+extended-escape family (for example a later `\?u1234` for a Unicode code point).
+`?` was chosen because it is not a legal Windows filename character. Until that
+family is designed and implemented, Poetic raises a hard error on any `\?` it
+interprets, so the syntax stays free for the future form (a literal backslash
+then `?` is written `\\?`). To resolve: define the extended-escape grammar under
+`\?` and replace the error with decoding.
+
+Referenced in code by `reservedEscapeError()` in `src/tools/poem-to-yaml.js`,
+thrown from `convertMarkup()` (WYSIWYG poem body and labels) and `scanShellWord()`
+(parameter values). Also described in `docs/POEM-SYNTAX.md` and `poem-syntax.ebnf`
+and highlighted by `editors/vim/syntax/poem.vim`. Update all of these together
+when the escape family lands.
+
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -67,3 +83,4 @@ a body above.
 | TD26071109 | js-yaml stuck on v4; v5 changes timestamp-quoting for edge-case date strings | resolved | 2026-07-11 | 7c4c29a |
 | TD26071110 | build-check-fallback.yml's path list is a hand-maintained mirror | resolved | 2026-07-11 | #10 |
 | TD26071111 | Incremental-rebuild dependency tracking is approximate | resolved | 2026-07-12 | #14 |
+| TD26071201 | `\?` escape prefix is reserved but not yet implemented | open | | |

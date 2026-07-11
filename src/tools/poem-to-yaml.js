@@ -31,6 +31,10 @@ class PoemParser {
     // Remove comment blocks first
     this.removeCommentBlocks();
 
+    // Fold trailing-backslash line continuations into logical lines, before any
+    // section parsing. `<<<...>>>` block interiors are left untouched.
+    this.joinContinuedLines();
+
     // Process variables (extract and remove definition lines)
     this.processVariables();
 
@@ -99,6 +103,84 @@ class PoemParser {
     }
 
     this.lines = newLines;
+  }
+
+  /**
+   * Fold trailing-backslash line continuations into logical lines.
+   *
+   * A physical line ending in a run of N backslashes immediately before the
+   * newline — with no trailing whitespace — contributes floor(N/2) literal
+   * backslashes, and the newline is nullified (the next physical line is joined
+   * on) iff N is odd. So a lone `\`+newline continues the line, while `\\`+
+   * newline is one literal backslash with the newline kept; the rule chains, so
+   * `\\\`+newline is one literal backslash followed by a continuation. This
+   * mirrors the mid-line `\\`→`\` decoding done later by convertMarkup().
+   *
+   * Continuation does not reach into `<<<...>>>` blocks (raw literal or
+   * markdown): their content is passed through or handed to another renderer
+   * verbatim, so a trailing backslash there is kept as written. A dangling
+   * continuation at end of file — or one whose next physical line is a
+   * structural block marker — keeps its floor(N/2) literal backslashes with
+   * nothing joined (the block marker is never swallowed).
+   */
+  joinContinuedLines() {
+    const out = [];
+    let inBlock = false;
+    let i = 0;
+
+    while (i < this.lines.length) {
+      let line = this.lines[i];
+
+      // Block markers and their interiors are opaque to continuation.
+      if (this.blockStartTag(line) !== null) { inBlock = true; out.push(line); i++; continue; }
+      if (this.isBlockEnd(line)) { inBlock = false; out.push(line); i++; continue; }
+      if (inBlock) { out.push(line); i++; continue; }
+
+      // Fold a (possibly multi-line) chain of continuations into `line`.
+      while (true) {
+        // Trailing backslash run, tolerating a CR from CRLF-terminated input.
+        const m = line.match(/(\\+)(\r?)$/);
+        if (m === null) break;
+
+        const run = m[1].length;
+        const cr = m[2];
+        const head = line.slice(0, line.length - m[0].length);
+        const literal = head + '\\'.repeat(Math.floor(run / 2));
+
+        if (run % 2 === 0) { line = literal + cr; break; } // even: newline kept
+
+        // Odd run: a continuation. Join the next physical line, unless there is
+        // none (EOF) or it is a structural block marker (never swallowed).
+        const next = this.lines[i + 1];
+        if (next === undefined ||
+            this.blockStartTag(next) !== null || this.isBlockEnd(next)) {
+          line = literal;
+          break;
+        }
+        line = literal + next;
+        i++; // the next physical line has been consumed into this logical line
+      }
+
+      out.push(line);
+      i++;
+    }
+
+    this.lines = out;
+  }
+
+  /**
+   * The `\?` escape prefix is reserved for a future extended-escape family and
+   * is not yet implemented (see TECH-DEBT TD26071201). Until then it is a hard
+   * error wherever Poetic interprets its own escapes — the WYSIWYG poem body and
+   * labels (convertMarkup) and parameter values (scanShellWord). `\\?` (an
+   * escaped backslash, then a literal `?`) is the way to write a literal `\?`.
+   */
+  reservedEscapeError() {
+    return new Error(
+      "Reserved syntax: '\\?' is reserved but not yet implemented " +
+      "(the '\\?' escape prefix is reserved for a future extended-escape family; " +
+      "see TECH-DEBT TD26071201). Write '\\\\?' for a literal backslash then '?'."
+    );
   }
 
   /**
@@ -243,6 +325,7 @@ class PoemParser {
           if (i >= n) return null; // unterminated quote
           const dc = str[i];
           if (dc === '"') { i++; break; } // closing quote
+          if (dc === '\\' && str[i + 1] === '?') throw this.reservedEscapeError();
           if (dc === '\\' && i + 1 < n && '"\\$`'.includes(str[i + 1])) {
             value += str[i + 1];
             i += 2;
@@ -265,6 +348,7 @@ class PoemParser {
       if (c === '\\') {
         // Unquoted backslash-escape: literal next character, whatever it is.
         if (i + 1 < n) {
+          if (str[i + 1] === '?') throw this.reservedEscapeError();
           value += str[i + 1];
           i += 2;
           continue;
@@ -1477,6 +1561,14 @@ class PoemParser {
    * Convert inline markup to HTML
    */
   convertMarkup(text) {
+    // `\?` is reserved for a future extended-escape family (TD26071201) and is
+    // an error until it is implemented. Only an ODD backslash run before `?`
+    // triggers it; `\\?` (even) is a literal `\` then `?`, decoded by the escape
+    // table below.
+    for (const m of text.matchAll(/(\\+)\?/g)) {
+      if (m[1].length % 2 === 1) throw this.reservedEscapeError();
+    }
+
     // Process escapes first
     const escapes = new Map();
     let escapeIndex = 0;

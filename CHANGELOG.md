@@ -9,6 +9,21 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Line continuation with a trailing backslash.** A line ending in a backslash
+  immediately before the newline (no trailing whitespace) is joined to the next
+  line, so a long title, label, audio embed, or parameter list can be split
+  across several physical lines. Two trailing backslashes (`\\`) produce one
+  literal backslash and keep the newline; the rule chains for longer runs. It
+  applies throughout a poem's own line syntax but not inside raw `<<<...>>>`
+  literal or `<<<markdown>>>` blocks, whose content is passed through verbatim.
+  (Continuation only removes the newline — a parameter list split across lines
+  still needs its commas.)
+- **`\?` is now reserved.** The escape prefix `\?` raises a build error, keeping
+  it free for a future extended-escape family; write `\\?` for a literal
+  backslash followed by `?`.
+
 ### Fixed
 
 - **Incremental rebuilds now track a poem's real `$ref` dependencies and

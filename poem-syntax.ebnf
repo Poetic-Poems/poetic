@@ -43,6 +43,10 @@ poem_file = [ preamble ],
                               blank_lines,
                               [ ignored_content ] ] ] ] ] ] ] ] ] ] ;
 
+(* Note: Before poem_file is parsed into sections, a lexical pre-pass folds
+   trailing-backslash line continuations into logical lines (see semantic
+   constraint 38). <<<...>>> block interiors are exempt from this pre-pass. *)
+
 (* ============================================================================
    PREAMBLE SECTION
    ============================================================================ *)
@@ -807,6 +811,43 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
       37. A directive with no attribute tokens omits the `attributes` field
          entirely from its parsed representation - there is no empty-object
          form for a directive with no attributes.
+
+      38. A lexical pre-pass, run before any section parsing, folds
+         trailing-backslash line continuations into logical lines. A
+         physical line ending in a run of N backslashes immediately before
+         the newline, with no trailing whitespace after the last
+         backslash, contributes floor(N/2) literal backslashes to the
+         line; iff N is odd, the newline is also nullified and the next
+         physical line is joined onto this one. The rule chains and
+         mirrors the mid-line `\\` -> `\` decoding of escaped_char: a lone
+         `\` at end of line is a continuation (both it and the newline
+         disappear); `\\` at end of line is one literal backslash with the
+         newline kept (not a continuation); `\\\` is one literal backslash
+         followed by a continuation. A backslash followed by whitespace
+         before the newline is not a continuation, since the run never
+         reaches the newline. This pre-pass does not reach inside a
+         `<<<...>>>` block (literal or markdown) - block interiors are
+         exempt and a trailing backslash there is kept exactly as written.
+         A continuation with no following physical line (end of file), or
+         whose following physical line is itself a block_start or
+         block_end marker, is left dangling: its floor(N/2) literal
+         backslashes are kept and nothing is joined, so a continuation can
+         never swallow a block marker. Continuation only removes the
+         newline - it does not change any other syntax, so e.g. a
+         parameter_list split across continued lines still needs its `,`
+         separators between parameters.
+
+      39. The escape prefix `\?` is RESERVED for a future extended-escape
+         family and raises an error wherever Poetic's own escape decoding
+         applies - escaped_char in text_with_markup (poem segments and
+         labels), and the equivalent unquoted/double-quoted backslash
+         handling in parameter_value (see constraint 33). It is not a
+         valid escaped_char production. Write `\\?` for a literal
+         backslash followed by `?`: the escaped backslash decodes to `\`
+         as usual, and the `?` is then an ordinary character, not part of
+         an escape. This reservation does not apply inside raw
+         `<<<...>>>` blocks or the Markdown analysis/postscript sections,
+         which have their own escaping.
 *)
 
 (* ============================================================================

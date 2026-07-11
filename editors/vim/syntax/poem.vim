@@ -232,6 +232,15 @@ syn region poemSpan start="/\.\w[[:alnum:].-]*{" end="}" end="^$" keepend contai
 
 " Special characters
 syn match poemEscaped "\\[_*~\[`\"&'\-<>=$/{}\\]"
+" Reserved "\?" sequence: not a valid escape, so it is an error in the
+" .poem format.
+syn match poemReservedEscape "\\?"
+" Trailing line-continuation backslash: a single backslash at end of line,
+" not preceded by another backslash, joins this line to the next. A
+" backslash immediately preceded by another backslash is instead a literal,
+" escaped backslash (see poemEscaped above) and the newline is kept, so the
+" negative lookbehind keeps that pair from matching here.
+syn match poemLineContinuation "\%(\\\)\@<!\\$"
 " Em-dash: three hyphens not followed by another hyphen
 syn match poemEmDash "---\%(-\)\@!"
 " En-dash: two hyphens not followed by another hyphen
@@ -308,6 +317,8 @@ hi def link poemSmartDoubleQuote String
 hi def link poemSpan Special
 
 hi def link poemEscaped Special
+hi def link poemReservedEscape Error
+hi def link poemLineContinuation Special
 hi def link poemEmDash Special
 hi def link poemEnDash Special
 hi def link poemQuoteOperator Operator

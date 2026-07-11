@@ -948,6 +948,15 @@ Use backslash to prevent markup conversion:
 | `\}` | `}` |
 | `\\` | `\` |
 
+`\?` is **reserved** for a future extended-escape family and is not a normal
+escape: wherever Poetic interprets its own escapes (the poem body and labels
+above, and [parameter values](#value-scanning-quotes-and-backslashes)), a `\?`
+raises a build error instead of decoding to anything. Write `\\?` for a literal
+backslash followed by `?` (the escaped backslash decodes to `\`, and the `?`
+is then just a plain character). This reservation does not reach inside raw
+`<<<...>>>` blocks or the Markdown analysis/postscript sections, which have
+their own escaping.
+
 ### Markup Rules
 
 1. **Nesting**: Markup can be nested (e.g., `` `[**_text_**\|url]` ``, `/.c{*text*}`)
@@ -1049,6 +1058,59 @@ This won't appear in the output
 ```
 
 ## 11. Structural Rules
+
+### Line Continuation
+
+A physical line ending in a run of backslashes immediately before the
+newline — with no trailing whitespace after the last backslash — is folded
+according to the same odd/even rule used for the mid-line `\\` → `\` escape
+(see [Escaped Characters](#escaped-characters)):
+
+- A trailing run of *N* backslashes contributes `floor(N/2)` literal
+  backslashes to the line.
+- If *N* is **odd**, the newline is also nullified, joining the next physical
+  line onto this one. A lone `\` at the end of a line is the simplest case: it
+  and the newline both disappear, and the following line is joined on with no
+  literal backslash left behind.
+- If *N* is **even**, the newline is kept — this is not a continuation. `\\`
+  at the end of a line is one literal backslash with the line break preserved.
+- The rule chains: `\\\` (three backslashes) is one literal backslash,
+  followed by a continuation onto the next line.
+- A backslash followed by whitespace before the newline is not a continuation
+  — trailing whitespace after the last backslash means the run doesn't reach
+  the newline at all.
+
+This is a lexical pre-pass that runs before section parsing, at the
+logical-line level — so it can fold a long title, an author line, a label, a
+poem-body line, an audio embed line, or a parameter list across several
+physical lines in the source file. A continuation whose next physical line
+doesn't exist (end of file) or is itself a structural block marker (`<<<`,
+`>>>`, and so on) is left dangling: its `floor(N/2)` literal backslashes are
+kept and nothing is joined, so a continuation can never swallow a block
+marker.
+
+**Scope:** Line continuation does not reach inside a raw `<<<...>>>` literal
+block or a `<<<markdown>>>` block — their content is passed through (or
+handed to the Markdown renderer) verbatim, so a trailing backslash there is
+kept exactly as written.
+
+**Continuation only removes the newline** — it does not change any other
+syntax. A parameter list split across continued lines still needs its comma
+separators between items:
+
+```
+Mega: \
+  AbC1dEfG#h1JkLmN0pQrStUvWxYz0123456789AbCdEfGh ( \
+    ratio=21:9, \
+    height=400 \
+  )
+```
+
+is exactly equivalent to writing it on one line:
+
+```
+Mega: AbC1dEfG#h1JkLmN0pQrStUvWxYz0123456789AbCdEfGh (ratio=21:9, height=400)
+```
 
 ### Line Anchoring
 
