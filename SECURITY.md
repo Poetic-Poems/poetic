@@ -17,3 +17,10 @@ advisory visible only to the maintainers.
 Please include enough detail to reproduce the issue (affected file or tool,
 steps, and impact). We aim to acknowledge reports within a few days and will
 keep you informed as we work on a fix.
+
+## Automated scanning
+
+[CodeQL](https://codeql.github.com/) (`.github/workflows/codeql.yml`) analyzes
+this repo's JavaScript and GitHub Actions workflows on every pull request and
+push to `main`, plus a weekly schedule. Results appear under the repository's
+**Security** &rarr; **Code scanning** tab.
