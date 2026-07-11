@@ -70,4 +70,4 @@ function readPoeticConfig(cwd) {
   return config;
 }
 
-module.exports = { readPoeticConfig };
+module.exports = { readPoeticConfig, CONFIG_FILENAME };

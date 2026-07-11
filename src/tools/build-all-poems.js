@@ -14,11 +14,12 @@ const path = require("path");
 const yaml = require("js-yaml");
 const { slugFromFile } = require("./slugify");
 const { parseDateForSorting, formatDateForDisplay, toISODate } = require("./date-utils");
-const { readPoeticConfig } = require("./poetic-config");
-const { loadPoemData, renderFragment, listPoemYamlFiles } = require("./poem-render");
-const { hasResolvableSongs } = require("./song-handlers");
-const { renderFooter, upsertFooter } = require("./footer");
+const { readPoeticConfig, CONFIG_FILENAME } = require("./poetic-config");
+const { loadPoemData, renderFragment, listPoemYamlFiles, FRAGMENT_TEMPLATE } = require("./poem-render");
+const { hasResolvableSongs, BUILTIN_HANDLERS_PATH } = require("./song-handlers");
+const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
+const { needsRebuild, forceRebuildRequested } = require("./needs-rebuild");
 const beautify = require("js-beautify");
 
 // Matches the HTML entity style already used elsewhere in these generated
@@ -458,7 +459,13 @@ function main() {
     process.exit(1);
   }
 
-  copyDateUtilsAsset(publicDir);
+  const force = forceRebuildRequested();
+
+  const dateUtilsDest = path.join(publicDir, "date-utils.js");
+  const dateUtilsSrc = path.join(__dirname, "date-utils.js");
+  if (needsRebuild(dateUtilsDest, dateUtilsSrc, { force })) {
+    copyDateUtilsAsset(publicDir);
+  }
 
   const config = readPoeticConfig(REPO_ROOT);
   // Strip a leading "public/" so the href resolves correctly when public/ is
@@ -478,10 +485,37 @@ function main() {
   }
   // all-poems.html and index.html both live at the public/ root.
   const footerBlock = renderFooter(config, REPO_ROOT, { base: '' });
+  const footerSourcePath = resolveFooterSourcePath(config, REPO_ROOT);
   if (config.footer && config.footer.enabled === false) {
     console.log('Footer disabled via .poetic-config.yaml (footer.enabled: false)');
   } else if (config.footer && config.footer.source) {
     console.log(`Using footer.source from .poetic-config.yaml: ${config.footer.source}`);
+  }
+
+  const poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml");
+  const configPath = path.join(REPO_ROOT, CONFIG_FILENAME);
+  const allPoemsOutputPath = path.join(publicDir, "all-poems.html");
+  const indexPath = path.join(publicDir, "index.html");
+  // all-poems.html/index.html are aggregates over every poem, so — unlike
+  // build-poems.js's per-poem check — every file in the poems directory is a
+  // valid input here: any poem being added, removed, or edited legitimately
+  // invalidates both outputs. The directory itself is *also* included: an
+  // existing file being edited in place doesn't change its parent
+  // directory's own mtime (only an add/remove/rename does), so the file
+  // list alone would miss a removal, and the directory alone would miss an
+  // in-place content edit — each covers what the other can't.
+  const yamlDirEntries = fs.readdirSync(poemsDir).map((f) => path.join(poemsDir, f));
+  const aggregateInputs = [
+    poemsDir,
+    ...yamlDirEntries,
+    FRAGMENT_TEMPLATE,
+    BUILTIN_HANDLERS_PATH,
+    ...(fs.existsSync(configPath) ? [configPath] : []),
+    ...(fs.existsSync(footerSourcePath) ? [footerSourcePath] : []),
+  ];
+  if (!needsRebuild([allPoemsOutputPath, indexPath], aggregateInputs, { force })) {
+    console.log("⏭  all-poems.html and index.html are up to date, skipping.");
+    return;
   }
 
   console.log("Step 1: Building all-poems.html...");
@@ -489,7 +523,6 @@ function main() {
   const { html: allPoemsHtml, errorCount: poemErrorCount } =
     concatenateAllHtmlFiles(publicDir, favicon, config);
   const concatenatedContent = upsertFooter(allPoemsHtml, footerBlock);
-  const allPoemsOutputPath = path.join(publicDir, "all-poems.html");
 
   const prettifiedContent = beautify.html(concatenatedContent, {
     indent_size: 2,
@@ -510,7 +543,6 @@ function main() {
   const updatedIndexContent = generateIndexHtml(publicDir, favicon, subtitle, config);
   let indexErrorCount = 0;
   if (updatedIndexContent) {
-    const indexPath = path.join(publicDir, "index.html");
     const finalIndexContent = upsertFooter(updatedIndexContent, footerBlock);
     const prettifiedIndexContent = beautify.html(finalIndexContent, {
       indent_size: 2,

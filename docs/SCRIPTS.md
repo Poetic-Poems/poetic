@@ -121,7 +121,13 @@ scripts/sync-framework.sh --commit         # also commit the staged sync
    a new framework path was added to it), re-runs the updated copy before
    syncing anything else, so the rest of this run already has the current
    path list.
-5. Checks out each remaining framework-owned path at the resolved commit.
+5. Checks out each remaining framework-owned path at the resolved commit,
+   unless the working tree already matches that commit for the path (a
+   content comparison, not just "same ref as last time") — reported as
+   `unchanged <path>` rather than `synced <path>`. This avoids bumping a
+   file's modification time when nothing in it actually changed, which
+   would otherwise cause the build scripts' incremental-rebuild checks (see
+   `docs/BUILD.md`) to treat every output as stale after every sync.
 6. Skips any paths listed in `skip_paths` in `.poetic-config.yaml`.
 7. Updates and stages `.poetic-version` with the synced channel, ref, and full
    commit hash.

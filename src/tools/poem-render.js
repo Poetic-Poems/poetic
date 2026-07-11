@@ -323,4 +323,5 @@ function renderPage(poemData, opts = {}) {
 module.exports = {
   resolveRefs, readPoemFile, clearRefCache, loadPoemData, renderFragment, renderPage,
   substituteContextVars, resolveContextVars, CONTEXT_VAR_NAMES, listPoemYamlFiles,
+  FRAGMENT_TEMPLATE, PAGE_TEMPLATE,
 };

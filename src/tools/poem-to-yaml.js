@@ -9,6 +9,7 @@ const path = require('path');
 const yaml = require('js-yaml');
 const { renderGfm } = require('./markdown');
 const { REPO_ROOT } = require('./repo-root');
+const { needsRebuild, forceRebuildRequested } = require('./needs-rebuild');
 
 /**
  * Parse a .poem file and convert to structured data
@@ -1597,13 +1598,23 @@ function main() {
     const poemDir = path.join(REPO_ROOT, 'src', 'poems', 'poem');
     const yamlDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
     const files = fs.readdirSync(poemDir);
+    const force = forceRebuildRequested();
 
     let errorCount = 0;
+    let skippedCount = 0;
     for (const file of files) {
       // Skip partial/private files (starting with '_' or '.', e.g. .shared.poem)
       if (file.endsWith('.poem') && !file.startsWith('_') && !file.startsWith('.')) {
         const poemPath = path.join(poemDir, file);
         const yamlPath = path.join(yamlDir, file.replace('.poem', '.yaml'));
+        const sharedPoemPath = path.join(poemDir, '.shared.poem');
+        const inputs = [poemPath, ...(fs.existsSync(sharedPoemPath) ? [sharedPoemPath] : [])];
+
+        if (!needsRebuild(yamlPath, inputs, { force })) {
+          console.log(`⏭  Skipping ${file} (up to date)`);
+          skippedCount++;
+          continue;
+        }
 
         try {
           console.log(`Converting ${file}...`);
@@ -1615,6 +1626,10 @@ function main() {
           errorCount++;
         }
       }
+    }
+
+    if (skippedCount > 0) {
+      console.log(`⏭  ${skippedCount} poem(s) already up to date, skipped.`);
     }
 
     // Warn about stale YAML artefacts that have no active source poem.

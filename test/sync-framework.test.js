@@ -340,6 +340,52 @@ test('re-execs itself when the upstream script differs', { skip: SKIP }, (t) => 
   assert.strictEqual(readFile(cons, 'docs/GUIDE.md'), 'upstream guide\n');
 });
 
+test('leaves an already-synced, unchanged path untouched (no checkout, no mtime bump)', { skip: SKIP }, (t) => {
+  const base = tmpBase(t);
+  const up = path.join(base, 'upstream');
+  initRepo(up);
+  write(up, 'docs/GUIDE.md', 'same content\n');
+  write(up, 'package.json', '{"name":"upstream"}\n');
+  write(up, 'src/tools/tool.js', 'same content\n');
+  commitAll(up, 'chore: upstream v1');
+
+  const dir = path.join(base, 'consumer');
+  initRepo(dir);
+  fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
+  fs.copyFileSync(SCRIPT_SRC, path.join(dir, 'scripts', 'sync-framework.sh'));
+  fs.chmodSync(path.join(dir, 'scripts', 'sync-framework.sh'), 0o755);
+  // The consumer's copy of src/tools/tool.js is already byte-identical to
+  // what upstream would sync — a real-world "nothing to do here" sync, the
+  // same situation a scheduled auto_sync run hits most of the time.
+  write(dir, 'docs/GUIDE.md', 'local guide\n');
+  write(dir, 'package.json', '{"name":"consumer-local"}\n');
+  write(dir, 'src/tools/tool.js', 'same content\n');
+  write(dir, '.poetic-version', 'channel=releases\nref=main\ncommit=\n');
+  commitAll(dir, 'chore: initial consumer');
+  git(dir, 'config', `url.${up}.insteadOf`, POETIC_URL);
+
+  // Backdate the already-identical file so a spurious checkout (which would
+  // rewrite it with identical content, but a fresh mtime) is detectable.
+  const toolPath = path.join(dir, 'src/tools/tool.js');
+  const past = new Date('2020-01-01T00:00:00Z');
+  fs.utimesSync(toolPath, past, past);
+  const mtimeBefore = fs.statSync(toolPath).mtimeMs;
+
+  const res = runSync(dir, ['--ref', 'main']);
+  assert.strictEqual(res.status, 0, res.stderr);
+
+  // src/tools is a directory entry in FRAMEWORK_PATHS, so the "unchanged"
+  // report (and the checkout it would otherwise trigger) applies to the
+  // whole directory, not the individual file within it.
+  assert.ok(res.stdout.includes('unchanged src/tools'), res.stdout);
+  assert.strictEqual(
+    fs.statSync(toolPath).mtimeMs, mtimeBefore,
+    'an unchanged path should not be checked out again (mtime should be preserved)'
+  );
+  // A genuinely different path still syncs normally.
+  assert.strictEqual(readFile(dir, 'docs/GUIDE.md'), 'same content\n');
+});
+
 test('rejects an unknown argument', { skip: SKIP }, (t) => {
   const base = tmpBase(t);
   const { dir: up } = makeUpstream(base);

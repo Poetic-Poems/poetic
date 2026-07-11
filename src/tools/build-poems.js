@@ -11,10 +11,12 @@ const fs = require("fs");
 const path = require("path");
 const { slugFromFile } = require("./slugify");
 const { formatDateForDisplay } = require("./date-utils");
-const { readPoeticConfig } = require("./poetic-config");
-const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles } = require("./poem-render");
+const { readPoeticConfig, CONFIG_FILENAME } = require("./poetic-config");
+const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles, PAGE_TEMPLATE } = require("./poem-render");
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
+const { needsRebuild, forceRebuildRequested } = require("./needs-rebuild");
+const { BUILTIN_HANDLERS_PATH } = require("./song-handlers");
 
 const POEMS_DIR = path.join(REPO_ROOT, "src", "poems", "yaml");
 const PUBLIC_DIR = path.join(REPO_ROOT, "public");
@@ -40,6 +42,7 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
   // Poem pages live at public/<slug>/index.html, one directory deep, so
   // footer-relative asset links (e.g. %{base}poetic-logo.svg) need "../".
   const footerBlock = renderFooter(config, REPO_ROOT, { base: '../' });
+  const footerSourcePath = resolveFooterSourcePath(config, REPO_ROOT);
 
   // Ensure directories exist
   if (!fs.existsSync(poemsDir)) {
@@ -61,14 +64,66 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
 
   console.log(`Found ${yamlFiles.length} poem(s) to build...`);
 
+  const force = forceRebuildRequested();
+  const configPath = path.join(REPO_ROOT, CONFIG_FILENAME);
+  // Underscore-prefixed YAML files are shared partials pulled in via $ref
+  // (see poem-render.js's listPoemYamlFiles, which excludes them from the
+  // standalone-poem list above) — treat them as an implicit dependency of
+  // every poem, alongside the page template and other framework-wide inputs
+  // that affect every rendered page. A poem's own $ref to a file *without*
+  // the underscore convention is a known, accepted gap — see TECH-DEBT.md
+  // TD26071111.
+  const partialYamlPaths = fs.readdirSync(poemsDir)
+    .filter((f) => (f.endsWith('.yaml') || f.endsWith('.yml')) && f.startsWith('_'))
+    .map((f) => path.join(poemsDir, f));
+  const globalInputs = [
+    PAGE_TEMPLATE,
+    BUILTIN_HANDLERS_PATH,
+    ...(fs.existsSync(configPath) ? [configPath] : []),
+    ...(fs.existsSync(footerSourcePath) ? [footerSourcePath] : []),
+  ];
+
   let successCount = 0;
   let errorCount = 0;
+  let skippedCount = 0;
   const builtSlugs = new Set();
   const slugToSource = new Map();
 
   // Process each YAML file
   for (const yamlFile of yamlFiles) {
     const yamlPath = path.join(poemsDir, yamlFile);
+
+    // Calculate slug from the source filename stem — this needs only the
+    // filename, not the file's content, so collision/staleness checks below
+    // can run before paying for a read+parse of the YAML.
+    const slug = slugFromFile(yamlFile);
+
+    // Guard: an empty slug would clobber public/index.html.
+    if (!slug) {
+      console.error(`Error: ${yamlFile} yields an empty slug from its filename stem; rename the source file to contain URL-safe characters.`);
+      errorCount++;
+      continue;
+    }
+    // Guard: two source files must never resolve to the same slug.
+    if (slugToSource.has(slug)) {
+      console.error(`Error: slug collision — "${yamlFile}" and "${slugToSource.get(slug)}" both resolve to "${slug}". Rename one .poem source so the filename stems differ.`);
+      errorCount++;
+      continue;
+    }
+    slugToSource.set(slug, yamlFile);
+
+    const slugDir = path.join(publicDir, slug);
+    const pageFile = path.join(slugDir, 'index.html');
+    const redirectFile = path.join(publicDir, `${slug}.html`);
+
+    const inputs = [yamlPath, ...partialYamlPaths, ...globalInputs];
+    if (!needsRebuild([pageFile, redirectFile], inputs, { force })) {
+      builtSlugs.add(slug);
+      successCount++;
+      skippedCount++;
+      continue;
+    }
+
     const poemData = readPoemFile(yamlPath);
 
     if (!poemData) {
@@ -89,8 +144,7 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
       continue;
     }
 
-    // Calculate slug from the source filename stem
-    poemData.slug = slugFromFile(yamlFile);
+    poemData.slug = slug;
 
     // Format date for display
     if (poemData.date) {
@@ -101,22 +155,6 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
     if (!poemData.versions || poemData.versions.length === 0) {
       console.warn(`⚠️  Warning: ${yamlFile} has empty versions block`);
     }
-
-    const slug = poemData.slug;
-
-    // Guard: an empty slug would clobber public/index.html.
-    if (!slug) {
-      console.error(`Error: ${yamlFile} yields an empty slug from its filename stem; rename the source file to contain URL-safe characters.`);
-      errorCount++;
-      continue;
-    }
-    // Guard: two source files must never resolve to the same slug.
-    if (slugToSource.has(slug)) {
-      console.error(`Error: slug collision — "${yamlFile}" and "${slugToSource.get(slug)}" both resolve to "${slug}". Rename one .poem source so the filename stems differ.`);
-      errorCount++;
-      continue;
-    }
-    slugToSource.set(slug, yamlFile);
 
     // ── 1. Full standalone page: public/<slug>/index.html ──────────────────
     let pageHtml;
@@ -129,8 +167,6 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
       continue;
     }
 
-    const slugDir = path.join(publicDir, slug);
-    const pageFile = path.join(slugDir, 'index.html');
     try {
       fs.mkdirSync(slugDir, { recursive: true });
       const beautify = require("js-beautify");
@@ -150,7 +186,6 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
     }
 
     // ── 2. Redirect stub: public/<slug>.html → ./<slug>/ ──────────────────
-    const redirectFile = path.join(publicDir, `${slug}.html`);
     const redirectHtml = `<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8">\n<link rel="canonical" href="./${slug}/">\n<meta http-equiv="refresh" content="0; url=./${slug}/"></head>\n<body><p>This poem has moved to <a href="./${slug}/">${slug}/</a>.</p></body></html>`;
     try {
       fs.writeFileSync(redirectFile, redirectHtml, "utf8");
@@ -166,7 +201,6 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
   // Warn about stale HTML artefacts that have no corresponding YAML source.
   // Exclude framework-generated aggregates (index, all-poems), template files,
   // and the configured footer.source file (when it lives directly in public/).
-  const footerSourcePath = resolveFooterSourcePath(config, REPO_ROOT);
   const footerSourceBasename = path.dirname(footerSourcePath) === publicDir
     ? path.basename(footerSourcePath)
     : null;
@@ -180,7 +214,8 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
   }
 
   console.log(
-    `\n📊 Build complete: ${successCount} successful, ${errorCount} errors`
+    `\n📊 Build complete: ${successCount} successful, ${errorCount} errors` +
+    (skippedCount > 0 ? ` (${skippedCount} up to date, skipped)` : '')
   );
 
   if (errorCount > 0) {
