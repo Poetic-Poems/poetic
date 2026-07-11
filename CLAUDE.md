@@ -27,7 +27,8 @@ scripts/          ← shell helpers synced to consumer repos
 editors/vim/      ← Vim filetype + syntax files
 docs/             ← documentation
 examples/         ← example poem files
-.github/workflows/← CI: build-poems.yml, release.yml, sync-framework.yml
+.github/workflows/← CI: build-poems.yml, codeql.yml, commit-format.yml, release.yml,
+                    sync-blogger.yml, sync-framework.yml
 ```
 
 ## Build commands
