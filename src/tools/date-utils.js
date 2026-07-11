@@ -8,6 +8,8 @@
  * parseDateForSorting() for its table sort). Do not add `require`/`fs`/
  * `process` or any other Node-only dependency here — it must keep working
  * unbundled in both environments.
+ *
+ * (Trivial comment added to verify build-skip logic; will not be merged.)
  */
 
 /**
