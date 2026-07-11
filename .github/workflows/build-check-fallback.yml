@@ -17,7 +17,8 @@ name: Build and Deploy Poems to GitHub Pages (fallback)
 # other, or a path could satisfy neither workflow and reintroduce the block.
 # A PR that touches paths on both sides simply runs both workflows, which is
 # harmless (the real one takes precedence for meaning, the stub is
-# redundant).
+# redundant). This hand-maintained mirror is tracked as TD26071110 in
+# TECH-DEBT.md.
 
 on:
   push:
