@@ -20,4 +20,5 @@ small fixes; ready-to-run agent prompts are provided for them and eleven further
 | [Findings](02-findings.md) | All findings across thirteen dimensions with evidence and impact. 30 findings: 0 critical, 2 high, 6 medium, 22 low. |
 | [Recommendations](03-recommendations.md) | 13 prioritised recommendations, each with current state, intended end state, and approach. |
 | [Improvement prompts](04-improvement-prompts.md) | One self-contained, paste-ready AI-agent prompt per recommendation, with ordering dependencies noted. |
+| [Implementation log](05-implementation-log.md) | Remediation record (project-remediation skill): what was resolved, already-resolved, or deferred, with evidence. |
 | [Tech debt register](../TECH-DEBT.md) | Updated in place: eight new entries (TD26071101–TD26071108) in the register's own format, cross-referenced to findings and recommendations. |
