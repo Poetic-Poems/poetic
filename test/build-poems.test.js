@@ -97,3 +97,44 @@ test('buildAllPoems skips a poem missing a required field and reports it as an e
   assert.strictEqual(result.status, 1);
   assert.match(result.stderr, /Missing 'author' field/);
 });
+
+test('buildAllPoems rejects a source file whose stem slugifies to an empty slug (process exits non-zero)', (t) => {
+  const { poemsDir } = tmpDirs(t);
+  const base = path.dirname(path.dirname(poemsDir));
+  fs.writeFileSync(path.join(poemsDir, '!!!.yaml'), FIXTURE_YAML, 'utf8');
+
+  const script = `
+    const { buildAllPoems } = require(${JSON.stringify(path.join(__dirname, '..', 'src', 'tools', 'build-poems.js'))});
+    buildAllPoems({
+      poemsDir: ${JSON.stringify(poemsDir)},
+      publicDir: ${JSON.stringify(path.join(base, 'public'))},
+    });
+  `;
+  const { spawnSync } = require('child_process');
+  const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
+
+  assert.strictEqual(result.status, 1);
+  assert.match(result.stderr, /yields an empty slug/);
+});
+
+test('buildAllPoems rejects two source files whose stems slugify to the same slug (process exits non-zero)', (t) => {
+  const { poemsDir } = tmpDirs(t);
+  const base = path.dirname(path.dirname(poemsDir));
+  fs.writeFileSync(path.join(poemsDir, 'my-poem.yaml'), FIXTURE_YAML, 'utf8');
+  fs.writeFileSync(path.join(poemsDir, 'My Poem.yaml'), FIXTURE_YAML, 'utf8');
+
+  const script = `
+    const { buildAllPoems } = require(${JSON.stringify(path.join(__dirname, '..', 'src', 'tools', 'build-poems.js'))});
+    buildAllPoems({
+      poemsDir: ${JSON.stringify(poemsDir)},
+      publicDir: ${JSON.stringify(path.join(base, 'public'))},
+    });
+  `;
+  const { spawnSync } = require('child_process');
+  const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
+
+  assert.strictEqual(result.status, 1);
+  assert.match(result.stderr, /slug collision/);
+  assert.match(result.stderr, /my-poem\.yaml/);
+  assert.match(result.stderr, /My Poem\.yaml/);
+});

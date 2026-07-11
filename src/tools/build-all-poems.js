@@ -39,11 +39,27 @@ function copyDateUtilsAsset(publicDir) {
   fs.copyFileSync(src, dest);
 }
 
-function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", config = {}) {
+/**
+ * Build all-poems.html by rendering every poem fragment into one page.
+ *
+ * @param {string} dirPath - publicDir (kept as the original parameter name).
+ * @param {string} [favicon]
+ * @param {object} [config] - Parsed .poetic-config.yaml.
+ * @param {object} [options]
+ * @param {string} [options.poemsDir] - Override the default REPO_ROOT-derived
+ *   src/poems/yaml (tests only; the npm run build / CLI entry point below
+ *   always uses the default) — see the matching option on buildAllPoems() in
+ *   build-poems.js.
+ */
+function concatenateAllHtmlFiles(
+  dirPath,
+  favicon = "poetic-logo.svg",
+  config = {},
+  { poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml") } = {}
+) {
   try {
     const siteTitle = escapeAmpersand(config.title || "My Poems");
     // Read YAML files from the poems directory for metadata
-    const poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml");
     const yamlFiles = fs
       .readdirSync(poemsDir)
       .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
@@ -238,10 +254,29 @@ function concatenateAllHtmlFiles(dirPath, favicon = "poetic-logo.svg", config = 
   }
 }
 
-function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = undefined, config = {}) {
+/**
+ * Build or refresh index.html's poem-data JSON island (and, on an existing
+ * file, sync favicon/title/subtitle and self-heal older formats).
+ *
+ * @param {string} publicDir
+ * @param {string} [favicon]
+ * @param {string} [subtitle]
+ * @param {object} [config] - Parsed .poetic-config.yaml.
+ * @param {object} [options]
+ * @param {string} [options.poemsDir] - Override the default REPO_ROOT-derived
+ *   src/poems/yaml (tests only; the npm run build / CLI entry point below
+ *   always uses the default) — see the matching option on buildAllPoems() in
+ *   build-poems.js.
+ */
+function generateIndexHtml(
+  publicDir,
+  favicon = "poetic-logo.svg",
+  subtitle = undefined,
+  config = {},
+  { poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml") } = {}
+) {
   try {
     // Read YAML files from the poems directory for metadata
-    const poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml");
     const yamlFiles = fs
       .readdirSync(poemsDir)
       .filter((file) => file.endsWith(".yaml") || file.endsWith(".yml"))
@@ -291,8 +326,12 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
 
     // Poem data consumed by public/index.js at runtime, embedded as a JSON
     // data island rather than interpolated into a JS blob — see the
-    // `poemDataIsland` block below.
-    const poemDataJson = JSON.stringify(poemData, null, 2);
+    // `poemDataIsland` block below. JSON.stringify does not escape "<", so a
+    // poem title containing "</script>" would end the <script> element early
+    // in the browser; escape every "<" as the equivalent JSON string escape
+    // (JSON.parse restores it) before it reaches either the refresh branch
+    // below or the fresh-template/migration paths that also use this value.
+    const poemDataJson = JSON.stringify(poemData, null, 2).replace(/</g, '\\u003c');
     const poemDataIsland =
       `<script type="application/json" id="poem-data">\n${poemDataJson}\n    </script>\n` +
       `    <script src="index.js" defer></script>`;
@@ -361,9 +400,14 @@ function generateIndexHtml(publicDir, favicon = "poetic-logo.svg", subtitle = un
       //     "index.js">`, migrating the file to the external-script format
       //     on its next build.
       if (/<script type="application\/json" id="poem-data">/.test(indexContent)) {
+        // Function replacement, not a string: a string replacement is scanned
+        // for "$$", "$&", "$`", "$'" etc. patterns, which would corrupt the
+        // insertion if poemDataJson contains one of those sequences (e.g. a
+        // poem titled "Big $$ Deal"). A function's return value is inserted
+        // verbatim.
         indexContent = indexContent.replace(
           /<script type="application\/json" id="poem-data">[\s\S]*?<\/script>/,
-          `<script type="application/json" id="poem-data">\n${poemDataJson}\n    </script>`
+          () => `<script type="application/json" id="poem-data">\n${poemDataJson}\n    </script>`
         );
       } else {
         indexContent = indexContent.replace(
