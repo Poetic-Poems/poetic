@@ -135,6 +135,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- **`js-yaml` upgraded to v5.** The build tools use only `yaml.load` /
+  `yaml.dump`, both of which are unchanged in v5, and generated poem YAML for
+  real four-digit poem dates is byte-for-byte identical to v4. v5 narrows its
+  timestamp-detection regex, so a non-standard placeholder date whose year is
+  `0000` (e.g. `0000-01-01`) is now dumped unquoted (`date: 0000-01-01`) rather
+  than quoted (`date: '0000-01-01'`); it still round-trips back to the identical
+  string, and no real poem date is affected. Resolves TD26071109.
 - **`scripts/sync-framework.sh` now propagates upstream deletions.** Previously
   the script only overlaid framework files (`git checkout <commit> -- <path>`),
   so a file the framework *removed* upstream lived on in every consumer repo
