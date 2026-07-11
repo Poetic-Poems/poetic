@@ -83,6 +83,13 @@ the pull request's description (GitHub repo setting `squash_merge_commit_message
 PR_BODY`), so a filled-in PR description carries through to `main`'s history —
 write one whenever the change needs more context than the title alone gives.
 
+Because every change is gated by a PR and CI regardless of who or what proposes it, agents
+work autonomously up to the PR stage: commit, push a branch, and open the pull request
+without pausing to ask permission first. Review happens on the PR, not before it — the repo
+owner reviews there and requests changes if needed. This does not extend to actions on `main`
+itself (direct commits/pushes are rejected by the branch protection anyway) or to
+force-pushing/merging, which still require explicit instruction.
+
 ## Release process
 
 `package.json`'s `version` field is the single source of truth. To release, open a pull

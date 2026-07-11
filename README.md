@@ -304,7 +304,9 @@ To switch channels, edit `.poetic-version` and change the `channel` line.
 
 If you improve a framework file (a tool, template, editor integration, or doc), please open a pull request against [warwickallen/poetic](https://github.com/warwickallen/poetic). Personal poems and your `README.md` stay in your own repo.
 
-`main` is a protected branch: it does not accept direct commits or pushes, so all changes — including from maintainers — go through a pull request. The repo only allows squash merging, so a merged PR always becomes a single commit on `main`.
+`main` is a protected branch: it does not accept direct commits or pushes, so all changes — including from maintainers and AI agents — go through a pull request. The repo only allows squash merging, so a merged PR always becomes a single commit on `main`.
+
+AI agents working in this repo commit, push, and open pull requests autonomously — that gate is what makes it safe to do so without asking first. Review happens on the PR, not before it.
 
 ### Commit messages
 
