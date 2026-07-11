@@ -141,6 +141,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   against Conventional Commits (it previously only checked each branch
   commit). `CLAUDE.md` and `README.md` document the new branch workflow and
   the pull-request-based release process.
+- **CodeQL security scanning.** A new `.github/workflows/codeql.yml` runs
+  GitHub's CodeQL analysis on every pull request and push to `main`, plus a
+  weekly schedule, covering `javascript-typescript` (the build tools in
+  `src/tools/`) and `actions` (this repo's own workflow YAML). Results upload
+  to the repo's Security tab.
 
 ### Changed
 
