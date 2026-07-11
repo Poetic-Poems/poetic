@@ -53,7 +53,12 @@ poem_file = [ preamble ],
 
 preamble = preamble_item, { preamble_item } ;
 
-preamble_item = blank_line | variable_definition ;
+(* A directive_line may appear here as well as in the metadata_section (see
+   METADATA SECTION and semantic constraint 40 below); the preamble_item
+   alternative is the ONLY place other than metadata_line that directive_line
+   is referenced. Scanning for preamble directives stops at the first line
+   that is neither blank nor a directive_line - that line begins the header. *)
+preamble_item = blank_line | variable_definition | directive_line ;
 
 (* ============================================================================
    HEADER SECTION
@@ -312,7 +317,10 @@ analysis_content = gfm_content ;
    METADATA SECTION
    The Metadata section holds two line types: directives and labels. It is
    the last section of a poem file, delimited by end_of_analysis_marker
-   before it and end_of_file_marker after it (see poem_file).
+   before it and end_of_file_marker after it (see poem_file). A directive_line
+   (but not a label_line) may ALSO appear in the preamble (see preamble_item
+   above and semantic constraint 40) - directives declared there are collected
+   ahead of any declared here, in source order (see semantic constraint 40).
    ============================================================================ *)
 
 metadata_section = { metadata_line } ;
@@ -489,7 +497,15 @@ markup_element = escaped_char
                | variable_substitution
                | plain_char ;
 
-escaped_char = "\", ( "_" | "*" | "~" | "[" | "`" | '"' | "&" | "'" | "-" | "<" | ">" | "=" | "$" | "/" | "{" | "}" | "\" ) ;
+(* "\%" decodes to a literal "%" EXCEPT as the first two characters of
+   "\%{", which is left untouched: "\%{name}" is context_variable_substitution's
+   literal-escape alternative (see above) and must keep its backslash so it
+   can be decoded later, at the render stage. This mirrors how "\$" here
+   coexists with variable_substitution's "\${" alternative, but - unlike
+   "${...}", which is resolved and so no longer contains a backslash by the
+   time escaped_char applies - "%{...}" is NOT resolved at this stage, so the
+   "\%{" carve-out must be enforced explicitly (see semantic constraint 41). *)
+escaped_char = "\", ( "_" | "*" | "~" | "[" | "`" | '"' | "&" | "'" | "-" | "<" | ">" | "=" | "$" | "%" | "/" | "{" | "}" | "\" ) ;
 
 (* Emphasis follows Markdown conventions: single markers = italic, double = bold. *)
 emphasis = ( "*", markup_content, "*" ) | ( "_", markup_content, "_" ) ;
@@ -848,6 +864,32 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
          an escape. This reservation does not apply inside raw
          `<<<...>>>` blocks or the Markdown analysis/postscript sections,
          which have their own escaping.
+
+      40. A directive_line may be declared in the preamble (see
+         preamble_item) as well as in the metadata_section. Scanning the
+         preamble for directives stops at the first line that is neither
+         blank nor a directive_line - that line begins the header
+         (title_line). When directives are declared in both places, they
+         are collected into a single, file-wide `directives` list in
+         source order: every directive declared in the preamble precedes
+         every directive declared in the metadata_section. As per
+         constraint 36, directives are NOT de-duplicated across the two
+         sites either - each directive_line, wherever it appears, becomes
+         its own entry.
+
+      41. `\%` decodes to a literal `%` wherever escaped_char applies (poem
+         segments and labels, per constraint 6), and additionally in
+         title_line specifically, even though title_line does not
+         otherwise go through text_with_markup - this lets a title begin
+         with a literal `%` without its line being read as a preamble
+         directive_line (a bare `%...` line, unescaped, opens a
+         directive_line instead). The one exception is the sequence
+         `\%{`: it is left completely untouched by escaped_char decoding,
+         because `\%{name}` is context_variable_substitution's literal-
+         escape alternative, decoded later, at the render stage, by
+         substituteContextVars - decoding the leading `\%` here would
+         destroy the backslash that later stage depends on. This carve-out
+         applies equally in title_line.
 *)
 
 (* ============================================================================

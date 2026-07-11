@@ -182,3 +182,50 @@ test(
     }
   }
 );
+
+test(
+  'a Preamble %directive, the "\\%" escape, and the "\\%{...}" context-var escape are highlighted',
+  { skip: vimSkipReason() },
+  () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'poem-vim-syntax-percent-'));
+    const tmpFile = path.join(tmpDir, 'percent.poem');
+    try {
+      fs.writeFileSync(
+        tmpFile,
+        [
+          '%example.preamble key:value',
+          'A Title Here',
+          '1970-01-01',
+          '',
+          'An escaped \\% percent sign.',
+          '',
+          'A context escape \\%{slug} left untouched.',
+        ].join('\n')
+      );
+      const rawGroupsByLine = dumpRawGroupsByLine(tmpFile);
+      assert.ok(
+        rawGroupsByLine[0].includes('poemDirective'),
+        `Expected poemDirective on the Preamble %directive line, got: ` +
+          `${JSON.stringify(rawGroupsByLine[0])}`
+      );
+      assert.ok(
+        rawGroupsByLine[1].includes('poemTitle'),
+        `Expected poemTitle on the line following the Preamble directive (verifying the ` +
+          `title/preamble boundary accounts for %directive lines), got: ` +
+          `${JSON.stringify(rawGroupsByLine[1])}`
+      );
+      assert.ok(
+        rawGroupsByLine[4].includes('poemEscaped'),
+        `Expected poemEscaped on the "\\%" line, got: ${JSON.stringify(rawGroupsByLine[4])}`
+      );
+      assert.ok(
+        !rawGroupsByLine[6].includes('poemEscaped'),
+        `"\\%{...}" is the render-time context-variable literal escape and must keep its ` +
+          `backslash unhighlighted as poemEscaped, so the "%" not-followed-by-"{" lookahead ` +
+          `must not match it: ${JSON.stringify(rawGroupsByLine[6])}`
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  }
+);

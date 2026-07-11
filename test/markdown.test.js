@@ -54,6 +54,24 @@ test('convertMarkup uses Markdown emphasis (* = em, ** = strong)', () => {
   assert.strictEqual(p.convertMarkup('__a__'), '<strong>a</strong>');
 });
 
+test('convertMarkup decodes \\% to a literal % (body/label escape)', () => {
+  const p = new PoemParser('');
+  assert.strictEqual(p.convertMarkup('\\%foo'), '%foo');
+  assert.strictEqual(p.convertMarkup('a \\% b'), 'a % b');
+});
+
+test('convertMarkup leaves \\%{...} untouched (render-time context-var escape survives)', () => {
+  const p = new PoemParser('');
+  // The backslash MUST survive so substituteContextVars() can decode \%{slug}
+  // later; only \% NOT followed by { is decoded here.
+  assert.strictEqual(p.convertMarkup('\\%{slug}'), '\\%{slug}');
+});
+
+test('a body line \\%foo decodes to %foo through the segment pipeline', () => {
+  const segments = parseSegments(['{Verse}', '\\%foo']);
+  assert.strictEqual(segments[0].lines, '%foo\n');
+});
+
 test('<<<markdown>>> block in a segment renders GFM with variable substitution', () => {
   const segments = parseSegments([
     '={who}=World',

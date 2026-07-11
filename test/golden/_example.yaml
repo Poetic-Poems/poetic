@@ -1,3 +1,10 @@
+directives:
+  - name: example.preamble
+    attributes:
+      key: value
+  - name: example.directive
+    attributes:
+      key: value
 title: Example Poem
 author: A Poet
 date: '1970-01-31'
@@ -14,7 +21,7 @@ versions:
       - label: Stanza 2
         lines: |
           A <a href="https://example.com">link</a> and a <span class="highlight">highlighted span</span>,
-          with escaped *asterisks* and a literal --- triple-hyphen.
+          with escaped *asterisks*, a literal --- triple-hyphen, and an escaped % percent sign.
           First line, with a hard line break here,<br/>
           and the line that follows it.
       - lines: |
@@ -128,7 +135,3 @@ analysis:
 labels:
   - reflection
   - nature
-directives:
-  - name: example.directive
-    attributes:
-      key: value

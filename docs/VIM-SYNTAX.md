@@ -10,6 +10,7 @@ The syntax highlighting provides colour-coding for:
 - **Dividers and markers**: `----` and `====` separators
 - **Labels**: Version labels {% raw %}`{{ ... }}`{% endraw %}, segment labels `{ ... }`, postscript labels, and analysis labels
 - **Metadata section**: Labels (`#tag`) and directives (`%name key:value ...`) in the block after a trailing `====` marker
+- **Preamble directives**: directive lines (`%name key:value ...`) are also recognised in the Preamble, before the header, using the same highlighting as Metadata-section directives
 - **Variables**: Single-line and multi-line variable definitions (`={var}=`), and variable references (`${var}`)
 - **Comment blocks**: `<<# ... #>>`
 - **Literal blocks**: `<<< ... >>>` with optional language-specific syntax highlighting
@@ -19,7 +20,7 @@ The syntax highlighting provides colour-coding for:
 - **Analysis section**: rendered with the embedded **Markdown** syntax (it is GitHub-Flavoured Markdown), keyed on the `{Synopsis}`/`{Full}` labels
 - **Markdown blocks**: `<<<markdown` … `>>>` (and `<<<md`) blocks use the embedded Markdown syntax
 - **Inline markup** (poem body and labels): italic (`*text*` or `_text_`), bold (`**text**` or `__text__`), strikethrough (`~text~`), links (`[text|url]`), smart quotes (`` `text` `` and `"text"`), and span elements (`/.class{text}`). These pairs may span multiple lines within a paragraph (but not across a blank line).
-- **Special characters**: Escaped characters (`\*`), em dashes (`---`), and en dashes (`--`)
+- **Special characters**: Escaped characters (`\*`, `\%`), em dashes (`---`), and en dashes (`--`) — `\%{...}` is highlighted separately, as the context-variable literal escape, not as an escaped character
 - **Trailing text**: Inline comments after line-anchored tokens (e.g., `----  # comment`)
 
 > **Note on emphasis:** emphasis follows Markdown conventions everywhere
@@ -43,6 +44,8 @@ Two line types are recognised there:
   labels never match the same line: `#tag` is a label, `# Heading` is a heading.
 - **Directives** — a `%` followed by a name (letters, digits, `.`, `-`), zero or more
   whitespace-separated `key:value` attribute pairs, and an optional trailing `# comment`.
+  The same directive highlighting also applies to directive lines in the Preamble, at
+  the top of the file, before the header.
 
 | Group | Covers | Default link |
 |-------|--------|---------------|

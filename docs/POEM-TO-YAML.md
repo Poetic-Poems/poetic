@@ -66,7 +66,9 @@ A bottom `====`-delimited Metadata section, after Analysis, produces the
 - A `#label` line adds `label` to `labels` (de-duplicated, first-seen order)
 - A `%directive.name key:value ...` line adds `{ name, attributes? }` to
   `directives` (source order, duplicates allowed; `attributes` is omitted
-  when the directive has no ` key:value` tokens)
+  when the directive has no ` key:value` tokens). A directive line may also
+  appear in the Preamble, before the header — directives found there are
+  added to `directives` ahead of any found in the Metadata section
 - A `# comment` line (`#` followed by whitespace) is ignored
 - See `docs/YAML-SCHEMA.md` for the exact shapes and `poem-syntax.ebnf` for
   the authoritative line-matching patterns
@@ -87,7 +89,10 @@ Converts text markup to HTML entities:
 | `&` | `&#38;` |
 | `'` | `&#39;` |
 
-Escaped characters with `\` are preserved as literals.
+Escaped characters with `\` are preserved as literals, including `\%` → `%`
+(so a title may start with a literal `%` without being read as a Preamble
+directive) — except `\%{…}`, which is left untouched, since `\%{name}`
+remains the render-time context-variable literal escape.
 
 ### Comment Blocks
 Comment blocks delimited by `<<#` ... `#>>` are automatically removed during parsing.

@@ -134,16 +134,17 @@ syn match poemEndMarkerLineTrailing "^====\s\+.*$" contains=poemEndMarkerMark ne
 syn match poemEndMarkerMark "^====" contained
 
 " Header section. The title is the first line of the header, which follows the
-" optional preamble (blank lines, variable definitions, and comment blocks) --
-" so it is not necessarily line 1. Match it by grammar rather than line number:
-" the first non-preamble line that sits on a preamble boundary (start of file,
-" or immediately after a blank line, a single-line variable definition, a
-" multi-line-variable close, or a comment-block close) and is followed by the
-" header's optional author line and mandatory date line. The leading negative
-" lookahead keeps a preamble line (e.g. a variable definition at the very top of
-" the file) from being taken as the title, and contains=poemVariableRef keeps a
-" ${var} reference in the title highlighted.
-syn match poemTitle "\%(\%^\|\%(^\%(\s*\|={\w\+}=.*\|=>>.*\|#>>.*\)\n\)\@<=\)\zs\%(={\|=>>\|#>>\|<<#\)\@!.\+\ze\n\%(.\+\n\)\?\d\{4\}-\d\{2\}-\d\{2\}$" contains=poemVariableRef
+" optional preamble (blank lines, variable definitions, comment blocks, and
+" %directive lines) -- so it is not necessarily line 1. Match it by grammar
+" rather than line number: the first non-preamble line that sits on a
+" preamble boundary (start of file, or immediately after a blank line, a
+" single-line variable definition, a multi-line-variable close, a
+" comment-block close, or a %directive line) and is followed by the header's
+" optional author line and mandatory date line. The leading negative
+" lookahead keeps a preamble line (e.g. a variable definition or a %directive
+" at the very top of the file) from being taken as the title, and
+" contains=poemVariableRef keeps a ${var} reference in the title highlighted.
+syn match poemTitle "\%(\%^\|\%(^\%(\s*\|={\w\+}=.*\|=>>.*\|#>>.*\|\s*%.*\)\n\)\@<=\)\zs\%(={\|=>>\|#>>\|<<#\|%\)\@!.\+\ze\n\%(.\+\n\)\?\d\{4\}-\d\{2\}-\d\{2\}$" contains=poemVariableRef
 syn match poemDate "^\d\{4\}-\d\{2\}-\d\{2\}$"
 
 " Audio section: each line names a song-service handler (see
@@ -230,8 +231,12 @@ syn region poemSmartDoubleQuote start='"' end='"' end="^$" keepend
 " Span elements
 syn region poemSpan start="/\.\w[[:alnum:].-]*{" end="}" end="^$" keepend contains=poemEmphasis,poemStrong,poemVariableRef
 
-" Special characters
-syn match poemEscaped "\\[_*~\[`\"&'\-<>=$/{}\\]"
+" Special characters. `\%` is a literal-percent escape, EXCEPT `\%{`: that
+" sequence is the render-time `\%{name}` context-variable literal escape
+" (substituteContextVars() in poem-render.js), which must keep its backslash,
+" so the negative lookahead carves it out of this rule -- mirroring the
+" parser's `\\(%(?!\{)|[...])` escape-class regex in poem-to-yaml.js.
+syn match poemEscaped "\\%\%({\)\@!\|\\[_*~\[`\"&'\-<>=$/{}\\]"
 " Reserved "\?" sequence: not a valid escape, so it is an error in the
 " .poem format.
 syn match poemReservedEscape "\\?"

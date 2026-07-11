@@ -41,6 +41,10 @@ class PoemParser {
     // Strip ignored trailing text after line-anchored tokens (spec section 10)
     this.normalizeTokenLines();
 
+    // Extract Preamble directives (before the header/title) so they are seen
+    // early, ahead of any declared in the Metadata section.
+    this.extractPreambleDirectives();
+
     this.parseHeader();
     this.parseVersions();
 
@@ -778,6 +782,45 @@ class PoemParser {
   }
 
   /**
+   * Decode the `\%` → `%` character escape. A backslash-escaped percent becomes
+   * a literal `%`, EXCEPT the sequence `\%{`, which is left untouched: `\%{name}`
+   * is the render-time context-variable literal escape, decoded later by
+   * substituteContextVars() in poem-render.js, which relies on the backslash
+   * surviving this parse stage. The negative lookahead `(?!\{)` is what enforces
+   * that carve-out. This lets a title (or body/label text) begin with a literal
+   * `%` without being mistaken for a directive.
+   */
+  decodePercentEscape(text) {
+    return text.replace(/\\%(?!\{)/g, '%');
+  }
+
+  /**
+   * Extract directives declared in the Preamble — section 0, at the very top of
+   * the file, before the header/title — into this.result.directives, removing
+   * their lines so the header parse that follows sees only the title onward.
+   *
+   * Runs after the variable-definition and comment-block pre-passes, so only
+   * blank lines and directive lines can precede the title here. Scanning stops
+   * at the first non-blank, non-directive line (the start of the header). Blank
+   * lines are left in place for parseHeader's skipBlankLines to consume.
+   *
+   * Preamble directives are collected before parseMetadata runs, so they land
+   * in result.directives ahead of any directives declared in the Metadata
+   * section — preamble first, then metadata, in overall source order.
+   */
+  extractPreambleDirectives() {
+    let i = 0;
+    while (i < this.lines.length) {
+      const line = this.lines[i];
+      if (line.trim() === '') { i++; continue; } // blank: leave for skipBlankLines
+      const directive = this.parseDirectiveLine(line);
+      if (directive === null) break; // first non-directive line begins the header
+      this.pushDirective(directive);
+      this.lines.splice(i, 1); // remove; the next line shifts into position i
+    }
+  }
+
+  /**
    * Parse header section (title, author, date)
    */
   parseHeader() {
@@ -788,7 +831,10 @@ class PoemParser {
     if (!title) {
       throw new Error('Missing title');
     }
-    this.result.title = this.substituteVariables(title.trim());
+    // Decode `\%` → `%` so a title may begin with a literal `%` without being
+    // read as a Preamble directive. `\%{...}` is preserved (see
+    // decodePercentEscape) for the render stage.
+    this.result.title = this.decodePercentEscape(this.substituteVariables(title.trim()));
 
     // Author (optional) or Date
     let line = this.next();
@@ -1475,6 +1521,46 @@ class PoemParser {
   }
 
   /**
+   * Recognise a directive line (`%name key:value ...`, with an optional trailing
+   * `# comment`) and build its structured form. Returns `{ name, attributes? }`
+   * — where `attributes` maps each `key:value` token (split on its first `:`)
+   * and is omitted entirely when the directive has no attributes — or `null`
+   * when `line` is not a directive.
+   *
+   * Shared by the Metadata section (parseMetadata) and the Preamble pre-pass
+   * (extractPreambleDirectives), so a directive parses identically wherever it
+   * is declared.
+   */
+  parseDirectiveLine(line) {
+    const directiveRe = /^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i;
+    const m = line.match(directiveRe);
+    if (!m) return null;
+
+    const directive = { name: m[1] };
+    const attrsRaw = m[2] ? m[2].trim() : '';
+    if (attrsRaw !== '') {
+      const attributes = {};
+      for (const token of attrsRaw.split(/\s+/)) {
+        const colonIndex = token.indexOf(':');
+        const key = token.slice(0, colonIndex);
+        const value = token.slice(colonIndex + 1);
+        attributes[key] = value;
+      }
+      directive.attributes = attributes;
+    }
+    return directive;
+  }
+
+  /**
+   * Append a parsed directive to this.result.directives, lazily creating the
+   * array so the key stays absent when a poem declares no directives.
+   */
+  pushDirective(directive) {
+    if (!this.result.directives) this.result.directives = [];
+    this.result.directives.push(directive);
+  }
+
+  /**
    * Parse metadata section (directives and labels)
    *
    * Reads lines until the end-of-file marker (====) or EOF, without
@@ -1491,7 +1577,6 @@ class PoemParser {
   parseMetadata() {
     this.skipBlankLines();
 
-    const directiveRe = /^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i;
     const labelRe = /^\s*#([^&<>\\#\s]+?)(\s+#.*)?\s*$/i;
     const seenLabels = new Set();
 
@@ -1514,24 +1599,9 @@ class PoemParser {
         continue;
       }
 
-      const directiveMatch = line.match(directiveRe);
-      if (directiveMatch) {
-        const directive = { name: directiveMatch[1] };
-        const attrsRaw = directiveMatch[2] ? directiveMatch[2].trim() : '';
-        if (attrsRaw !== '') {
-          const attributes = {};
-          for (const token of attrsRaw.split(/\s+/)) {
-            const colonIndex = token.indexOf(':');
-            const key = token.slice(0, colonIndex);
-            const value = token.slice(colonIndex + 1);
-            attributes[key] = value;
-          }
-          directive.attributes = attributes;
-        }
-        if (!this.result.directives) {
-          this.result.directives = [];
-        }
-        this.result.directives.push(directive);
+      const directive = this.parseDirectiveLine(line);
+      if (directive) {
+        this.pushDirective(directive);
         this.next();
         continue;
       }
@@ -1569,10 +1639,14 @@ class PoemParser {
       if (m[1].length % 2 === 1) throw this.reservedEscapeError();
     }
 
-    // Process escapes first
+    // Process escapes first. The escape class also decodes `\%` → `%`, but NOT
+    // `\%{`: `\%{name}` is the render-time context-variable literal escape and
+    // must survive this stage (it is decoded later by substituteContextVars()
+    // in poem-render.js). The `%(?!\{)` alternative — a `%` not followed by `{`
+    // — is what carves `\%{` out; every other class character is unconditional.
     const escapes = new Map();
     let escapeIndex = 0;
-    text = text.replace(/\\([_*~[`"&'\-<>=$\\/{}])/g, (match, char) => {
+    text = text.replace(/\\(%(?!\{)|[_*~[`"&'\-<>=$\\/{}])/g, (match, char) => {
       const placeholder = `\x00ESCAPE${escapeIndex++}\x00`;
       escapes.set(placeholder, char);
       return placeholder;

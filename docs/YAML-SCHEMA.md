@@ -152,8 +152,9 @@ directives:
 ```
 
 `directives` is an array of objects, one per directive line in the poem's
-Metadata section, in source order (duplicates allowed - directives are not
-de-duplicated). Each object has:
+Metadata section or Preamble, in source order — Preamble directives precede
+Metadata directives (duplicates allowed - directives are not de-duplicated).
+Each object has:
 
 - `name`: String - the directive name
 - `attributes`: Map of string keys to string values, parsed from the
