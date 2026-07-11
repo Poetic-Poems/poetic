@@ -16,15 +16,6 @@ Where `<id>` is a literal "TD" then the date followed by a zero-padded
 sequential number (starting at 1 for the the first entry of a day). I.e.:
 **TD*YYMMDDNN***
 
-## TD26071103 Poem conversion failures do not fail the build
-
-`poem-to-yaml.js --all` logs per-file errors but exits 0, so a consumer's broken
-`.poem` silently vanishes from the deployed site (YAML is gitignored; CI
-regenerates it). Related: all-poems render errors are embedded as text in the
-published page, and `$ref` cycles crash with a stack overflow instead of a clear
-message. Fix: count errors and exit non-zero; add a `$ref` cycle guard.
-(project-review-2026-07-11: F-ARCH-02, F-UX-02, F-ARCH-05, R-03.)
-
 ## TD26071105 Embedded client JS is untested and unlintable
 
 ~370 lines of client-side JS live in template literals in
