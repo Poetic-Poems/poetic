@@ -76,7 +76,15 @@ it has the full description and the suggested fix, and instruct it to:
 6. Add a `[Unreleased]` `CHANGELOG.md` entry if the change is visible to poem
    authors or site publishers (skip it for routine/patch-level fixes, per that
    file's own header).
-7. Push the final commits and mark the draft PR ready for review — per
+7. Before marking the PR ready for review, update its description
+   (`gh pr edit <n> --body ...`) to reflect the finished state: replace the
+   "This draft PR claims the item..." line (it's no longer a draft) with a
+   summary of what was actually implemented, and append the post-implementation
+   information a reviewer needs — results of the checks run in step 4 (test/
+   build/lint pass or fail), and anything else worth flagging (files touched
+   outside the obvious scope, follow-ups left undone, tech-debt entries added).
+   Keep the PR title as-is; only the body changes.
+8. Push the final commits and mark the draft PR ready for review — per
    `CLAUDE.md`'s branch workflow, agents work autonomously up to the PR
    stage without pausing to ask first. If verification fails and the agent
    can't resolve it, flip the Ledger row back to `open`, close the draft PR,
