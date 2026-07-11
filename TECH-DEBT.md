@@ -93,4 +93,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071110 | build-check-fallback.yml's path list is a hand-maintained mirror | resolved | 2026-07-11 | #10 |
 | TD26071111 | Incremental-rebuild dependency tracking is approximate | resolved | 2026-07-12 | #14 |
 | TD26071201 | `\?` escape prefix is reserved but not yet implemented | not-debt | | docs/POEM-SYNTAX.md |
-| TD26071202 | Preamble grammar omits comment blocks despite the prose | open | | |
+| TD26071202 | Preamble grammar omits comment blocks despite the prose | in-progress | | |
