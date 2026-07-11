@@ -87,4 +87,4 @@ a body above.
 | TD26071108 | No linter; commit-format check is opt-in only | resolved | 2026-07-11 | cf0bf26 |
 | TD26071109 | js-yaml stuck on v4; v5 changes timestamp-quoting for edge-case date strings | resolved | 2026-07-11 | 7c4c29a |
 | TD26071110 | build-check-fallback.yml's path list is a hand-maintained mirror | resolved | 2026-07-11 | #10 |
-| TD26071111 | Incremental-rebuild dependency tracking is approximate | open | | |
+| TD26071111 | Incremental-rebuild dependency tracking is approximate | in-progress | | |
