@@ -135,6 +135,20 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   handler (any handler can now take config the same way). `favicon`,
   `subtitle`, and `skip_paths` are unchanged, at the top level. Update your
   `.poetic-config.yaml` by hand — there is no auto-migration. See
+- **`scripts/sync-framework.sh` now propagates upstream deletions.** Previously
+  the script only overlaid framework files (`git checkout <commit> -- <path>`),
+  so a file the framework *removed* upstream lived on in every consumer repo
+  forever. After the checkout pass it now stages a removal for each
+  framework-owned path deleted between the previously synced commit and the
+  target commit (`git diff --diff-filter=D`), announced with a `deleted …`
+  line alongside the existing `synced`/`skipped` output. Deletion is
+  conservative — a path is removed only when it is under the framework path
+  list, was deleted upstream between the two synced commits, and is not in
+  `skip_paths`; a path merely absent at the target commit (e.g. a consumer's
+  own file under a shared framework directory) is never touched. On a first
+  sync, or when the previously synced commit is unavailable locally (rewritten
+  history), deletion is skipped and the run says so. Resolves TD26071107.
+
   `examples/poetic-config.example.yaml` for a fully-commented reference of
   every key in the new shape.
 
@@ -162,6 +176,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `<id>#<key>` identifier) becomes an inline, lazy-loaded player that plays
   **both audio and video** files, with full-screen and picture-in-picture, on
   GitHub Pages and Blogger.
+### Removed
+
+- **Two dead one-off migration tools.** `src/tools/convert-html-to-yaml.js`
+  and `src/tools/update-analysis-format.js` were single-use scripts anchored on
+  a `poems/` directory layout the framework no longer uses (poems live under
+  `src/poems/poem/`); the latter's own comment noted it "was used to migrate
+  existing YAML files". They are deleted, and — now that `sync-framework.sh`
+  propagates upstream deletions — consumers stop carrying them on their next
+  sync.
+
 - **Configurable player size — per handler and per song.** Handlers declare a
   size with `embed_height` / `embed_aspect_ratio`, or, for multi-media handlers,
   `default_media` + a `media_sizes` map of per-type profiles. Authors override

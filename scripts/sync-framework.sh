@@ -184,6 +184,38 @@ git add "$VERSION_FILE"
 
 # Build a commit body from the upstream commit messages between the previously
 # synced commit and this one, restricted to framework-owned paths. Falls back
+# Propagate upstream deletions. `git checkout <commit> -- <path>` overlays files
+# but never removes ones deleted upstream, so a framework file the poetic repo
+# has since deleted would otherwise live on in the consumer forever. When the
+# previously synced commit (OLD_COMMIT) is available locally, stage removals for
+# framework paths deleted between it and the target commit. This is deliberately
+# conservative — it runs unattended in consumer CI: a path is removed only when
+# it is (i) under FRAMEWORK_PATHS (the diff pathspec is restricted to that list),
+# (ii) deleted upstream between the two synced commits (--diff-filter=D), and
+# (iii) not in skip_paths. A file merely absent at the target commit is left
+# alone, so consumer files living under shared framework directories are safe.
+if [ -z "$OLD_COMMIT" ]; then
+  echo "  (no previously synced commit recorded; skipping deletion of upstream-removed files)"
+elif [ "$OLD_COMMIT" = "$POETIC_COMMIT" ]; then
+  : # same commit — nothing was deleted between it and itself
+elif ! git cat-file -e "${OLD_COMMIT}^{commit}" 2>/dev/null; then
+  echo "  (previous commit ${OLD_COMMIT:0:8} not found upstream; skipping deletion of upstream-removed files)"
+else
+  while IFS= read -r deleted_path; do
+    [ -n "$deleted_path" ] || continue
+    if is_skipped "$deleted_path"; then
+      echo "  skipped $deleted_path (local override; deleted upstream)"
+      continue
+    fi
+    # Only remove paths the consumer actually tracks, so the echo is honest and
+    # a path the consumer never synced is a silent no-op.
+    if git ls-files --error-unmatch -- "$deleted_path" >/dev/null 2>&1; then
+      git rm --quiet --ignore-unmatch -- "$deleted_path"
+      echo "  deleted $deleted_path (removed upstream)"
+    fi
+  done < <(git diff --name-only --diff-filter=D "$OLD_COMMIT" "$POETIC_COMMIT" -- "${FRAMEWORK_PATHS[@]}" 2>/dev/null || true)
+fi
+
 # to a note (rather than failing) if the previous commit isn't in the local
 # object database — e.g. first-ever sync, or upstream history was rewritten.
 COMMIT_BODY=""

@@ -209,6 +209,96 @@ test('--commit body summarises upstream commits since the last synced commit', {
   assert.match(readFile(cons, '.poetic-version'), new RegExp(`^commit=${c2}$`, 'm'));
 });
 
+test('deletes framework files removed upstream between the synced commits', { skip: SKIP }, (t) => {
+  const base = tmpBase(t);
+  const up = path.join(base, 'upstream');
+  initRepo(up);
+  write(up, 'docs/GUIDE.md', 'upstream guide v1\n');
+  write(up, 'package.json', '{"name":"upstream"}\n');
+  write(up, 'src/tools/tool.js', '// upstream tool v1\n');
+  write(up, 'src/tools/dead.js', '// dead migration tool\n');
+  const c1 = commitAll(up, 'chore: upstream v1');
+  // Upstream deletes the dead tool in the next commit.
+  fs.rmSync(path.join(up, 'src/tools/dead.js'));
+  const c2 = commitAll(up, 'chore: remove dead tool');
+
+  // Consumer last synced c1 and carries the (now-removed) dead tool.
+  const dir = path.join(base, 'consumer');
+  initRepo(dir);
+  fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
+  fs.copyFileSync(SCRIPT_SRC, path.join(dir, 'scripts', 'sync-framework.sh'));
+  fs.chmodSync(path.join(dir, 'scripts', 'sync-framework.sh'), 0o755);
+  write(dir, 'docs/GUIDE.md', 'local guide\n');
+  write(dir, 'package.json', '{"name":"consumer-local"}\n');
+  write(dir, 'src/tools/tool.js', '// consumer tool\n');
+  write(dir, 'src/tools/dead.js', '// dead migration tool\n');
+  write(dir, '.poetic-version', `channel=releases\nref=main\ncommit=${c1}\n`);
+  commitAll(dir, 'chore: initial consumer');
+  git(dir, 'config', `url.${up}.insteadOf`, POETIC_URL);
+
+  const res = runSync(dir, ['--ref', 'main']);
+  assert.strictEqual(res.status, 0, res.stderr);
+
+  // The upstream-removed tool is announced and staged for deletion downstream.
+  assert.ok(res.stdout.includes('deleted src/tools/dead.js'), res.stdout);
+  const staged = git(dir, 'diff', '--staged', '--name-status');
+  assert.match(staged, /^D\s+src\/tools\/dead\.js$/m, staged);
+  assert.ok(
+    !fs.existsSync(path.join(dir, 'src/tools/dead.js')),
+    'the deleted file should be gone from the working tree'
+  );
+
+  // A surviving framework file is synced (overlaid), not deleted.
+  assert.strictEqual(readFile(dir, 'src/tools/tool.js'), '// upstream tool v1\n');
+  assert.match(readFile(dir, '.poetic-version'), new RegExp(`^commit=${c2}$`, 'm'));
+});
+
+test('does not delete an upstream-removed file that is in skip_paths', { skip: SKIP }, (t) => {
+  const base = tmpBase(t);
+  const up = path.join(base, 'upstream');
+  initRepo(up);
+  write(up, 'src/tools/tool.js', '// upstream tool v1\n');
+  write(up, 'src/tools/dead.js', '// dead migration tool\n');
+  const c1 = commitAll(up, 'chore: upstream v1');
+  fs.rmSync(path.join(up, 'src/tools/dead.js'));
+  commitAll(up, 'chore: remove dead tool');
+
+  const dir = path.join(base, 'consumer');
+  initRepo(dir);
+  fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
+  fs.copyFileSync(SCRIPT_SRC, path.join(dir, 'scripts', 'sync-framework.sh'));
+  fs.chmodSync(path.join(dir, 'scripts', 'sync-framework.sh'), 0o755);
+  write(dir, 'src/tools/tool.js', '// consumer tool\n');
+  write(dir, 'src/tools/dead.js', '// locally-maintained fork of the tool\n');
+  // The consumer opts to manage the exact deleted path locally.
+  write(dir, '.poetic-config.yaml', 'skip_paths:\n  - src/tools/dead.js\n');
+  write(dir, '.poetic-version', `channel=releases\nref=main\ncommit=${c1}\n`);
+  commitAll(dir, 'chore: initial consumer');
+  git(dir, 'config', `url.${up}.insteadOf`, POETIC_URL);
+
+  const res = runSync(dir, ['--ref', 'main']);
+  assert.strictEqual(res.status, 0, res.stderr);
+
+  // The skipped path is announced as kept and survives untouched, unstaged.
+  assert.ok(res.stdout.includes('skipped src/tools/dead.js (local override; deleted upstream)'), res.stdout);
+  assert.strictEqual(readFile(dir, 'src/tools/dead.js'), '// locally-maintained fork of the tool\n');
+  const staged = git(dir, 'diff', '--staged', '--name-status');
+  assert.doesNotMatch(staged, /src\/tools\/dead\.js/, staged);
+});
+
+test('first sync (no recorded commit) skips deletion and says so', { skip: SKIP }, (t) => {
+  const base = tmpBase(t);
+  const { dir: up } = makeUpstream(base);
+  const { dir: cons } = makeConsumer(base, up); // versionCommit defaults to ''
+
+  const res = runSync(cons, ['--ref', 'main']);
+  assert.strictEqual(res.status, 0, res.stderr);
+  assert.ok(
+    res.stdout.includes('no previously synced commit recorded; skipping deletion'),
+    res.stdout
+  );
+});
+
 test('--ref <tag> checks out the tagged commit, not the branch head', { skip: SKIP }, (t) => {
   const base = tmpBase(t);
   const up = path.join(base, 'upstream');
