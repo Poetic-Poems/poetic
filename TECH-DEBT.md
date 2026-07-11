@@ -16,14 +16,6 @@ Where `<id>` is a literal "TD" then the date followed by a zero-padded
 sequential number (starting at 1 for the the first entry of a day). I.e.:
 **TD*YYMMDDNN***
 
-## TD26071102 Site name "Fragments & Unity" hard-coded in generators
-
-`src/tools/build-all-poems.js` bakes "Fragments & Unity" into `all-poems.html`
-(lines ~124, ~133) and the default `index.html` template (~709, ~718); there is
-no site-name config key, so every other consumer deploys pages with the wrong
-name. Fix: add a top-level `title` key to `.poetic-config.yaml`, threaded like
-`subtitle`. (project-review-2026-07-11: F-ARCH-01, R-02.)
-
 ## TD26071103 Poem conversion failures do not fail the build
 
 `poem-to-yaml.js --all` logs per-file errors but exits 0, so a consumer's broken
