@@ -47,9 +47,10 @@ case above and ask which item to work on.
 ## 2. Launch an agent to fix the resolved record
 
 Once — and only once — a single record is resolved, launch a `general-purpose`
-agent to do the work. Put the resolved `id`, `title`, and `body` verbatim into
-its prompt so it has the full description and the suggested fix, and instruct it
-to:
+agent to do the work; the agent should be appropriately spec'd: not too costly
+yet capable enough to (mostly likely) do the task correctly on its first
+attempt. Put the resolved `id`, `title`, and `body` verbatim into its prompt so
+it has the full description and the suggested fix, and instruct it to:
 
 1. Read this repo's `CLAUDE.md` first and follow its conventions (Conventional
    Commits, the CHANGELOG/as-built-docs policy, and the tech-debt policy).
