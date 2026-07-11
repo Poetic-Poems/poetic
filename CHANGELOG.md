@@ -11,6 +11,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Doc-only pull requests no longer hang on the required `build` check.**
+  `build-poems.yml`'s `build` job is a required status check, but the
+  workflow only triggers on its `paths:` list, so a PR touching only e.g.
+  `CLAUDE.md` or `SECURITY.md` never produced a `build` check at all — the
+  required check sat as "Expected" indefinitely, blocking merge for anyone
+  without bypass permission. A new
+  `.github/workflows/build-check-fallback.yml` triggers on the exact inverse
+  path set and reports a trivial pass under the same `build` job name, per
+  GitHub's documented workaround for required checks gated by `paths:`.
 - **`sync-blogger.js` now finds `.yml` poems and excludes `YAML-SCHEMA*`.**
   The "list poem YAML files" filter (accept `.yaml`/`.yml`, exclude
   `YAML-SCHEMA*` and `_`-prefixed files) was duplicated across

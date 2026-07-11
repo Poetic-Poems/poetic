@@ -1,0 +1,60 @@
+name: Build and Deploy Poems to GitHub Pages (fallback)
+
+# build-poems.yml's `build` job is a required status check, but that
+# workflow only triggers on its `paths:` list — so a doc-only PR (e.g. one
+# touching only CLAUDE.md or SECURITY.md) never produces a "build" check at
+# all, and the required check hangs as "Expected" forever, blocking merge.
+#
+# This is GitHub's documented workaround: a companion workflow on the exact
+# inverse path set (`paths-ignore:` mirroring build-poems.yml's `paths:`),
+# with a job of the same name ("build"), that reports a trivial pass when
+# the real build has nothing relevant to build. See "Handling skipped but
+# required checks":
+# https://docs.github.com/en/actions/using-workflows/using-conditions-to-control-job-execution#handling-skipped-but-required-checks
+#
+# Keep the `paths-ignore:` list below the exact complement of
+# build-poems.yml's `paths:` list — if one changes, mirror the change in the
+# other, or a path could satisfy neither workflow and reintroduce the block.
+# A PR that touches paths on both sides simply runs both workflows, which is
+# harmless (the real one takes precedence for meaning, the stub is
+# redundant).
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'src/poems/**'
+      - 'src/templates/**'
+      - 'src/tools/**'
+      - 'editors/**'
+      - 'test/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'eslint.config.js'
+      - '.editorconfig'
+      - '.github/workflows/**'
+      - '.poetic-config.yaml'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - 'src/poems/**'
+      - 'src/templates/**'
+      - 'src/tools/**'
+      - 'editors/**'
+      - 'test/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'eslint.config.js'
+      - '.editorconfig'
+      - '.github/workflows/**'
+      - '.poetic-config.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: No build-relevant files changed
+        run: echo "Nothing under build-poems.yml's paths changed — skipping the real build."
