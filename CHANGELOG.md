@@ -26,6 +26,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   github:Poetic-Poems/poetic#<tag>` and import the renderer plus the preview
   CSS at a pinned version, without publishing this (still-`private`) package
   to npm — see "Packaging & consumption" in `docs/RENDERER-BROWSER.md`.
+- **Browser-safe aggregate renderers (`src/browser/render-aggregate.js`).**
+  `renderAllPoems(poems, opts)` and `renderIndex(poems, opts)` render the
+  all-poems/index pages from an in-memory list of poems — no filesystem — the
+  aggregate counterpart to `renderPoem`/`renderPoemPage`. Both are exported
+  from `poetic/browser` alongside the single-poem renderer. Supporting this,
+  `src/tools/aggregate-render-core.js` is a new pure, filesystem-free templating
+  module shared with the CLI build's `build-all-poems.js`, so the Node and
+  browser aggregate outputs cannot silently diverge. See "Aggregate renderers"
+  in `docs/RENDERER-BROWSER.md`.
 - **`scripts/new-poem TITLE`.** Scaffolds a new `.poem` file (kebab-cased
   filename, today's date, one empty stanza), opens it in the users' default
   editor (dafaults to vi), and builds — a one-command alternative to copying

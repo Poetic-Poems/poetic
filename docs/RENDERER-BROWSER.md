@@ -28,11 +28,67 @@ const page = renderPoemPage(sourceText, { config, slug, favicon, subtitle });
 | `favicon`  | `renderPoemPage`  | `poetic-logo.svg`  | Favicon href (must already have any leading `public/` stripped). |
 | `subtitle` | `renderPoemPage`  | `My Poems`         | Nav subtitle. |
 
-Both functions produce output **byte-for-byte identical** to the Node build path
-(`poem-render.js`'s `renderFragment`/`renderPage`) for the same poem. This is
-asserted over the whole poem corpus by
+`renderPoem`/`renderPoemPage` produce output **byte-for-byte identical** to the
+Node build path (`poem-render.js`'s `renderFragment`/`renderPage`) for the same
+poem. This is asserted over the whole poem corpus by
 [`test/browser-render.test.js`](../test/browser-render.test.js), so the two
 paths cannot silently diverge.
+
+## Aggregate renderers — index.html and all-poems.html
+
+Alongside the single-poem renderer, [`src/browser/render-aggregate.js`](../src/browser/render-aggregate.js)
+exports two fs-free aggregate renderers — the browser-safe analogue of
+`build-all-poems.js`'s `concatenateAllHtmlFiles`/`generateIndexHtml`, for a
+hosted app (Poetic Fiddle) that renders a site's index/all-poems pages from an
+in-memory list of poems (e.g. rows fetched from a database) rather than `.poem`
+files on disk.
+
+```js
+const { renderAllPoems, renderIndex } = require('poetic/browser');
+// or: import { renderAllPoems, renderIndex } from 'poetic/browser';
+
+// Every poem's fragment concatenated onto one page behind a filterable/
+// sortable table of contents.
+const allPoemsHtml = renderAllPoems(poems, { config, title, favicon });
+
+// A poem-data JSON island consumed client-side by index.js.
+const indexHtml = renderIndex(poems, { config, title, subtitle, favicon });
+```
+
+`poems` is an array of `{ data, slug }`:
+
+- `data` is a poem's **raw parsed poem-data**, from the framework's
+  `PoemParser` (`src/tools/poem-parser.js`): `new PoemParser(text).parse()`.
+  Pass the object exactly as `parse()` returns it — **before** the
+  slug/display-date augmentation `renderPoem`/`renderPoemPage` apply
+  internally (via `parseAndAugment`). Keeping `data.date` in its raw
+  `YYYY-MM-DD` form lets these renderers derive both the human-readable
+  display date and the raw ISO date (used for `all-poems.html`'s date-range
+  filter and `index.html`'s JSON island) from the same value; a
+  pre-augmented, already display-formatted date cannot be converted back to
+  ISO.
+- `slug` is caller-supplied per poem, the same convention as `renderPoem`'s
+  `opts.slug` — an in-memory poem has no filename to derive one from.
+
+| Option     | Applies to     | Default            | Meaning |
+|------------|----------------|--------------------|---------|
+| `config`   | both           | `{}`               | The friendly subset of `.poetic-config` (drives song handlers). |
+| `title`    | both           | `My Poems`         | Site title (`<title>`/`<h1>`). |
+| `favicon`  | both           | `poetic-logo.svg`  | Favicon href (must already have any leading `public/` stripped). |
+| `subtitle` | `renderIndex`  | `My Poems`         | Nav subtitle. |
+
+`renderAllPoems` sorts poems oldest-first (matching the Node build); `renderIndex`
+sorts its JSON island alphabetically by slug. Neither performs the Node build's
+self-heal/merge-into-an-existing-`index.html` step — that step rewrites a static
+file incrementally across builds and has no fs-free analogue; a hosted page is
+re-rendered fresh from current data on every request instead.
+
+Both share [`src/tools/aggregate-render-core.js`](../src/tools/aggregate-render-core.js)
+— pure, fs-free templating helpers — with `build-all-poems.js`, the same
+single-source-of-truth pattern `render-core.js` uses for the single-poem path
+(see "How it stays filesystem-free" below), so the Node and browser aggregate
+outputs cannot silently diverge; asserted by
+[`test/browser-render-aggregate.test.js`](../test/browser-render-aggregate.test.js).
 
 ## Packaging & consumption
 
@@ -57,8 +113,8 @@ imports through these, not a deep `poetic/src/...` path (which `exports`
 deliberately leaves unresolvable):
 
 ```js
-const { renderPoem, renderPoemPage } = require('poetic/browser');
-// or: import { renderPoem, renderPoemPage } from 'poetic/browser';
+const { renderPoem, renderPoemPage, renderAllPoems, renderIndex } = require('poetic/browser');
+// or: import { renderPoem, renderPoemPage, renderAllPoems, renderIndex } from 'poetic/browser';
 ```
 
 ```js
@@ -119,10 +175,10 @@ disk. Three couplings are broken for the browser graph:
    object, so the browser entry just accepts it as `opts.config` — no file read.
 
 The whole graph reachable from the entry (`poem-parser`, `render-core`,
-`song-handlers` + `song-handlers-data`, `poem-templates`, `slugify`,
-`date-utils`, plus the npm deps `markdown-it` and `js-yaml`) is filesystem-free.
-`test/browser-render.test.js` asserts it loads **zero Node built-ins** and
-references no `__dirname`/`__filename`.
+`aggregate-render-core`, `song-handlers` + `song-handlers-data`,
+`poem-templates`, `slugify`, `date-utils`, plus the npm deps `markdown-it` and
+`js-yaml`) is filesystem-free. `test/browser-render.test.js` asserts it loads
+**zero Node built-ins** and references no `__dirname`/`__filename`.
 
 ### Regenerating the generated modules
 

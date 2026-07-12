@@ -40,17 +40,6 @@ requests for its ID. Then:
 If a claim is abandoned (the draft PR is closed without merging), flip the
 row back to `open`.
 
-## TD26071302 Aggregate (index + all-poems) renderers are not browser-safe
-
-The browser renderer only covers a single poem (`renderPoem`/`renderPoemPage`).
-The index and all-poems aggregates are still produced solely by
-`build-all-poems.js`, which concatenates already-built HTML files off disk —
-there is no fs-free variant that renders an aggregate from an in-memory list of
-poems. Phase 2a of Poetic Fiddle (hosted publishing) needs that. When picking it
-up, add data-driven aggregate renderers alongside `src/browser/render.js`,
-reusing the same precompiled-template approach. See poetic-fiddle
-`docs/IMPLEMENTATION-PLAN.md` §3.2(3) and §5.
-
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -87,4 +76,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071201 | `\?` escape prefix is reserved but not yet implemented | not-debt | | docs/POEM-SYNTAX.md |
 | TD26071202 | Preamble grammar omits comment blocks despite the prose | resolved | 2026-07-12 | #24 |
 | TD26071301 | Browser renderer is not yet packaged for consumption | resolved | 2026-07-13 | #33 |
-| TD26071302 | Aggregate (index + all-poems) renderers are not browser-safe | open | | |
+| TD26071302 | Aggregate (index + all-poems) renderers are not browser-safe | resolved | 2026-07-13 | #34 |

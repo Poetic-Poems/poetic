@@ -20,18 +20,15 @@ const { hasResolvableSongs } = require("./song-handlers");
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
 const { needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested } = require("./needs-rebuild");
+const {
+  escapeAmpersand, buildPoemDataIsland, renderFreshIndexHtml, renderAllPoemsHtml,
+} = require("./aggregate-render-core");
 const beautify = require("js-beautify");
 
 // The builtin song handlers are a global build input (their YAML source, still
 // the human-authored form even though song-handlers.js now loads the generated
 // data module) — editing them must rebuild the aggregate pages.
 const BUILTIN_HANDLERS_PATH = path.join(REPO_ROOT, "src", "song-handlers.yaml");
-
-// Matches the HTML entity style already used elsewhere in these generated
-// pages (e.g. &#8212; for the em dash).
-function escapeAmpersand(str) {
-  return str.replace(/&/g, "&#38;");
-}
 
 // public/all-poems.js calls date-utils.js's parseDateForSorting() to sort the
 // table's date column, so date-utils.js must also be reachable as a plain
@@ -68,30 +65,6 @@ function concatenateAllHtmlFiles(
     // Read YAML files from the poems directory for metadata
     const yamlFiles = listPoemYamlFiles(poemsDir);
 
-    if (yamlFiles.length === 0) {
-      return {
-        html: `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>No Poems Found</title>
-    <link rel="stylesheet" href="poetic.css">
-    <link rel="stylesheet" href="custom.css">
-</head>
-<body>
-    <div class="container">
-        <div class="poem-section text-center">
-            <h1>No Poems Found</h1>
-            <p>No YAML files were found in the poems directory.</p>
-        </div>
-    </div>
-</body>
-</html>`,
-        errorCount: 0,
-      };
-    }
-
     // Extract poem data from YAML files
     const poemData = [];
     yamlFiles.forEach((file) => {
@@ -115,23 +88,11 @@ function concatenateAllHtmlFiles(
           return;
         }
 
-        const anchor = `poem-${fileName}`;
         const date = data.date ? formatDateForDisplay(data.date) : "Unknown Date";
         const isoDate = data.date ? toISODate(data.date) : "";
-        const hasSongLink = hasResolvableSongs(data.audio, config);
-        const labels = Array.isArray(data.labels) ? data.labels : [];
+        const hasAudio = hasResolvableSongs(data.audio, config);
 
-        poemData.push({
-          fileName,
-          slug,
-          title,
-          date,
-          isoDate,
-          anchor,
-          yamlPath,
-          hasSongLink,
-          labels,
-        });
+        poemData.push({ slug, title, date, isoDate, yamlPath, hasAudio });
       } catch (err) {
         console.warn(`Warning: Could not read ${file}:`, err.message);
       }
@@ -144,110 +105,28 @@ function concatenateAllHtmlFiles(
       return aDate - bDate; // oldest first
     });
 
-    // Regenerate anchors based on sorted order
-    poemData.forEach((poem) => {
-      poem.anchor = `poem-${poem.fileName}`;
-    });
-
-    // Compute the corpus min/max ISO dates (ignoring poems without a date) so
-    // the filter bar's date-range inputs can be bounded to the actual data.
-    const isoDates = poemData.map((poem) => poem.isoDate).filter(Boolean);
-    const minIsoDate = isoDates.length ? isoDates.reduce((a, b) => (a < b ? a : b)) : "";
-    const maxIsoDate = isoDates.length ? isoDates.reduce((a, b) => (a > b ? a : b)) : "";
-    const dateBoundsAttrs = isoDates.length ? ` min="${minIsoDate}" max="${maxIsoDate}"` : "";
-
-    let concatenatedContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${siteTitle} &#8212; Concatenated View</title>
-    <link rel="icon" href="${favicon}" type="image/svg+xml">
-    <link rel="stylesheet" href="poetic.css">
-    <link rel="stylesheet" href="custom.css">
-    <script src="poetic.js" defer></script>
-    <script src="date-utils.js" defer></script>
-    <script src="all-poems.js" defer></script>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>${siteTitle}</h1>
-            <p class="subtitle">Concatenated view of all poems (${poemData.length} poems)</p>
-            <a href="index.html" class="back-link">← Back to Main Page</a>
-        </div>
-
-        <div class="filter-bar" id="filterBar">
-            <label class="filter-field">
-                <span class="filter-icon" aria-hidden="true">🔍</span>
-                <input type="search" id="poemFilter" class="filter-input" placeholder="Filter poems…" aria-label="Filter poems by text" autocomplete="off">
-            </label>
-            <div class="scope-toggle" role="group" aria-label="Search scope">
-                <button type="button" class="scope-led is-on" id="scopeTitles" aria-pressed="true"><span class="led" aria-hidden="true"></span>Titles</button>
-                <button type="button" class="scope-led is-on" id="scopeLyrics" aria-pressed="true"><span class="led" aria-hidden="true"></span>Lyrics</button>
-                <button type="button" class="scope-led is-on" id="scopeLabels" aria-pressed="true"><span class="led" aria-hidden="true"></span>Labels</button>
-            </div>
-            <div class="date-range">
-                <label class="date-field">From <input type="date" id="dateFrom" class="filter-date"${dateBoundsAttrs}></label>
-                <label class="date-field">To <input type="date" id="dateTo" class="filter-date"${dateBoundsAttrs}></label>
-            </div>
-            <button type="button" class="filter-reset" id="filterReset">Clear</button>
-            <span class="filter-count" id="filterCount" aria-live="polite"></span>
-        </div>
-
-        <div class="toc">
-            <h2>Table of Contents</h2>
-            <table class="toc-table" id="poemTable">
-                <thead>
-                    <tr>
-                        <th class="sortable" aria-sort="none"><button type="button" class="sort-button" data-column="0" data-sort-type="title">Poem Title</button></th>
-                        <th class="sortable" aria-sort="none"><button type="button" class="sort-button" data-column="1" data-sort-type="date">Poem Date</button></th>
-                        <th class="sortable" aria-sort="none"><button type="button" class="sort-button" data-column="2" data-sort-type="audio">🎵 Audio</button></th>
-                    </tr>
-                </thead>
-                <tbody id="poemTableBody">`;
-
-    // Add table rows with poem data
-    poemData.forEach((poem) => {
-      const audioIcon = poem.hasSongLink ? "🎵" : "";
-      concatenatedContent += `<tr>
-                        <td><a href="#${poem.anchor}">${poem.title}</a></td>
-                        <td>${poem.date}</td>
-                        <td class="audio-cell">${audioIcon}</td>
-                    </tr>`;
-    });
-
-    concatenatedContent += `</tbody>
-            </table>
-        </div>`;
-
-    // Render each poem fragment in-memory (no file reads)
+    // Render each poem fragment in-memory (no file reads) — a poem whose
+    // fragment fails to render is excluded from the aggregate entirely
+    // (table of contents row included), not just its poem-section.
     let errorCount = 0;
+    const entries = [];
     poemData.forEach((poem) => {
       try {
         const poemDataObj = loadPoemData(poem.yamlPath);
         if (!poemDataObj) {
           throw new Error(`Failed to load poem data from ${poem.yamlPath}`);
         }
-        const poemContent = renderFragment(poemDataObj, { config });
-
-        concatenatedContent += `
-        <div class="poem-section" id="${poem.anchor}" data-date="${poem.isoDate || ''}">
-            <h2 class="poem-title"><a href="${poem.slug}/">${poem.title}</a></h2>
-            <div class="poem-content">${poemContent}</div>
-        </div>`;
+        const content = renderFragment(poemDataObj, { config });
+        entries.push({ ...poem, content });
       } catch (err) {
         console.error(`Error rendering poem '${poem.title}' (${poem.yamlPath}):`, err.message);
         errorCount++;
       }
     });
 
-    concatenatedContent += `
-    </div>
-</body>
-</html>`;
+    const html = renderAllPoemsHtml(entries, { siteTitle, favicon });
 
-    return { html: concatenatedContent, errorCount };
+    return { html, errorCount };
   } catch (err) {
     return {
       html: `<!DOCTYPE html><html><body><h1>Error reading directory</h1><p>${err.message}</p></body></html>`,
@@ -322,16 +201,12 @@ function generateIndexHtml(
     });
 
     // Poem data consumed by public/index.js at runtime, embedded as a JSON
-    // data island rather than interpolated into a JS blob — see the
-    // `poemDataIsland` block below. JSON.stringify does not escape "<", so a
-    // poem title containing "</script>" would end the <script> element early
-    // in the browser; escape every "<" as the equivalent JSON string escape
-    // (JSON.parse restores it) before it reaches either the refresh branch
+    // data island rather than interpolated into a JS blob — see
+    // buildPoemDataIsland (aggregate-render-core.js) for the "<" escaping
+    // this relies on, needed before it reaches either the refresh branch
     // below or the fresh-template/migration paths that also use this value.
     const poemDataJson = JSON.stringify(poemData, null, 2).replace(/</g, '\\u003c');
-    const poemDataIsland =
-      `<script type="application/json" id="poem-data">\n${poemDataJson}\n    </script>\n` +
-      `    <script src="index.js" defer></script>`;
+    const poemDataIsland = buildPoemDataIsland(poemData);
 
     const indexPath = path.join(publicDir, "index.html");
 
@@ -415,37 +290,11 @@ function generateIndexHtml(
     } else {
       // Create a default index.html template
       const siteTitle = escapeAmpersand(config.title || "My Poems");
-      indexContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${siteTitle}</title>
-    <link rel="icon" href="${favicon}" type="image/svg+xml">
-    <link rel="stylesheet" href="poetic.css">
-    <link rel="stylesheet" href="custom.css">
-    <script src="poetic.js" defer></script>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>${siteTitle}</h1>
-            <p class="subtitle">${subtitle || "My Poems"}</p>
-        </div>
-
-        <!-- The title filter bar is inserted here by renderPoems()/setupHomeFilter() in index.js. -->
-        <div class="poem-grid" id="poemGrid">
-            <!-- Poems will be populated by JavaScript -->
-        </div>
-
-        <div class="links">
-            <a href="all-poems.html">View All Poems</a>
-        </div>
-    </div>
-
-    ${poemDataIsland}
-</body>
-</html>`;
+      indexContent = renderFreshIndexHtml(poemData, {
+        siteTitle,
+        subtitle: subtitle || "My Poems",
+        favicon,
+      });
     }
 
     return indexContent;

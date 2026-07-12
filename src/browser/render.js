@@ -3,14 +3,19 @@
  *
  *   renderPoem(text, opts)      → an HTML fragment for the live preview
  *   renderPoemPage(text, opts)  → a full standalone HTML document (SSR share pages)
+ *   renderAllPoems(poems, opts) → an all-poems.html document from an in-memory
+ *                                 list of poems (see ./render-aggregate.js)
+ *   renderIndex(poems, opts)    → an index.html document from an in-memory
+ *                                 list of poems (see ./render-aggregate.js)
  *
- * Both run in a plain JS runtime (browser or edge) with NO filesystem access,
- * `__dirname`, or Pug compiler. The entire dependency graph reachable from here
- * is filesystem-free — poem-parser, render-core, song-handlers (+ generated
- * song-handlers-data), the precompiled poem-templates, slugify, date-utils, and
- * the two npm deps markdown-it and js-yaml. test/browser-render.test.js asserts
- * that no module in this graph touches `fs`/`path`/`__dirname`, and asserts
- * byte-for-byte parity with the Node build path over the poem corpus.
+ * All four run in a plain JS runtime (browser or edge) with NO filesystem
+ * access, `__dirname`, or Pug compiler. The entire dependency graph reachable
+ * from here is filesystem-free — poem-parser, render-core, aggregate-render-core,
+ * song-handlers (+ generated song-handlers-data), the precompiled poem-templates,
+ * slugify, date-utils, and the two npm deps markdown-it and js-yaml.
+ * test/browser-render.test.js asserts that no module in this graph touches
+ * `fs`/`path`/`__dirname`, and asserts byte-for-byte parity with the Node build
+ * path over the poem corpus (for renderPoem/renderPoemPage).
  *
  * SECURITY — poem content in Fiddle is UNTRUSTED. This renderer is built on
  * markdown-it with `html: true` and performs NO sanitisation (the framework's
@@ -25,6 +30,7 @@ const { resolveContextVars, songsFor } = require('../tools/render-core');
 const { renderFragmentTemplate, renderPageTemplate } = require('../tools/poem-templates');
 const { slugify } = require('../tools/slugify');
 const { formatDateForDisplay } = require('../tools/date-utils');
+const { renderAllPoems, renderIndex } = require('./render-aggregate');
 
 /**
  * Parse `.poem` source and augment it exactly as the Node build does before
@@ -76,4 +82,6 @@ function renderPoemPage(text, opts = {}) {
   return renderPageTemplate({ ...data, favicon, subtitle, songs, labelBase: '../' });
 }
 
-module.exports = { renderPoem, renderPoemPage, parseAndAugment };
+module.exports = {
+  renderPoem, renderPoemPage, parseAndAugment, renderAllPoems, renderIndex,
+};
