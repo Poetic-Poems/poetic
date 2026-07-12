@@ -2,7 +2,7 @@
 
 // End-to-end tests for scripts/sync-framework.sh.
 //
-// The script hardcodes the upstream URL (https://github.com/warwickallen/poetic.git)
+// The script hardcodes the upstream URL (https://github.com/Poetic-Poems/poetic.git)
 // and always resets the `poetic` remote to it, so we can't just point a remote at a
 // local fixture. Instead each test builds a throwaway "upstream" git repo and a
 // "consumer" git repo, then sets `url.<upstream-path>.insteadOf <github-url>` in the
@@ -19,7 +19,7 @@ const { execFileSync, spawnSync } = require('child_process');
 const { REPO_ROOT } = require('../src/tools/repo-root');
 
 const SCRIPT_SRC = path.join(REPO_ROOT, 'scripts', 'sync-framework.sh');
-const POETIC_URL = 'https://github.com/warwickallen/poetic.git';
+const POETIC_URL = 'https://github.com/Poetic-Poems/poetic.git';
 
 // Isolate git from the developer's global/system config (identity, gpg signing,
 // hook paths, existing insteadOf rules) so runs are deterministic everywhere.

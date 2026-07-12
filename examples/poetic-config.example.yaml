@@ -3,7 +3,7 @@
 # .poetic-config.yaml (at the repo root), uncomment, and fill in your values.
 #
 # Full reference: docs/BUILD.md and docs/BLOGGER.md in the poetic framework
-# repo (https://github.com/warwickallen/poetic).
+# repo (https://github.com/Poetic-Poems/poetic).
 #
 # This file itself is framework-owned and kept in sync by
 # scripts/sync-framework.sh — do not edit your copy of it; edit your repo's

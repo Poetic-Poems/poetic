@@ -46,7 +46,7 @@ own CLAUDE.md says as much, and syncing would overwrite hand edits anyway.
    `git push`, per standard push-confirmation practice. This applies even if
    step 7 (sync) was pre-approved, since push and sync are separable actions.
 6. **Push** the provider commit to its remote once confirmed. Consumers sync
-   from the GitHub remote (`warwickallen/poetic.git`), not from a local
+   from the GitHub remote (`Poetic-Poems/poetic.git`), not from a local
    checkout, so the push must land before syncing will see the change.
 7. **Sync down** into each consumer repo:
    ```bash

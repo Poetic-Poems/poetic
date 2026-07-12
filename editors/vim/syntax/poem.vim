@@ -3,7 +3,7 @@
 " Maintainer:   (maintainer name)
 " Last Change:  2026-07-06
 " Filenames:    *.poem
-" URL:          https://github.com/warwickallen/poetic
+" URL:          https://github.com/Poetic-Poems/poetic
 
 if exists("b:current_syntax")
   finish
