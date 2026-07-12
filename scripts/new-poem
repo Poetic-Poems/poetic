@@ -1,6 +1,6 @@
 #!/bin/bash -e
 #
-# new-poem — scaffold a new .poem file, open it in vi, and build.
+# new-poem — scaffold a new .poem file, open it in $EDITOR (default vi), and build.
 #
 # Usage:
 #   scripts/new-poem TITLE
@@ -50,5 +50,5 @@ Write your first line here.
 POEM
 
 echo "Created $path"
-vi "$path"
+${EDITOR:-vi} "$path"
 npm run build

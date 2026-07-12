@@ -55,7 +55,7 @@ scripts/edit-poem ^at           # open any poem whose filename starts with "at"
 
 ## `scripts/new-poem`
 
-Scaffold a new `.poem` file, open it in vi, and build.
+Scaffold a new `.poem` file, open it in `$EDITOR` (default `vi`), and build.
 
 ### Usage
 
@@ -84,12 +84,11 @@ scripts/new-poem "Kintsugi"           # creates src/poems/poem/kintsugi.poem
 
 ### Notes
 
-- The generated file has one empty `{Stanza 1}` segment — fill it in, save,
-  and quit vi to trigger the build.
-- The editor is always `vi`, and the build always runs after vi exits
-  (unlike `edit-poem`, which only rebuilds if the file changed) since a
-  newly scaffolded poem has never been built. To use a different editor,
-  call it directly instead and run `npm run build` manually.
+- The generated file has one `{Stanza 1}` segment with a placeholder line —
+  replace it, save, and quit the editor to trigger the build.
+- The editor is `$EDITOR` if set, otherwise `vi`. The build always runs after
+  the editor exits (unlike `edit-poem`, which only rebuilds if the file
+  changed) since a newly scaffolded poem has never been built.
 
 ---
 
