@@ -9,6 +9,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`scripts/new-poem TITLE`.** Scaffolds a new `.poem` file (kebab-cased
+  filename, today's date, one empty stanza), opens it in vi, and builds —
+  a one-command alternative to copying `_example.poem` by hand for the
+  common case of starting a poem from scratch.
+
 ### Fixed
 
 - **`poem-syntax.ebnf`'s preamble grammar now derives comment blocks.** The

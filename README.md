@@ -153,9 +153,8 @@ In your repo settings, set Pages source to **GitHub Actions**. The included work
 ### 4. Write your first poem
 
 ```bash
-cp src/poems/poem/_example.poem src/poems/poem/my-poem.poem
-# Open my-poem.poem in your text editor and edit it, then:
-npm run build
+scripts/new-poem My Poem Title
+# Fill in the stanza, save, and quit — new-poem builds automatically.
 npm start   # open http://localhost:8080
 ```
 
@@ -184,7 +183,14 @@ See [`docs/POEM-SYNTAX.md`](docs/POEM-SYNTAX.md) for the full specification and 
 ### Create a poem
 
 ```bash
-# Write a new poem
+# Scaffold, edit, and build in one step
+scripts/new-poem My Poem Title
+```
+
+For a poem that exercises every syntax feature as a starting point instead of
+the minimal scaffold, copy the example file directly:
+
+```bash
 cp src/poems/poem/_example.poem src/poems/poem/my-poem.poem
 # Edit it, then build
 npm run build
@@ -307,7 +313,7 @@ To switch channels, edit `.poetic-version` and change the `channel` line.
 - [`docs/YAML-SCHEMA.md`](docs/YAML-SCHEMA.md) — YAML schema for poems
 - [`docs/POEM-TO-YAML.md`](docs/POEM-TO-YAML.md) — converter documentation
 - [`docs/BUILD.md`](docs/BUILD.md) — GitHub Pages deployment details
-- [`docs/SCRIPTS.md`](docs/SCRIPTS.md) — shell scripts reference (`edit-poem`, `sync-framework.sh`, etc.)
+- [`docs/SCRIPTS.md`](docs/SCRIPTS.md) — shell scripts reference (`new-poem`, `edit-poem`, `sync-framework.sh`, etc.)
 - [`docs/VIM-SYNTAX.md`](docs/VIM-SYNTAX.md) — Vim syntax highlighting setup
 - [`docs/QUICKSTART-VIM.md`](docs/QUICKSTART-VIM.md) — quick Vim setup guide
 
