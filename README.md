@@ -4,25 +4,31 @@
 Write poems in a concise `.poem` format, build them into HTML,
 and optionally publish to GitHub Pages.
 
-> Your poems are more than things to look at—  
-> they want a URL, a stage, a view.  
-> Write them in the `.poem` format,  
-> and *Poetic* does the rest for you.  
->  
-> Label stanzas, add a song link,  
-> build to HTML and, when you're done,  
-> push to GitHub—faster than you'd think—  
-> then your words reach everyone.  
->  
-> The pipeline runs from `.poem` to page  
-> with YAML, Pug, and scripts between;  
-> just four lines set a valid stage—  
-> the workflow's tidy, calm, and clean.  
->  
-> Use the template, start your drafting,  
-> `npm run build` and the deed is done;  
-> the only question worth the asking  
-> is why you haven't yet begun.  
+<p align="center">
+  <img src="public/2026-07-12%2018_55_55-Poetic-Poems_poetic_%20A%20plain-text%20poem%20authoring%20framework.png" alt="Split screenshot: the plain-text .poem source for &quot;A Poem Kept&quot; on GitHub (left) next to its built HTML page rendered by the local Poetic dev server (right), showing the same poem as typed source and as styled output.">
+</p>
+
+<details>
+<summary>Poem text: "A Poem Kept" (for screen readers)</summary>
+
+> A poem kept is still a poem —  
+> a letter no one thought to post.  
+> Four lines are all it needs for home:  
+> a title, a name, a date, a ghost.  
+> Give it a tune, if it wants to sing,  
+> then build: beneath the quiet floor  
+> it's passed along, a whispered thing,  
+> through tongues it never heard before.  
+> Then push. One keystroke and it's gone —  
+> not lost; the opposite of lost.  
+> The drawer forgets it. Further on,  
+> a border's being quietly crossed.  
+> And somewhere, at an hour unknown,  
+> in rooms you'll never be inside,  
+> a stranger mouths it on their own,  
+> and, line by line, you coincide.
+
+</details>
 
 ## What it does
 
