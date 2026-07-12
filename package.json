@@ -23,6 +23,7 @@
     "stop:win": "for /f \"tokens=5\" %a in ('netstat -ano ^| findstr :8080') do taskkill /PID %a /F",
     "build:poems": "node src/tools/build-poems.js",
     "build:yaml": "node src/tools/poem-to-yaml.js --all",
+    "build:generated": "node src/tools/build-song-handlers-data.js && node src/tools/build-templates.js",
     "poem-to-raw": "node src/tools/poem-to-raw.js",
     "build": "npm run poem-to-raw && npm run build:yaml && npm run build:poems && node src/tools/build-all-poems.js",
     "build:all": "npm run build && npm run start",

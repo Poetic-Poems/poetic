@@ -16,10 +16,12 @@ const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles,
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
 const { needsRebuild, forceRebuildRequested } = require("./needs-rebuild");
-const { BUILTIN_HANDLERS_PATH } = require("./song-handlers");
-
 const POEMS_DIR = path.join(REPO_ROOT, "src", "poems", "yaml");
 const PUBLIC_DIR = path.join(REPO_ROOT, "public");
+// The builtin song handlers are a global build input (their YAML source, still
+// the human-authored form even though song-handlers.js now loads the generated
+// data module) — editing them must rebuild every page.
+const BUILTIN_HANDLERS_PATH = path.join(REPO_ROOT, "src", "song-handlers.yaml");
 
 /**
  * Process all YAML files in the poems directory.

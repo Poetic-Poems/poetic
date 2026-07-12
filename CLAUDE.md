@@ -20,7 +20,11 @@ use this framework via `scripts/sync-framework.sh`.
 
 ```
 src/tools/        ← build scripts (Node.js) — the core of the framework
+                    (incl. generated song-handlers-data.js + poem-templates.js;
+                    regenerate with `npm run build:generated`)
 src/templates/    ← Pug template
+src/browser/      ← browser-safe renderer entry (renderPoem/renderPoemPage) —
+                    see docs/RENDERER-BROWSER.md; keep it filesystem-free
 src/poems/        ← example/test poems used for developing the framework
 public/           ← generated HTML (build artefact)
 scripts/          ← shell helpers synced to consumer repos
@@ -51,8 +55,9 @@ npm run check:build    # verify expected build artefacts exist after `npm run bu
 3. `.poetic-version` in the consumer repo records which commit/tag is synced
 4. GitHub Action `sync-framework.yml` can automate syncing on a schedule
 
-Files synced to consumers: `src/tools/`, `src/templates/`, `scripts/`, `editors/`, `package.json`,
-`package-lock.json`, and a few root-level files. **Consumer poem source files are never touched.**
+Files synced to consumers: `src/tools/`, `src/templates/`, `src/browser/`, `scripts/`, `editors/`,
+`package.json`, `package-lock.json`, and a few root-level files. **Consumer poem source files are
+never touched.**
 
 ## Poem file format (brief)
 
@@ -170,6 +175,7 @@ visible to other agents/developers before the fix lands.
 | `docs/POEM-SYNTAX.md` | Complete `.poem` format spec |
 | `docs/YAML-SCHEMA.md` | YAML poem schema |
 | `docs/POEM-TO-YAML.md` | Converter (poem-to-yaml.js) docs |
+| `docs/RENDERER-BROWSER.md` | Browser-safe renderer (`renderPoem`/`renderPoemPage`) |
 | `docs/BUILD.md` | GitHub Pages deployment |
 | `poem-syntax.ebnf` | Formal EBNF grammar |
 | `docs/VIM-SYNTAX.md` | Vim integration docs |
