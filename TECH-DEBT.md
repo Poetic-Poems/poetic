@@ -99,5 +99,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071111 | Incremental-rebuild dependency tracking is approximate | resolved | 2026-07-12 | #14 |
 | TD26071201 | `\?` escape prefix is reserved but not yet implemented | not-debt | | docs/POEM-SYNTAX.md |
 | TD26071202 | Preamble grammar omits comment blocks despite the prose | resolved | 2026-07-12 | #24 |
-| TD26071301 | Browser renderer is not yet packaged for consumption | open | | |
+| TD26071301 | Browser renderer is not yet packaged for consumption | in-progress | | |
 | TD26071302 | Aggregate (index + all-poems) renderers are not browser-safe | open | | |
