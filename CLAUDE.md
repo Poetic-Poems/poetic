@@ -90,6 +90,19 @@ owner reviews there and requests changes if needed. This does not extend to acti
 itself (direct commits/pushes are rejected by the branch protection anyway) or to
 force-pushing/merging, which still require explicit instruction.
 
+In this workspace, a local `post-checkout` Git hook refreshes the local `main` branch from
+`origin/main` after switching to `main`, helping keep the branch aligned with GitHub while
+working locally.
+
+After opening (or updating) a pull request, confirm it is actually mergeable via `gh`
+(e.g. `gh pr view <n> --json mergeable,mergeStateStatus`) — in addition to, not instead
+of, whatever local checks the agent already ran. The remote can diverge from what the
+agent last saw locally (another PR merging to `main` first, for example), so this check
+has to happen after the PR exists, against GitHub's own view of it, not inferred from the
+local working tree. If it comes back conflicting, resolve the conflict (e.g. rebase onto
+the current `main`) and push the fix; force-pushing to update a branch still requires
+explicit instruction, per above.
+
 ## Release process
 
 `package.json`'s `version` field is the single source of truth. To release, open a pull
