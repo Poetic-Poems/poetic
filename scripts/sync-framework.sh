@@ -151,6 +151,7 @@ FRAMEWORK_PATHS=(
   scripts/remove-trailing-spaces.sh
   scripts/setup-linux.sh
   scripts/sync-framework.sh
+  src/browser
   src/poems/poem/_example.poem
   src/poems/poem/_minimal.poem
   src/poems/poem/_params-example.poem

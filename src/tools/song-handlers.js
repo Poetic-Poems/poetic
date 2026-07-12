@@ -49,21 +49,20 @@
  *   substituteTemplate(template, scope)      - low-level {token} expansion
  */
 
-const fs = require('fs');
-const path = require('path');
-const yaml = require('js-yaml');
+const BUILTIN_HANDLERS = require('./song-handlers-data');
 
-const BUILTIN_HANDLERS_PATH = path.join(__dirname, '..', 'song-handlers.yaml');
-
-/** Read the framework's builtin handler definitions. */
+/**
+ * Read the framework's builtin handler definitions.
+ *
+ * Returns a deep clone so callers and the merge in loadSongHandlers() can never
+ * mutate the shared module data. The builtins are authored in
+ * src/song-handlers.yaml and emitted to ./song-handlers-data.js (a plain,
+ * fs-free data module) by build-song-handlers-data.js — so this module, and the
+ * browser renderer that depends on it (src/browser/render.js), stay
+ * filesystem-free. Do NOT reintroduce `fs`/`path`/`__dirname` here.
+ */
 function loadBuiltinHandlers() {
-  try {
-    const parsed = yaml.load(fs.readFileSync(BUILTIN_HANDLERS_PATH, 'utf8'));
-    return (parsed && typeof parsed === 'object') ? parsed : {};
-  } catch (err) {
-    console.error(`Error reading builtin song handlers (${BUILTIN_HANDLERS_PATH}): ${err.message}`);
-    return {};
-  }
+  return JSON.parse(JSON.stringify(BUILTIN_HANDLERS));
 }
 
 /** True for a non-null, non-array object (a "plain" mergeable map). */
@@ -398,5 +397,4 @@ module.exports = {
   resolveSongs,
   hasResolvableSongs,
   substituteTemplate,
-  BUILTIN_HANDLERS_PATH,
 };

@@ -16,11 +16,16 @@ const { slugFromFile } = require("./slugify");
 const { parseDateForSorting, formatDateForDisplay, toISODate } = require("./date-utils");
 const { readPoeticConfig, CONFIG_FILENAME } = require("./poetic-config");
 const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, FRAGMENT_TEMPLATE } = require("./poem-render");
-const { hasResolvableSongs, BUILTIN_HANDLERS_PATH } = require("./song-handlers");
+const { hasResolvableSongs } = require("./song-handlers");
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
 const { needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested } = require("./needs-rebuild");
 const beautify = require("js-beautify");
+
+// The builtin song handlers are a global build input (their YAML source, still
+// the human-authored form even though song-handlers.js now loads the generated
+// data module) — editing them must rebuild the aggregate pages.
+const BUILTIN_HANDLERS_PATH = path.join(REPO_ROOT, "src", "song-handlers.yaml");
 
 // Matches the HTML entity style already used elsewhere in these generated
 // pages (e.g. &#8212; for the em dash).
