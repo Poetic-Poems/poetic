@@ -95,7 +95,7 @@ jobs:
           current_ref="${{ steps.pinned.outputs.ref }}"
           current_commit="${{ steps.pinned.outputs.commit }}"
           override_ref="${{ github.event.inputs.ref }}"
-          poetic_url="https://github.com/warwickallen/poetic.git"
+          poetic_url="https://github.com/Poetic-Poems/poetic.git"
 
           if [ -n "$override_ref" ]; then
             target_ref="$override_ref"
@@ -162,7 +162,7 @@ jobs:
           git push origin "$branch"
 
           printf '%s\n' \
-            "Automated sync of framework files from [warwickallen/poetic](https://github.com/warwickallen/poetic)." \
+            "Automated sync of framework files from [Poetic-Poems/poetic](https://github.com/Poetic-Poems/poetic)." \
             "" \
             "| | |" \
             "|---|---|" \

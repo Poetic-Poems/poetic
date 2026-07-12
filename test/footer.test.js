@@ -108,7 +108,7 @@ test('DEFAULT_FOOTER_SOURCE matches the documented default and the shipped defau
 test('renderFooter: the framework-shipped default footer names Poetic and links the logo', () => {
   const block = renderFooter({}, REPO_ROOT, { base: '../' });
   assert.match(block, /Built with Poetic/);
-  assert.match(block, /href="https:\/\/github\.com\/warwickallen\/poetic"/);
+  assert.match(block, /href="https:\/\/github\.com\/Poetic-Poems\/poetic"/);
   assert.match(block, /src="\.\.\/poetic-logo\.svg"/);
 });
 

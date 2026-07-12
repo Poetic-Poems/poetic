@@ -116,7 +116,7 @@ Pick the approach that suits you:
 **Clone + rewire steps:**
 
 ```bash
-git clone https://github.com/warwickallen/poetic.git my-poems
+git clone https://github.com/Poetic-Poems/poetic.git my-poems
 cd my-poems
 git remote set-url origin https://github.com/YOUR-USERNAME/my-poems.git   # point at your own repo
 ```
@@ -225,7 +225,7 @@ Files beginning with `_` (e.g. `_example.poem`, `_shared.yaml`) are excluded fro
 
 ### Versioning
 
-Poetic releases are numbered `vMAJOR.MINOR.PATCH` (for example, `v1.2.0`). Each release is tagged on the `main` branch and listed under [Releases](https://github.com/warwickallen/poetic/releases) on GitHub.
+Poetic releases are numbered `vMAJOR.MINOR.PATCH` (for example, `v1.2.0`). Each release is tagged on the `main` branch and listed under [Releases](https://github.com/Poetic-Poems/poetic/releases) on GitHub.
 
 `package.json`'s `version` field is the single source of truth: releasing means opening a pull request that bumps that field (titled `chore: release vX.Y.Z`) and squash-merging it into `main`. The [release workflow](.github/workflows/release.yml) then tags that commit and publishes the GitHub release automatically, so the tag can never drift out of sync with `package.json`.
 
@@ -304,7 +304,7 @@ To switch channels, edit `.poetic-version` and change the `channel` line.
 
 ## Contributing
 
-If you improve a framework file (a tool, template, editor integration, or doc), please open a pull request against [warwickallen/poetic](https://github.com/warwickallen/poetic). Personal poems and your `README.md` stay in your own repo.
+If you improve a framework file (a tool, template, editor integration, or doc), please open a pull request against [Poetic-Poems/poetic](https://github.com/Poetic-Poems/poetic). Personal poems and your `README.md` stay in your own repo.
 
 `main` is a protected branch: it does not accept direct commits or pushes, so all changes — including from maintainers and AI agents — go through a pull request. The repo only allows squash merging, so a merged PR always becomes a single commit on `main`.
 
@@ -339,7 +339,7 @@ git config core.hooksPath .githooks
 
 ### Getting help
 
-If something is not working or you have a question, [open an issue](https://github.com/warwickallen/poetic/issues) on GitHub.
+If something is not working or you have a question, [open an issue](https://github.com/Poetic-Poems/poetic/issues) on GitHub.
 
 ### Learning the tools
 

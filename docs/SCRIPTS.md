@@ -88,7 +88,7 @@ On macOS or native Linux without nvm, the script is a transparent pass-through
 
 ## `scripts/sync-framework.sh`
 
-Pull framework files from the upstream `warwickallen/poetic` repository into
+Pull framework files from the upstream `Poetic-Poems/poetic` repository into
 this repo.
 
 The poetic framework owns the build tools, templates, editor integrations, and

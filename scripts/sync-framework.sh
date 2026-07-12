@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# sync-framework.sh — pull framework files from warwickallen/poetic into this repo.
+# sync-framework.sh — pull framework files from Poetic-Poems/poetic into this repo.
 #
 # The poetic framework owns the build tools, templates, editor integrations, and
 # documentation.  This script fetches the requested ref from the upstream repo,
@@ -25,7 +25,7 @@
 
 set -euo pipefail
 
-POETIC_URL="https://github.com/warwickallen/poetic.git"
+POETIC_URL="https://github.com/Poetic-Poems/poetic.git"
 POETIC_REMOTE="poetic"
 VERSION_FILE=".poetic-version"
 SELF_PATH="scripts/sync-framework.sh"
