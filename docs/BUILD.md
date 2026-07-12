@@ -565,6 +565,19 @@ skip_paths:
   - public/poetic-footer.html
 ```
 
+#### Automatic framework sync
+
+Set `auto_sync.enabled: true` to run the `Sync framework from poetic` GitHub Actions workflow on a schedule (`auto_sync.schedule`: `hourly`, `daily`, or `weekly`, default `weekly`). It opens a pull request with the latest framework-owned files whenever the pinned version is out of date — review and merge it like any other PR.
+
+The workflow pushes its sync branch using `GITHUB_TOKEN` by default, which GitHub blocks from touching `.github/workflows/*.yml` regardless of the permissions granted to it (a deliberate restriction so Actions runs can't silently rewrite workflow files). Since the framework's own workflow files are among the synced paths, a sync that changes one of them will fail to open its PR unless a `SYNC_PAT` repository secret is configured:
+
+1. Create a personal access token with permission to write workflow files:
+   - **Fine-grained token** (recommended): repository access limited to this repo, with **Contents: Read and write**, **Pull requests: Read and write**, and **Workflows: Read and write** permissions.
+   - **Classic token**: `repo` and `workflow` scopes.
+2. In the consumer repo go to **Settings → Secrets and variables → Actions → New repository secret** and add it as `SYNC_PAT`.
+
+Without `SYNC_PAT`, the workflow still runs and opens PRs normally for every other framework-owned path — it only fails on syncs that touch `.github/workflows/*.yml`.
+
 ### Publishing to Blogger
 
 Poetic supports optional automatic publishing of poems to a Blogger blog. The feature is off by default and is enabled per-consumer via `.poetic-config.yaml`. See [`docs/BLOGGER.md`](BLOGGER.md) for the full setup guide, including one-time Google OAuth authorisation, GitHub secrets, and theme parity steps.

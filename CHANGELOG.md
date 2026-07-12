@@ -18,6 +18,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`Sync framework from poetic` no longer fails outright when the sync touches
+  a workflow file.** The default `GITHUB_TOKEN` can never push changes to
+  `.github/workflows/*.yml` (a GitHub restriction, not a permissions
+  misconfiguration), so any sync that updated one of the framework's own
+  workflow files failed to open its PR. The workflow now uses an optional
+  `SYNC_PAT` repository secret (a PAT with the `workflow` scope) when present,
+  falling back to `GITHUB_TOKEN` otherwise — see "Automatic framework sync" in
+  `docs/BUILD.md` for setup.
 - **`poem-syntax.ebnf`'s preamble grammar now derives comment blocks.** The
   `preamble_item` production references `comment_block`, and the "comment
   blocks can appear anywhere" allowance is now backed by a documented lexical
