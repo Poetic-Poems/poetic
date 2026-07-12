@@ -21,7 +21,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and guarded by freshness tests), and `song-handlers.js`/`slugify.js` are now
   filesystem-free. The renderer output is unsanitised by design — see
   `docs/RENDERER-BROWSER.md` for the API and the consumer-side sanitisation
-  requirement.
+  requirement. `package.json` now declares an `exports` map (`poetic/browser`,
+  `poetic/browser/poetic.css`) so a consumer app can `npm install
+  github:Poetic-Poems/poetic#<tag>` and import the renderer plus the preview
+  CSS at a pinned version, without publishing this (still-`private`) package
+  to npm — see "Packaging & consumption" in `docs/RENDERER-BROWSER.md`.
 - **`scripts/new-poem TITLE`.** Scaffolds a new `.poem` file (kebab-cased
   filename, today's date, one empty stanza), opens it in the users' default
   editor (dafaults to vi), and builds — a one-command alternative to copying

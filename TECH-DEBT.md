@@ -40,19 +40,6 @@ requests for its ID. Then:
 If a claim is abandoned (the draft PR is closed without merging), flip the
 row back to `open`.
 
-## TD26071301 Browser renderer is not yet packaged for consumption
-
-`src/browser/render.js` (`renderPoem`/`renderPoemPage`) is browser-safe and
-importable within this repo, but nothing lets a separate app (e.g. Poetic
-Fiddle) consume it at a pinned version: this package is `private: true`,
-publishes nothing, declares no `exports`/entry map, and the preview CSS
-(`public/poetic.css`, needed for full styled fidelity) is not exposed as a
-package asset either. Until this is decided a consumer can only vendor a pinned
-copy by hand. Pick the packaging path — a small published package scoped to the
-renderer, or a tag-pinned git dependency — and expose the renderer entry plus
-the preview CSS through it, pinned to a poetic version. See
-`docs/RENDERER-BROWSER.md` and poetic-fiddle `docs/IMPLEMENTATION-PLAN.md` §6.1.
-
 ## TD26071302 Aggregate (index + all-poems) renderers are not browser-safe
 
 The browser renderer only covers a single poem (`renderPoem`/`renderPoemPage`).
@@ -99,5 +86,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071111 | Incremental-rebuild dependency tracking is approximate | resolved | 2026-07-12 | #14 |
 | TD26071201 | `\?` escape prefix is reserved but not yet implemented | not-debt | | docs/POEM-SYNTAX.md |
 | TD26071202 | Preamble grammar omits comment blocks despite the prose | resolved | 2026-07-12 | #24 |
-| TD26071301 | Browser renderer is not yet packaged for consumption | open | | |
+| TD26071301 | Browser renderer is not yet packaged for consumption | resolved | 2026-07-13 | #33 |
 | TD26071302 | Aggregate (index + all-poems) renderers are not browser-safe | open | | |

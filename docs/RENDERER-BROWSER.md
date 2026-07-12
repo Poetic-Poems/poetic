@@ -11,7 +11,8 @@ The entry point is [`src/browser/render.js`](../src/browser/render.js).
 ## API
 
 ```js
-const { renderPoem, renderPoemPage } = require('poetic/src/browser/render');
+const { renderPoem, renderPoemPage } = require('poetic/browser');
+// or: import { renderPoem, renderPoemPage } from 'poetic/browser';
 
 // A styled HTML fragment (no <html>/<head>/<body>) — for a live preview.
 const fragment = renderPoem(sourceText, { config, slug });
@@ -32,6 +33,47 @@ Both functions produce output **byte-for-byte identical** to the Node build path
 asserted over the whole poem corpus by
 [`test/browser-render.test.js`](../test/browser-render.test.js), so the two
 paths cannot silently diverge.
+
+## Packaging & consumption
+
+`poetic` stays `private: true` — it is not published to the npm registry. Its
+usual distribution path to a poem-collection repo is
+`scripts/sync-framework.sh` (a file sync, not an npm dependency; see the root
+`CLAUDE.md`), which doesn't fit an app like Poetic Fiddle that needs to
+`import` the renderer as code. Instead, a consumer installs `poetic` as a
+**git dependency pinned to a tag or commit**:
+
+```bash
+npm install github:Poetic-Poems/poetic#v6.0.0
+```
+
+(swap `v6.0.0` for whichever tag/commit to pin to — `package.json`'s `version`
+field is the single source of truth for tags; see the root `CLAUDE.md`
+"Release process". A commit SHA works the same way if pinning between
+releases.)
+
+`package.json` declares an `exports` map with two subpaths — a consumer
+imports through these, not a deep `poetic/src/...` path (which `exports`
+deliberately leaves unresolvable):
+
+```js
+const { renderPoem, renderPoemPage } = require('poetic/browser');
+// or: import { renderPoem, renderPoemPage } from 'poetic/browser';
+```
+
+```js
+// Resolves to this repo's committed public/poetic.css.
+const cssPath = require.resolve('poetic/browser/poetic.css');
+```
+
+`public/poetic.css` is framework-authored, hand-maintained CSS — committed
+source, not a build artefact (it is not listed in `.gitignore`, unlike the
+generated `public/*.html`) — so it is present immediately after a git-dependency
+install, with no `npm run build` step required. A consumer reads it however
+suits its bundler (inline the contents, copy it into a static asset pipeline,
+etc.) to get full styled fidelity alongside `renderPoem`'s output; `custom.css`
+is poem-collection-specific and is never synced or exported, so it has no
+package equivalent.
 
 ## Security — the output is UNTRUSTED
 
@@ -108,5 +150,5 @@ missed regeneration.
   path needs none.
 - **Preview CSS.** Full styled fidelity needs `public/poetic.css` (and any
   `custom.css`); that is a stylesheet asset the consumer bundles, not part of
-  the renderer. Exposing it as part of a package is part of the packaging
-  question (`TECH-DEBT.md` TD26071301).
+  the renderer itself. It is exposed alongside the renderer as
+  `poetic/browser/poetic.css` — see "Packaging & consumption" above.
