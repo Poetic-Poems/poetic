@@ -20,6 +20,14 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          # GITHUB_TOKEN can never push changes to .github/workflows/* (GitHub
+          # blocks this regardless of the `permissions:` block, to stop
+          # Actions runs silently rewriting workflow files). A framework sync
+          # routinely touches those files, so use a PAT with the `workflow`
+          # scope when the consumer has configured one; fall back to
+          # GITHUB_TOKEN otherwise (sync still works, just can't push
+          # workflow-file changes — same as before this was added).
+          token: ${{ secrets.SYNC_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Check for .poetic-version
         id: precheck
@@ -135,7 +143,7 @@ jobs:
       - name: Open pull request
         if: steps.precheck.outputs.skip == 'false' && steps.check.outputs.up_to_date == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.SYNC_PAT || secrets.GITHUB_TOKEN }}
         run: |
           target_ref="${{ steps.check.outputs.target_ref }}"
           target_commit="${{ steps.check.outputs.target_commit }}"
