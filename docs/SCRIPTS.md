@@ -53,6 +53,45 @@ scripts/edit-poem ^at           # open any poem whose filename starts with "at"
 
 ---
 
+## `scripts/new-poem`
+
+Scaffold a new `.poem` file, open it in `$EDITOR` (default `vi`), and build.
+
+### Usage
+
+```bash
+scripts/new-poem TITLE
+```
+
+`TITLE` becomes the poem's title line. It is also kebab-cased into the
+filename, created at `src/poems/poem/<slug>.poem`, dated today. The author
+line is omitted, so it falls back to `${author}` from `.shared.poem` (see
+[`docs/POEM-SYNTAX.md`](POEM-SYNTAX.md)).
+
+### Examples
+
+```bash
+scripts/new-poem The Journey Home     # creates src/poems/poem/the-journey-home.poem
+scripts/new-poem "Kintsugi"           # creates src/poems/poem/kintsugi.poem
+```
+
+### Exit codes
+
+| Code | Meaning |
+|---|---|
+| `0` | Poem created, opened, and built |
+| `1` | `TITLE` missing, empty after slugifying, or a file with that slug already exists |
+
+### Notes
+
+- The generated file has one `{Stanza 1}` segment with a placeholder line —
+  replace it, save, and quit the editor to trigger the build.
+- The editor is `$EDITOR` if set, otherwise `vi`. The build always runs after
+  the editor exits (unlike `edit-poem`, which only rebuilds if the file
+  changed) since a newly scaffolded poem has never been built.
+
+---
+
 ## `scripts/setup-linux.sh`
 
 Wrapper that activates nvm before running a command.

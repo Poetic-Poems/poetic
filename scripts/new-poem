@@ -1,0 +1,54 @@
+#!/bin/bash -e
+#
+# new-poem — scaffold a new .poem file, open it in $EDITOR (default vi), and build.
+#
+# Usage:
+#   scripts/new-poem TITLE
+#
+# TITLE becomes the poem's title line and, kebab-cased, its filename:
+# src/poems/poem/<slug>.poem, dated today. The author line is omitted, so it
+# falls back to ${author} from .shared.poem (see docs/POEM-SYNTAX.md).
+#
+# Exit codes:
+#    0   poem created, opened, and built
+#    1   TITLE missing, empty after slugifying, or a file with that slug
+#        already exists
+#
+# Examples:
+#   scripts/new-poem The Journey Home     # creates src/poems/poem/the-journey-home.poem
+#   scripts/new-poem "Kintsugi"           # creates src/poems/poem/kintsugi.poem
+
+cd $(git rev-parse --show-toplevel)
+
+title="$*"
+if [ -z "$title" ]; then
+  echo "Usage: scripts/new-poem TITLE" >&2
+  exit 1
+fi
+
+# Lowercase, then collapse every run of non a-z0-9 characters (spaces,
+# punctuation) into a single hyphen, trimming any leading/trailing hyphen.
+slug=$(echo "$title" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//')
+if [ -z "$slug" ]; then
+  echo "Could not derive a filename from title '$title'" >&2
+  exit 1
+fi
+
+path="src/poems/poem/$slug.poem"
+if [ -e "$path" ]; then
+  echo "$path already exists" >&2
+  exit 1
+fi
+
+cat > "$path" <<POEM
+$title
+$(date +%Y-%m-%d)
+
+{Stanza 1}
+Write your first line here.
+
+POEM
+
+echo "Created $path"
+${EDITOR:-vi} "$path"
+npm run build
