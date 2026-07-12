@@ -90,9 +90,9 @@ owner reviews there and requests changes if needed. This does not extend to acti
 itself (direct commits/pushes are rejected by the branch protection anyway) or to
 force-pushing/merging, which still require explicit instruction.
 
-In this workspace, a local `post-checkout` Git hook refreshes the local `main` branch from
-`origin/main` after switching to `main`, helping keep the branch aligned with GitHub while
-working locally.
+In this workspace, a local `post-checkout` Git hook in `.githooks/` refreshes the local
+`main` branch from `origin/main` after switching to `main`, helping keep the branch aligned
+with GitHub while working locally.
 
 After opening (or updating) a pull request, confirm it is actually mergeable via `gh`
 (e.g. `gh pr view <n> --json mergeable,mergeStateStatus`) — in addition to, not instead
