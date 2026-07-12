@@ -135,6 +135,8 @@ git push -u origin main           # push to GitHub (-u only needed the first tim
 
 `.poetic-version` identifies this repo as a poem collection (as opposed to the framework repo itself) and records which version of the framework you are tracking. It is required for automatic updates to work.
 
+If you are working in this workspace, a local Git hook in `.git/hooks/post-checkout` will refresh the local `main` branch from `origin/main` whenever you switch to `main`, helping keep the branch aligned with GitHub.
+
 ### 3. Enable GitHub Pages
 
 In your repo settings, set Pages source to **GitHub Actions**. The included workflow (`.github/workflows/build-poems.yml`) then builds and deploys your site on every push to `main`.
