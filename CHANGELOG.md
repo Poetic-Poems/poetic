@@ -58,6 +58,31 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [6.0.0] — 2026-07-12
 
+## [6.0.1] — 2026-07-13
+
+### Added
+
+- **Browser-safe aggregate renderers.** `renderAllPoems(poems, opts)` and
+  `renderIndex(poems, opts)` provide browser-safe aggregate rendering
+  (commit 81f8ce7).
+- **Expose browser renderer via `package.json` exports.** Consumers can now
+  import the browser renderer and preview CSS from the package exports
+  (commit c541ae2).
+- **`scripts/new-poem` command.** Scaffolds a new `.poem` file and opens it in
+  the user's editor (commit 3ad2c5d).
+- **`LICENCE-POEMS.md` added** (commit 115b153).
+
+### Fixed
+
+- **`sync-framework.sh` workflow pushes.** Use of an optional `SYNC_PAT`
+  avoids failing PRs when workflow files are updated (commit 0ca7c9f).
+
+### Documentation
+
+- Miscellaneous documentation and housekeeping updates (commits 67e9487,
+  8ca7c7f, bc2c8c2).
+
+
 ### Added
 
 - **Line continuation with a trailing backslash.** A line ending in a backslash
