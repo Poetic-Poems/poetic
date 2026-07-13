@@ -157,6 +157,11 @@ scripts/new-poem My Poem Title
 # Fill in the stanza, save, and quit — new-poem builds automatically.
 npm start   # open http://localhost:8080
 ```
+> [!IMPORTANT]
+> Before you publish, open [`LICENCE-POEMS.md`](LICENCE-POEMS.md) and
+> replace the placeholder name and year with your own. This sets the
+> licence your poems are published under, separately from Poetic's
+> own MIT licence for the code (see [`LICENCE`](LICENCE)).
 
 ## Poem format
 
