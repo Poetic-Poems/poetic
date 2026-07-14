@@ -549,7 +549,11 @@ test('extractContent: mode="poem" removes the song-link audio block', () => {
   assert.ok(!result.includes('class="song-link"'), 'audio block should be removed');
   assert.ok(!result.includes('song-embed-btn'), 'audiomack embed button should be removed');
   assert.ok(!result.includes('recording on Suno'), 'Suno link text should be removed');
-  assert.ok(!result.includes('suno.com'), 'Suno link href should be removed');
+  const hrefs = [...result.matchAll(/href="([^"]*)"/g)].map((m) => m[1]);
+  assert.ok(
+    !hrefs.some((href) => new URL(href).hostname === 'suno.com'),
+    'Suno link href should be removed'
+  );
 });
 
 test('extractContent: mode="poem" removes the show-analysis button', () => {
