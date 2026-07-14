@@ -1189,6 +1189,61 @@ class PoemParser {
   }
 
   /**
+   * Match a single audio (song-service) line: a service name, either bare
+   * ("Audiomack") or with a value ("Suno: s/xyz"), plus an optional trailing
+   * param list ("Mega: id#key (video, ratio=21:9)"). The trailing " (...)"
+   * group is only recognised when preceded by whitespace and the line ends
+   * with ")", so a "(" embedded in a value (no preceding whitespace) stays
+   * part of the value.
+   *
+   * Hand-scanned rather than matched with a single regex: a lazy value
+   * capture immediately followed by an optional "(...)" group is vulnerable
+   * to polynomial backtracking (CodeQL js/polynomial-redos) once both can
+   * grow across the same input — see CHANGELOG.md.
+   *
+   * @param {string} trimmed - the already-trimmed, variable-substituted line
+   * @returns {{key: string, rawValue: (string|undefined), paramStr: (string|undefined)}|null}
+   */
+  matchAudioLine(trimmed) {
+    const idMatch = trimmed.match(/^[A-Za-z][\w-]*/);
+    if (!idMatch) {
+      return null;
+    }
+    const key = idMatch[0].toLowerCase();
+    let pos = idMatch[0].length;
+    while (pos < trimmed.length && /\s/.test(trimmed[pos])) pos++;
+
+    // Trailing " (...)" param list: the first whitespace-preceded "(" at or
+    // after `pos`, provided the line actually ends with ")".
+    let paramStr;
+    let valueEnd = trimmed.length;
+    if (trimmed.endsWith(')')) {
+      for (let i = pos; i < trimmed.length; i++) {
+        if (trimmed[i] === '(' && /\s/.test(trimmed[i - 1])) {
+          let wsStart = i;
+          while (wsStart > pos && /\s/.test(trimmed[wsStart - 1])) wsStart--;
+          paramStr = trimmed.slice(i);
+          valueEnd = wsStart;
+          break;
+        }
+      }
+    }
+
+    let rawValue;
+    if (trimmed[pos] === ':') {
+      pos++;
+      while (pos < valueEnd && /\s/.test(trimmed[pos])) pos++;
+      rawValue = trimmed.slice(pos, valueEnd);
+    } else if (pos !== valueEnd) {
+      // Trailing content after the identifier that is neither a ": value"
+      // nor a recognised param list — not a service line.
+      return null;
+    }
+
+    return { key, rawValue, paramStr };
+  }
+
+  /**
    * Parse audio section
    */
   parseAudio() {
@@ -1212,18 +1267,13 @@ class PoemParser {
       // ("Suno: s/xyz", "YouTube: dQw4…"), plus an optional trailing param list
       // ("Mega: id#key (video, ratio=21:9)"). The service becomes a lower-cased
       // key; a song handler (builtin or from .poetic-config.yaml) renders it
-      // later. The trailing " (...)" group is matched separately so it is not
-      // swallowed into the value (song values contain no whitespace-preceded
-      // "(", so a whitespace-preceded group is unambiguous). Anything that is
-      // not a service line stops the audio section, matching the behaviour for
-      // stray prose before a missing ==== marker.
-      const m = trimmed.match(/^([A-Za-z][\w-]*)\s*(?::\s*(.*?))?(?:\s+(\(.*\)))?$/);
+      // later. Anything that is not a service line stops the audio section,
+      // matching the behaviour for stray prose before a missing ==== marker.
+      const m = this.matchAudioLine(trimmed);
       if (!m) {
         break;
       }
-      const key = m[1].toLowerCase();
-      const rawValue = m[2];   // undefined for a bare service line
-      const paramStr = m[3];   // undefined when there is no trailing param list
+      const { key, rawValue, paramStr } = m;
 
       if (paramStr === undefined) {
         if (rawValue === undefined) {
