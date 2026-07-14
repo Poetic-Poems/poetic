@@ -333,10 +333,10 @@ After running:
   console.log('\n─────────────────────────────────────────────────────────');
   console.log('Next steps:');
   console.log('─────────────────────────────────────────────────────────');
-  console.log('1. Add these as GitHub Actions secrets in your repo:');
-  console.log(`   BLOGGER_CLIENT_ID     = ${clientId}`);
-  console.log(`   BLOGGER_CLIENT_SECRET = ${clientSecret}`);
-  console.log(`   BLOGGER_REFRESH_TOKEN = ${refreshToken || '<see above>'}`);
+  console.log('1. Add these as GitHub Actions secrets in your repo (values shown above):');
+  console.log('   BLOGGER_CLIENT_ID     = <redacted>');
+  console.log('   BLOGGER_CLIENT_SECRET = <redacted>');
+  console.log('   BLOGGER_REFRESH_TOKEN = <redacted>');
   console.log('2. Add to .poetic-config.yaml:');
   console.log('   blogger:');
   console.log('     sync: true');
