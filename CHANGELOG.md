@@ -82,6 +82,17 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   severity) — ~4.2s for a 100,000-char adversarial input. The line is now
   matched with a linear character scan instead, so matching is linear
   regardless of input.
+- **`poem-parser.js`'s directive-line, label-line, and reserved-`\?`-escape
+  matching no longer risk catastrophic regex backtracking.** `parseDirectiveLine()`,
+  the Metadata section's label matching, and `convertMarkup()`'s `\?`
+  reserved-escape check used
+  `/^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i`,
+  `/^\s*#([^&<>\\#\s]+?)(\s+#.*)?\s*$/i`, and the unanchored `/(\\+)\?/g`
+  respectively (CodeQL `js/polynomial-redos`, high severity, alerts 11-13) —
+  the last of these backtracks polynomially on a long backslash run with no
+  `?` anywhere in it (~33s for a 200,000-backslash input). All three are now
+  matched with a linear character scan instead, so matching is linear
+  regardless of input.
 - **`poem-to-raw.js`'s tag-stripping now runs to a fixed point.** `htmlToPlainText`
   previously ran its `<br>`/block-close/tag-strip replacements in a single pass,
   so a crafted nested sequence (e.g. `<scr<script>ipt>`) could have its inner

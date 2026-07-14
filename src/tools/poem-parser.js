@@ -1577,6 +1577,22 @@ class PoemParser {
   }
 
   /**
+   * Consume the optional trailing `#comment` (which requires at least one
+   * whitespace character before the `#`) and any trailing whitespace, from
+   * `start` to end of `line`. Returns `true` if the remainder of the line is
+   * exhausted this way, `false` if unconsumed non-whitespace content remains.
+   * Shared by parseDirectiveLine() and matchLabelLine(), whose PCRE
+   * equivalents both end in `(\s+#.*)?\s*$`.
+   */
+  matchesTrailingComment(line, start) {
+    const len = line.length;
+    let i = start;
+    while (i < len && /\s/.test(line[i])) i++;
+    if (i > start && line[i] === '#') return true;
+    return i === len;
+  }
+
+  /**
    * Recognise a directive line (`%name key:value ...`, with an optional trailing
    * `# comment`) and build its structured form. Returns `{ name, attributes? }`
    * — where `attributes` maps each `key:value` token (split on its first `:`)
@@ -1586,24 +1602,51 @@ class PoemParser {
    * Shared by the Metadata section (parseMetadata) and the Preamble pre-pass
    * (extractPreambleDirectives), so a directive parses identically wherever it
    * is declared.
+   *
+   * Scanned by hand rather than with
+   * /^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i: CodeQL
+   * (js/polynomial-redos) flags that pattern's repeated `key:value` group as
+   * vulnerable to polynomial backtracking on adversarial input.
    */
   parseDirectiveLine(line) {
-    const directiveRe = /^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i;
-    const m = line.match(directiveRe);
-    if (!m) return null;
+    const len = line.length;
+    let i = 0;
+    while (i < len && /\s/.test(line[i])) i++;
+    if (line[i] !== '%') return null;
+    i++;
 
-    const directive = { name: m[1] };
-    const attrsRaw = m[2] ? m[2].trim() : '';
-    if (attrsRaw !== '') {
-      const attributes = {};
-      for (const token of attrsRaw.split(/\s+/)) {
-        const colonIndex = token.indexOf(':');
-        const key = token.slice(0, colonIndex);
-        const value = token.slice(colonIndex + 1);
-        attributes[key] = value;
-      }
-      directive.attributes = attributes;
+    const nameStart = i;
+    while (i < len && /[\w.-]/.test(line[i])) i++;
+    if (i === nameStart) return null;
+    const name = line.slice(nameStart, i);
+
+    const attributes = {};
+    let hasAttributes = false;
+
+    while (true) {
+      let j = i;
+      while (j < len && /\s/.test(line[j])) j++;
+      if (j === i) break;
+
+      const keyStart = j;
+      while (j < len && /[\w.]/.test(line[j])) j++;
+      if (j === keyStart || line[j] !== ':') break;
+      const key = line.slice(keyStart, j);
+      j++;
+
+      const valueStart = j;
+      while (j < len && /[\w.-]/.test(line[j])) j++;
+      if (j === valueStart) break;
+
+      attributes[key] = line.slice(valueStart, j);
+      hasAttributes = true;
+      i = j;
     }
+
+    if (!this.matchesTrailingComment(line, i)) return null;
+
+    const directive = { name };
+    if (hasAttributes) directive.attributes = attributes;
     return directive;
   }
 
@@ -1614,6 +1657,32 @@ class PoemParser {
   pushDirective(directive) {
     if (!this.result.directives) this.result.directives = [];
     this.result.directives.push(directive);
+  }
+
+  /**
+   * Recognise a label line (`#label`, with an optional trailing `# comment`)
+   * and return the label text, or `null` when `line` is not a label.
+   *
+   * Scanned by hand rather than with
+   * /^\s*#([^&<>\\#\s]+?)(\s+#.*)?\s*$/i: CodeQL (js/polynomial-redos) flags
+   * that pattern's lazy label capture as vulnerable to polynomial
+   * backtracking on adversarial input.
+   */
+  matchLabelLine(line) {
+    const len = line.length;
+    let i = 0;
+    while (i < len && /\s/.test(line[i])) i++;
+    if (line[i] !== '#') return null;
+    i++;
+
+    const labelStart = i;
+    while (i < len && !/[\s&<>\\#]/.test(line[i])) i++;
+    if (i === labelStart) return null;
+    const label = line.slice(labelStart, i);
+
+    if (!this.matchesTrailingComment(line, i)) return null;
+
+    return label;
   }
 
   /**
@@ -1633,7 +1702,6 @@ class PoemParser {
   parseMetadata() {
     this.skipBlankLines();
 
-    const labelRe = /^\s*#([^&<>\\#\s]+?)(\s+#.*)?\s*$/i;
     const seenLabels = new Set();
 
     while (true) {
@@ -1662,9 +1730,8 @@ class PoemParser {
         continue;
       }
 
-      const labelMatch = line.match(labelRe);
-      if (labelMatch) {
-        const label = labelMatch[1];
+      const label = this.matchLabelLine(line);
+      if (label !== null) {
         if (!seenLabels.has(label)) {
           seenLabels.add(label);
           if (!this.result.labels) {
@@ -1684,17 +1751,32 @@ class PoemParser {
   }
 
   /**
+   * `\?` is reserved for a future extended-escape family (see
+   * docs/POEM-SYNTAX.md) and is an error until it is implemented. Only an
+   * ODD backslash run before `?` triggers it; `\\?` (even) is a literal `\`
+   * then `?`, decoded by the escape table in convertMarkup().
+   *
+   * Scanned by hand rather than with /(\\+)\?/g: that pattern is unanchored,
+   * so CodeQL (js/polynomial-redos) flags it as vulnerable to polynomial
+   * backtracking on a long backslash run not followed by `?` anywhere (same
+   * root cause as joinContinuedLines(), above).
+   */
+  checkReservedEscape(text) {
+    for (let searchIndex = 0; ;) {
+      const qIndex = text.indexOf('?', searchIndex);
+      if (qIndex === -1) break;
+      let runStart = qIndex;
+      while (runStart > 0 && text[runStart - 1] === '\\') runStart--;
+      if ((qIndex - runStart) % 2 === 1) throw this.reservedEscapeError();
+      searchIndex = qIndex + 1;
+    }
+  }
+
+  /**
    * Convert inline markup to HTML
    */
   convertMarkup(text) {
-    // `\?` is reserved for a future extended-escape family (see
-    // docs/POEM-SYNTAX.md) and is an error until it is implemented. Only an
-    // ODD backslash run before `?`
-    // triggers it; `\\?` (even) is a literal `\` then `?`, decoded by the escape
-    // table below.
-    for (const m of text.matchAll(/(\\+)\?/g)) {
-      if (m[1].length % 2 === 1) throw this.reservedEscapeError();
-    }
+    this.checkReservedEscape(text);
 
     // Process escapes first. The escape class also decodes `\%` → `%`, but NOT
     // `\%{`: `\%{name}` is the render-time context-variable literal escape and

@@ -551,15 +551,12 @@ A directive line has the form:
 %name key:value key2:value2   # optional comment
 ```
 
-Authoritative syntax:
+Authoritative grammar: `directive_line` in `poem-syntax.ebnf`.
 
-```
-/^ \s* %([\w.-]+) ((?:\s+[\w.]+:[\w.-]+)*) (\s+#.*)? \s*$/xi
-```
-
-- Capture group 1 is the directive name, made up of word characters, `.`, and `-`
-- Capture group 2 is zero or more whitespace-separated `key:value` attribute pairs
-- Capture group 3 is an optional trailing `# comment`
+- The directive name is made up of word characters, `.`, and `-`
+- Zero or more whitespace-separated `key:value` attribute pairs follow, each
+  split on its (only) `:` into a key and a value
+- An optional trailing `# comment` may follow
 
 A directive line may also appear in the [Preamble](#0-preamble-section), at the very top of the file, with this same syntax. When directives are declared in both the Preamble and the Metadata section, they are collected into a single `directives` list in source order — Preamble directives first, then Metadata directives. Directives are not de-duplicated (unlike labels): each directive line becomes its own entry, even if its name and attributes repeat.
 
@@ -573,14 +570,10 @@ A label line has the form:
 #label   # optional comment
 ```
 
-Authoritative syntax:
+Authoritative grammar: `label_line` in `poem-syntax.ebnf`.
 
-```
-/^ \s* #([^&<>\\#\s]+?) (\s+#.*)? \s*$/xi
-```
-
-- Capture group 1 is the label itself: a single run of characters excluding whitespace and `& < > \ #`
-- Capture group 2 is an optional trailing `# comment`, which is ignored
+- The label itself is a single run of characters excluding whitespace and `& < > \ #`
+- An optional trailing `# comment` may follow, which is ignored
 
 A `#` immediately followed by a non-space character starts a label (`#tag`); a `#` followed by whitespace starts a comment (`# words`) and is not treated as a label.
 

@@ -92,6 +92,62 @@ test('directives are collected in source order, duplicates allowed', () => {
   ]);
 });
 
+// ── ReDoS guards ─────────────────────────────────────────────────────────────
+//
+// Regression guards for CodeQL js/polynomial-redos alerts 11 (directive
+// lines) and 12 (label lines): parseDirectiveLine() and the Metadata
+// section's label matching used to be
+// /^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i and
+// /^\s*#([^&<>\\#\s]+?)(\s+#.*)?\s*$/i respectively. Neither reproduces a
+// measurable hang against quick local adversarial input (their repeated/lazy
+// groups don't overlap with disjoint tail character classes enough to force
+// real backtracking), but CodeQL flags both structurally; both are now
+// scanned by hand instead, which removes the flagged construct regardless.
+// These guards just confirm a large adversarial line is still rejected
+// promptly, not that a hang was ever reproduced.
+
+test('a directive line with many attribute tokens and invalid trailing content is rejected promptly', () => {
+  const line = '%name' + ' a:a'.repeat(50000) + ' !';
+  const parser = new PoemParser('');
+  const t0 = Date.now();
+  const directive = parser.parseDirectiveLine(line);
+  const elapsed = Date.now() - t0;
+  assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
+  assert.strictEqual(directive, null);
+});
+
+test('a directive line with many valid attribute tokens parses them all promptly', () => {
+  const line = '%name' + ' a:a'.repeat(50000);
+  const parser = new PoemParser('');
+  const t0 = Date.now();
+  const directive = parser.parseDirectiveLine(line);
+  const elapsed = Date.now() - t0;
+  assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
+  assert.strictEqual(directive.name, 'name');
+  assert.strictEqual(Object.keys(directive.attributes).length, 1); // same key repeated
+  assert.strictEqual(directive.attributes.a, 'a');
+});
+
+test('a label line with a long run of label characters and invalid trailing content is rejected promptly', () => {
+  const line = '#' + 'a'.repeat(100000) + '<';
+  const parser = new PoemParser('');
+  const t0 = Date.now();
+  const label = parser.matchLabelLine(line);
+  const elapsed = Date.now() - t0;
+  assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
+  assert.strictEqual(label, null);
+});
+
+test('a label line with a long run of valid label characters is parsed promptly', () => {
+  const line = '#' + 'a'.repeat(100000);
+  const parser = new PoemParser('');
+  const t0 = Date.now();
+  const label = parser.matchLabelLine(line);
+  const elapsed = Date.now() - t0;
+  assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
+  assert.strictEqual(label, 'a'.repeat(100000));
+});
+
 // ── Inline comments ──────────────────────────────────────────────────────────
 
 test('inline comments on label and directive lines are stripped', () => {

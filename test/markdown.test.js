@@ -72,6 +72,28 @@ test('a body line \\%foo decodes to %foo through the segment pipeline', () => {
   assert.strictEqual(segments[0].lines, '%foo\n');
 });
 
+test('a long backslash run with no "?" does not hang (ReDoS guard)', () => {
+  // Regression guard for CodeQL js/polynomial-redos (code-scanning-alert-13):
+  // checkReservedEscape() (called by convertMarkup()) used to detect the
+  // reserved "\?" escape with the unanchored /(\\+)\?/g, which — since a
+  // `?` need not exist anywhere in the text — backtracks polynomially
+  // trying every start position within a long backslash run (empirically
+  // ~33s for a 200,000-backslash input pre-fix; must now be near-instant).
+  // Exercised directly, bypassing convertMarkup(), whose unrelated
+  // escape-restoration loop is itself quadratic in the number of escapes
+  // and would dominate the timing at this input size.
+  const p = new PoemParser('');
+  const t0 = Date.now();
+  p.checkReservedEscape('\\'.repeat(200000));
+  const elapsed = Date.now() - t0;
+  assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
+});
+
+test('convertMarkup decodes a long even backslash run to half as many literal backslashes', () => {
+  const p = new PoemParser('');
+  assert.strictEqual(p.convertMarkup('\\'.repeat(2000)), '\\'.repeat(1000));
+});
+
 test('<<<markdown>>> block in a segment renders GFM with variable substitution', () => {
   const segments = parseSegments([
     '={who}=World',

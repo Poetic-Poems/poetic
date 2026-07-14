@@ -344,15 +344,12 @@ metadata_line = blank_line | metadata_comment_line | directive_line | label_line
    appear in the parsed output. *)
 metadata_comment_line = [ whitespace ], "#", ( whitespace | ? end of line ? ), { ? any character except newline ? } ;
 
-(* Directive line. The authoritative specification is this PCRE:
-
-     /^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i
-
-   Capture group 1 is the directive name; group 2 is zero or more
-   ' key:value' attribute tokens (each token is split on its FIRST ':' to
-   give the key and value, then collected into an `attributes` object -
-   omitted entirely from the parsed representation when group 2 is empty);
-   group 3 is an optional inline comment, discarded. *)
+(* Directive line. `directive_name` becomes the parsed directive's name; each
+   `directive_attribute` is a ' key:value' token (the key and value character
+   classes below both exclude ':', so each token has exactly one) collected
+   into an `attributes` object - omitted entirely from the parsed
+   representation when there are no attribute tokens; `inline_comment`, if
+   present, is discarded. *)
 directive_line = [ whitespace ], "%", directive_name,
                   { whitespace, directive_attribute },
                   [ whitespace, inline_comment ],
@@ -372,15 +369,11 @@ directive_attribute_value = directive_attribute_value_char, { directive_attribut
 
 directive_attribute_value_char = letter | digit | "_" | "." | "-" ;
 
-(* Label line. The authoritative specification is this PCRE:
-
-     /^\s*#([^&<>\\#\s]+?)(\s+#.*)?\s*$/i
-
-   Capture group 1 is the label text: a run of characters excluding '&',
-   '<', '>', '\', '#', and whitespace; capture group 2 is an optional inline
-   comment, discarded. Because group 1 excludes whitespace, '#' immediately
-   followed by whitespace never matches label_line - it matches
-   metadata_comment_line instead (see above). *)
+(* Label line. `label_token` becomes the parsed label text: a run of
+   characters excluding '&', '<', '>', '\', '#', and whitespace;
+   `inline_comment`, if present, is discarded. Because `label_token` excludes
+   whitespace, '#' immediately followed by whitespace never matches
+   label_line - it matches metadata_comment_line instead (see above). *)
 label_line = [ whitespace ], "#", label_token, [ whitespace, inline_comment ], [ whitespace ] ;
 
 label_token = label_token_char, { label_token_char } ;
