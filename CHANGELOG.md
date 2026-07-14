@@ -142,7 +142,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `.poetic-config.yaml` with a `song_handlers.__proto__` (or a nested
   handler's `__proto__`/`constructor`) key could write properties directly
   onto the live `Object.prototype`, affecting every object in the process.
-  Both loops now skip these key names outright.
+  Both loops now skip these key names outright via a direct `key === '__proto__'
+  || key === 'constructor' || key === 'prototype'` equality check — CodeQL's
+  guard recognition for this query only treats an inline equality test as a
+  sanitizing barrier, not an indirect membership check (e.g. a `Set`/array
+  lookup), so the alert stayed open under an earlier version of this fix that
+  blocked the same keys via `Set.has()`.
 
 ## [6.0.0] — 2026-07-12
 
