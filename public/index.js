@@ -5,6 +5,17 @@
 // or patched — only the JSON island's content changes across builds.
 const allPoems = JSON.parse(document.getElementById('poem-data').textContent);
 
+// poem.file is always a slugified relative path (see slugFromFile in
+// slugify.js — lowercase alphanumerics and hyphens only), but it reaches
+// this script via a JSON island read from the DOM, so nothing here can
+// assume it's safe to use as a navigation target as-is. Reject anything
+// that isn't a plain relative path before it's ever assigned to href, so a
+// scheme (e.g. "javascript:") or a protocol-relative "//host" can't slip
+// through as a poem's file.
+function safePoemHref(file) {
+    return typeof file === 'string' && /^[a-zA-Z0-9._-]+(?:\/[a-zA-Z0-9._-]+)*\/?$/.test(file) ? file : '#';
+}
+
 function formatPoemDate(dateStr) {
     const parts = dateStr.split('-').map(Number);
     if (parts.length !== 3 || parts.some(isNaN)) return dateStr;
@@ -56,7 +67,7 @@ function renderPoems() {
         titleDiv.className = 'poem-title';
 
         const link = document.createElement('a');
-        link.href = poem.file;
+        link.href = safePoemHref(poem.file);
         link.textContent = poem.title;
         titleDiv.appendChild(link);
 
@@ -91,7 +102,7 @@ function renderPoems() {
         }
 
         card.addEventListener('click', () => {
-            window.location.href = poem.file;
+            window.location.href = safePoemHref(poem.file);
         });
 
         grid.appendChild(card);
