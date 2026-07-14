@@ -103,16 +103,35 @@ function directoryExists(dirPath) {
   }
 }
 
+// Escapes text for safe interpolation into HTML (as element content or
+// inside a double-quoted attribute value).
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Builds a same-origin href from a slash-separated path, percent-encoding
+// each segment so a crafted file/directory name can't break out of the
+// attribute or be interpreted as a "javascript:"-style URI scheme.
+function encodeHref(pathname) {
+  return pathname.split("/").map(encodeURIComponent).join("/");
+}
+
 function generateDirectoryListing(dirPath, relativePath = "/") {
   try {
     const items = fs.readdirSync(dirPath, { withFileTypes: true });
+    const safeRelativePath = escapeHtml(relativePath);
 
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Directory Listing - ${relativePath}</title>
+    <title>Directory Listing - ${safeRelativePath}</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; background: #f5f5f5; }
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -134,7 +153,7 @@ function generateDirectoryListing(dirPath, relativePath = "/") {
 <body>
     <div class="container">
         <h1>Directory Listing</h1>
-        <div class="path">${relativePath}</div>
+        <div class="path">${safeRelativePath}</div>
         ${
           relativePath !== "/"
             ? '<a href=".." class="back-link">← Parent Directory</a>'
@@ -148,8 +167,9 @@ function generateDirectoryListing(dirPath, relativePath = "/") {
         ${items
           .map((item) => {
             const isDir = item.isDirectory();
-            const href =
+            const rawHref =
               relativePath === "/" ? item.name : `${relativePath}/${item.name}`;
+            const href = encodeHref(rawHref);
             const icon = isDir ? "📁" : "📄";
             const className = isDir ? "folder" : "file";
 
@@ -165,8 +185,8 @@ function generateDirectoryListing(dirPath, relativePath = "/") {
 
             return `<div class="item">
             <span class="icon ${className}">${icon}</span>
-            <a href="${href}">${item.name}</a>
-            ${size ? `<span class="size">${size}</span>` : ""}
+            <a href="${href}">${escapeHtml(item.name)}</a>
+            ${size ? `<span class="size">${escapeHtml(size)}</span>` : ""}
           </div>`;
           })
           .join("")}
@@ -176,7 +196,7 @@ function generateDirectoryListing(dirPath, relativePath = "/") {
 
     return html;
   } catch (err) {
-    return `<!DOCTYPE html><html><body><h1>Error reading directory</h1><p>${err.message}</p></body></html>`;
+    return `<!DOCTYPE html><html><body><h1>Error reading directory</h1><p>${escapeHtml(err.message)}</p></body></html>`;
   }
 }
 
