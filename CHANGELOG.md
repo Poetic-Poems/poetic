@@ -70,7 +70,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   title or label could inject arbitrary HTML/JavaScript into the page
   (CodeQL `js/xss-through-dom`, high severity). Poem cards are now built with
   `createElement`/`textContent`/`appendChild`, so poem data is never parsed
-  as HTML.
+  as HTML. `poem.file` is also validated by a new `safePoemHref()` allowlist
+  before it's assigned to an anchor's `href` or `window.location.href`, so a
+  scheme (e.g. `javascript:`) or a protocol-relative `//host` can't be used
+  as a navigation target.
 
 ## [6.0.0] — 2026-07-12
 
