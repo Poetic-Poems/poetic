@@ -42,6 +42,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`convertMarkup()`'s escape restoration is no longer quadratic in the number
+  of escapes.** It restored each escaped character with its own
+  `String.prototype.replace()` call inside a loop over the escapes `Map`, and
+  each call rescanned the whole placeholder-laden string from the start —
+  O(N²) overall for N escapes (empirically ~900ms for 50,000 escapes; tens of
+  seconds projected for 200,000). Restoration now runs in a single global-regex
+  pass over the text, so it's linear regardless of input size. No change to
+  the restored content.
 - **`Sync framework from poetic` no longer fails outright when the sync touches
   a workflow file.** The default `GITHUB_TOKEN` can never push changes to
   `.github/workflows/*.yml` (a GitHub restriction, not a permissions

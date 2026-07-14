@@ -1834,10 +1834,10 @@ class PoemParser {
     text = text.replace(/&(?!#\d+;|[a-z]+;)/gi, '&#38;');
     text = text.replace(/'/g, '&#39;');
 
-    // Restore escapes
-    for (const [placeholder, char] of escapes.entries()) {
-      text = text.replace(placeholder, char);
-    }
+    // Restore escapes in a single pass over the text, rather than one
+    // replace() (and full rescan) per escape.
+    // eslint-disable-next-line no-control-regex -- \x00 matches the placeholder format built above
+    text = text.replace(/\x00ESCAPE\d+\x00/g, (placeholder) => escapes.get(placeholder));
 
     // Hard line break: trailing two-or-more spaces before a newline (or end-of-string)
     // are converted to a hard line break <br/>. This applies outside literal blocks
