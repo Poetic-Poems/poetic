@@ -64,15 +64,25 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tag stripped while reconstituting the outer one, leaving a literal `<script>`
   in the "sanitised" plain-text output (CodeQL `js/incomplete-multi-character-sanitization`,
   high severity). The replacements now loop until the string stops changing.
-- **`yaml-to-poem.js`'s entity decoding no longer double-decodes.**
-  `convertEntitiesToMarkup` decoded `&#38;` (the numeric entity for `&`) partway
-  through its pass, so its output `&` could combine with left-over
-  digits/punctuation into a new entity-shaped sequence — e.g. `&#38;#8220;`,
-  literally the text `&#8220;`, reconstituted into `&#8220;` mid-pipeline — which
-  a still-pending replace then decoded a second time, corrupting literal text
-  into markup (CodeQL `js/double-escaping`, high severity). `&#38;` is now
-  decoded last, after every other entity pattern has already run, so no
-  replace can ever see reconstituted output from an earlier one.
+- **`public/index.js`'s poem card rendering no longer builds HTML via
+  `innerHTML` template literals.** `renderPoems()` interpolated `poem.title`
+  and `poem.labels` values directly into an `innerHTML` string, so a crafted
+  title or label could inject arbitrary HTML/JavaScript into the page
+  (CodeQL `js/xss-through-dom`, high severity). Poem cards are now built with
+  `createElement`/`textContent`/`appendChild`, so poem data is never parsed
+  as HTML. `poem.file` is also validated by a new `safePoemHref()` allowlist
+  before it's assigned to an anchor's `href` or `window.location.href`, so a
+  scheme (e.g. `javascript:`) or a protocol-relative `//host` can't be used
+  as a navigation target.
+- **`serve-static.js`'s generated directory listing no longer interpolates
+  filenames and the requested path into HTML unescaped.** `generateDirectoryListing()`
+  built each entry's link and the page's title/path directly from
+  `fs.readdirSync` filenames and the request path, so a file or directory
+  named with HTML markup would have that markup execute in the browser of
+  anyone who viewed the listing (CodeQL `js/stored-xss`, high severity).
+  Entry names and the current path are now HTML-escaped before insertion,
+  and `href`s are built from percent-encoded path segments so a crafted name
+  can't break out of the attribute or be read as a URI scheme.
 
 ## [6.0.0] — 2026-07-12
 
