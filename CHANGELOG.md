@@ -89,6 +89,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Entry names and the current path are now HTML-escaped before insertion,
   and `href`s are built from percent-encoded path segments so a crafted name
   can't break out of the attribute or be read as a URI scheme.
+- **`sync-blogger.test.js`'s Suno-link-removal assertion no longer relies on a
+  raw substring check.** The test asserted `!result.includes('suno.com')` to
+  confirm the Suno anchor was stripped, but a substring check like this would
+  also incorrectly pass a crafted `href` such as `https://suno.com.evil.example`
+  (CodeQL `js/incomplete-url-substring-sanitization`, high severity). The
+  assertion now extracts each remaining `href` and compares its parsed
+  hostname exactly against `suno.com`.
 - **`yaml-to-poem.js`'s entity decoding no longer double-decodes reconstituted
   entities.** `convertEntitiesToMarkup` decoded `&#38;` (the numeric entity for
   `&`) partway through its pass, so the `&` it produced could combine with
