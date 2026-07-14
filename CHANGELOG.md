@@ -64,6 +64,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   severity) — a redundant echo, since the client ID/secret were entered by the
   operator and the refresh token was already shown once in the SUCCESS banner
   above. The summary now prints `<redacted>` placeholders instead.
+- **`poem-parser.js`'s audio (song-service) line matching no longer risks
+  catastrophic regex backtracking.** `parseAudio()` located a service name,
+  optional value, and optional trailing `(...)` param list with
+  `/^([A-Za-z][\w-]*)\s*(?::\s*(.*?))?(?:\s+(\(.*\)))?$/`, whose lazy value
+  capture and optional trailing group overlap, so an audio line that
+  repeatedly looks like it might open a param list but never closes one
+  could backtrack polynomially (CodeQL `js/polynomial-redos`, high
+  severity) — ~4.2s for a 100,000-char adversarial input. The line is now
+  matched with a linear character scan instead, so matching is linear
+  regardless of input.
 - **`poem-to-raw.js`'s tag-stripping now runs to a fixed point.** `htmlToPlainText`
   previously ran its `<br>`/block-close/tag-strip replacements in a single pass,
   so a crafted nested sequence (e.g. `<scr<script>ipt>`) could have its inner

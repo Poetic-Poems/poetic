@@ -111,3 +111,19 @@ test('bare service line with a param list records media on a true value', () => 
   const audio = parseAudio(['Audiomack (video)']);
   assert.deepStrictEqual(audio.audiomack, { value: true, media: 'video' });
 });
+
+test('a long unterminated "(...)"-like run does not hang (ReDoS guard)', () => {
+  // Regression guard for CodeQL js/polynomial-redos: parseAudio() used to
+  // locate the trailing param list with
+  // /^([A-Za-z][\w-]*)\s*(?::\s*(.*?))?(?:\s+(\(.*\)))?$/, whose lazy value
+  // capture and optional trailing "(...)" group overlap, causing polynomial
+  // backtracking on input that repeatedly looks like it might open a param
+  // list but never closes one (~4.2s for a 100,000-char adversarial input
+  // pre-fix; must now be near-instant).
+  const line = 'Suno:' + ' ('.repeat(50000) + 'b';
+  const t0 = Date.now();
+  const audio = parseAudio([line]);
+  const elapsed = Date.now() - t0;
+  assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
+  assert.strictEqual(audio.suno, line.slice('Suno:'.length).trim());
+});
