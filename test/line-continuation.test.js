@@ -71,6 +71,23 @@ test('EOF dangling continuation: odd run on the very last line keeps floor(N/2) 
   assert.strictEqual(segments[0].lines, 'tail\\\n');
 });
 
+test('a long backslash run not at end-of-line does not hang (ReDoS guard)', () => {
+  // Regression guard for CodeQL js/polynomial-redos: joinContinuedLines() used
+  // to locate the trailing run with /(\\+)(\r?)$/, which backtracks
+  // polynomially when a long backslash run turns out not to be anchored at
+  // the string end (~8.5s for 100,000 backslashes pre-fix; must now be
+  // near-instant). Exercised directly, bypassing convertMarkup, so this test
+  // is specific to the trailing-run scan.
+  const parser = new PoemParser('T\n1970-01-01\n\n{V}\nline\n');
+  parser.lines = ['xx' + '\\'.repeat(100000) + ' trailing'];
+  const t0 = Date.now();
+  parser.joinContinuedLines();
+  const elapsed = Date.now() - t0;
+  assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
+  assert.strictEqual(parser.lines.length, 1);
+  assert.match(parser.lines[0], / trailing$/);
+});
+
 test('CRLF input: a trailing backslash before \\r\\n still continues the line', () => {
   const src = 'A Very \\\r\nLong Title\r\n2020-01-01\r\n\r\nverse line\r\n';
   const result = new PoemParser(src).parse();

@@ -143,12 +143,18 @@ class PoemParser {
       // Fold a (possibly multi-line) chain of continuations into `line`.
       while (true) {
         // Trailing backslash run, tolerating a CR from CRLF-terminated input.
-        const m = line.match(/(\\+)(\r?)$/);
-        if (m === null) break;
+        // Scanned by hand rather than with /(\\+)(\r?)$/: that pattern is
+        // vulnerable to polynomial backtracking (CodeQL js/polynomial-redos)
+        // on a long backslash run not actually anchored at the string end.
+        let end = line.length;
+        const cr = line.endsWith('\r') ? '\r' : '';
+        end -= cr.length;
+        let start = end;
+        while (start > 0 && line[start - 1] === '\\') start--;
+        const run = end - start;
+        if (run === 0) break;
 
-        const run = m[1].length;
-        const cr = m[2];
-        const head = line.slice(0, line.length - m[0].length);
+        const head = line.slice(0, start);
         const literal = head + '\\'.repeat(Math.floor(run / 2));
 
         if (run % 2 === 0) { line = literal + cr; break; } // even: newline kept
