@@ -61,6 +61,19 @@ test('htmlToPlainText: literal <<< / >>> runs in text are preserved', () => {
   );
 });
 
+test('htmlToPlainText: a nested tag does not reconstitute after stripping', () => {
+  // A single-pass strip would remove only the inner `<script>`, leaving the
+  // outer `<script`/`ipt>` fragments to rejoin into a literal `<script>` tag.
+  assert.strictEqual(
+    htmlToPlainText('<scr<script>ipt>alert(1)</scr<script>ipt>'),
+    'alert(1)'
+  );
+  assert.strictEqual(
+    htmlToPlainText('<img src=x on<script>error=alert(1)>'),
+    ''
+  );
+});
+
 // ── poetic-alternatives (plain text keeps the last option) ──────────────────
 
 const altSpan = (cls, text) => `<span class="poetic-alternatives ${cls}">${text}</span>`;

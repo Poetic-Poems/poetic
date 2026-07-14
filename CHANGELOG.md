@@ -56,6 +56,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   pre-pass rule instead of prose alone — matching `docs/POEM-SYNTAX.md` §0 and
   the parser's existing behaviour. No parsing behaviour changes.
 
+### Security
+
+- **`poem-to-raw.js`'s tag-stripping now runs to a fixed point.** `htmlToPlainText`
+  previously ran its `<br>`/block-close/tag-strip replacements in a single pass,
+  so a crafted nested sequence (e.g. `<scr<script>ipt>`) could have its inner
+  tag stripped while reconstituting the outer one, leaving a literal `<script>`
+  in the "sanitised" plain-text output (CodeQL `js/incomplete-multi-character-sanitization`,
+  high severity). The replacements now loop until the string stops changing.
+
 ## [6.0.0] — 2026-07-12
 
 ## [6.0.1] — 2026-07-13

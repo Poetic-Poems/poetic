@@ -80,13 +80,22 @@ function collapseAlternatives(html) {
 // Flatten the engine's inline-markup HTML to plain text: alternatives collapse
 // to their last option, hard breaks and block boundaries become newlines,
 // remaining tags are dropped, entities decoded.
+//
+// The tag-stripping replaces run to a fixed point rather than a single pass:
+// a single pass can reconstitute a tag from fragments split across two nested
+// ones (e.g. `<scr<script>ipt>` loses only the inner `<script>`, leaving the
+// outer `<script>` intact), so each pass re-runs until nothing more changes.
 function htmlToPlainText(html) {
-  return decodeEntities(
-    collapseAlternatives(html)
+  let text = collapseAlternatives(html);
+  let previous;
+  do {
+    previous = text;
+    text = previous
       .replace(/<br\s*\/?>\n?/gi, '\n')                 // hard break (absorb an adjacent newline)
       .replace(/<\/(p|blockquote|div|li|h[1-6])\s*>/gi, '\n')
-      .replace(TAG_RE, '')
-  );
+      .replace(TAG_RE, '');
+  } while (text !== previous);
+  return decodeEntities(text);
 }
 
 // Render a single segment's body (labels are omitted from plain text). Opaque
