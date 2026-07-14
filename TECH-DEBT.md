@@ -100,4 +100,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071301 | Browser renderer is not yet packaged for consumption | resolved | 2026-07-13 | #33 |
 | TD26071302 | Aggregate (index + all-poems) renderers are not browser-safe | resolved | 2026-07-13 | #34 |
 | TD26071501 | yaml-to-poem entity decoding is order-fragile, not structurally single-pass | resolved | 2026-07-15 | #47 |
-| TD26071502 | convertMarkup's escape-restoration loop is quadratic in the number of escapes | open | | |
+| TD26071502 | convertMarkup's escape-restoration loop is quadratic in the number of escapes | in-progress | | |
