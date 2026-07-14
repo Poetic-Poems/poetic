@@ -58,6 +58,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- **`blogger-auth.js` no longer echoes credentials in its "Next steps" summary.**
+  The closing summary reprinted `BLOGGER_CLIENT_ID`, `BLOGGER_CLIENT_SECRET`, and
+  `BLOGGER_REFRESH_TOKEN` in plain text (CodeQL `js/clear-text-logging`, high
+  severity) — a redundant echo, since the client ID/secret were entered by the
+  operator and the refresh token was already shown once in the SUCCESS banner
+  above. The summary now prints `<redacted>` placeholders instead.
 - **`poem-to-raw.js`'s tag-stripping now runs to a fixed point.** `htmlToPlainText`
   previously ran its `<br>`/block-close/tag-strip replacements in a single pass,
   so a crafted nested sequence (e.g. `<scr<script>ipt>`) could have its inner
