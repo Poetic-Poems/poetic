@@ -200,6 +200,35 @@ test('deep-merge: overriding a builtin does not mutate it for the next load', ()
   assert.strictEqual(fresh.mega.media_sizes.audio.height, undefined);
 });
 
+test('deep-merge: a "__proto__" handler name is skipped, not merged into Object.prototype', () => {
+  const before = ({}).polluted;
+  const handlers = loadSongHandlers({
+    song_handlers: { __proto__: { polluted: 'yes' } },
+  });
+  assert.strictEqual(({}).polluted, before, 'Object.prototype must be untouched');
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(handlers, '__proto__'), false);
+  assert.ok(handlers.mega, 'other builtins are unaffected');
+});
+
+test('deep-merge: a "constructor" handler name is skipped, not merged', () => {
+  const handlers = loadSongHandlers({
+    song_handlers: { constructor: { embed_url: 'https://evil/{value}' } },
+  });
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(handlers, 'constructor'), false);
+  assert.strictEqual(({}).constructor, Object, 'Object.prototype.constructor must be untouched');
+});
+
+test('deep-merge: a nested "__proto__"/"constructor" key inside a handler override is skipped', () => {
+  const before = ({}).polluted;
+  loadSongHandlers({
+    song_handlers: {
+      mega: { __proto__: { polluted: 'yes' }, constructor: { polluted2: 'yes' } },
+    },
+  });
+  assert.strictEqual(({}).polluted, before);
+  assert.strictEqual(({}).polluted2, undefined);
+});
+
 test('a consumer can add a brand-new handler alongside the builtins', () => {
   const handlers = loadSongHandlers({
     song_handlers: { youtube: { embed_url: 'https://youtube/{value}', button_label: 'Y' } },

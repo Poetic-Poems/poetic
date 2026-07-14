@@ -70,15 +70,24 @@ function isPlainObject(v) {
   return v != null && typeof v === 'object' && !Array.isArray(v);
 }
 
+/** Keys that would reach or replace a prototype rather than an own data property. */
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 /**
  * Deep-merge `source` into `target` in place and return `target`. Plain objects
  * merge recursively (key-by-key); any scalar/array value replaces the target
  * value wholesale; a `null` source value deletes the target key. Nested plain
  * objects on the source are cloned rather than shared, so the builtin
  * definitions are never mutated by a consumer override.
+ *
+ * `__proto__`/`constructor`/`prototype` keys are skipped outright: `source`
+ * ultimately comes from consumer-authored YAML (`song_handlers:` in
+ * .poetic-config.yaml), so an untrusted or malformed config must not be able
+ * to reach `Object.prototype` (CodeQL js/prototype-pollution-utility).
  */
 function deepMerge(target, source) {
   for (const [key, value] of Object.entries(source)) {
+    if (UNSAFE_KEYS.has(key)) continue;
     if (value === null) {
       delete target[key];
     } else if (isPlainObject(value)) {
@@ -97,7 +106,9 @@ function deepMerge(target, source) {
  * scalar keys are overridden, nested maps (e.g. `media_sizes`) merge key-by-key,
  * and a `null` value deletes a key (or, at the top level, the whole handler).
  * This lets a consumer retune just one size profile without redeclaring the
- * handler's `embed_url`.
+ * handler's `embed_url`. A handler name of `__proto__`/`constructor`/`prototype`
+ * is skipped (see `UNSAFE_KEYS` on `deepMerge` above) rather than merged, since
+ * `handlers[key]` would otherwise resolve to `Object.prototype` itself.
  *
  * @param {object} [config] - parsed .poetic-config.yaml
  * @returns {Object<string, object>} handler map keyed by lower-case service name
@@ -108,6 +119,7 @@ function loadSongHandlers(config = {}) {
     if (!isPlainObject(source)) return;
     for (const [name, def] of Object.entries(source)) {
       const key = String(name).toLowerCase();
+      if (UNSAFE_KEYS.has(key)) continue;
       if (def === null) { delete handlers[key]; continue; }
       if (!isPlainObject(def)) continue;
       if (!isPlainObject(handlers[key])) handlers[key] = {};

@@ -123,6 +123,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   source (CodeQL `js/double-escaping`, high severity). `&#38;` now decodes
   strictly last, after every other entity pattern has run, so no earlier replace
   can ever see its output — a single, deterministic, non-overlapping pass.
+- **`song-handlers.js`'s `deepMerge`/`loadSongHandlers` no longer risk
+  prototype pollution.** Both the handler-name loop in `loadSongHandlers` and
+  the recursive `deepMerge` copied keys straight from a `song_handlers`
+  config without guarding against `__proto__`/`constructor`/`prototype`
+  (CodeQL `js/prototype-pollution-utility`, medium severity) — a
+  `.poetic-config.yaml` with a `song_handlers.__proto__` (or a nested
+  handler's `__proto__`/`constructor`) key could write properties directly
+  onto the live `Object.prototype`, affecting every object in the process.
+  Both loops now skip these key names outright.
 
 ## [6.0.0] — 2026-07-12
 
