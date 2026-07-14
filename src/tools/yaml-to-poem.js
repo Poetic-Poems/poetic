@@ -336,6 +336,8 @@ class YamlToPoemConverter {
     // into "&#8220;" mid-pipeline -- which an earlier replace above would
     // then never see, but a later one still pending would decode a second
     // time, corrupting literal text into markup (CodeQL js/double-escaping).
+    // This ordered-pass approach is correct but order-fragile; see TD26071501
+    // in TECH-DEBT.md for a structurally single-pass alternative.
     text = text.replace(/&#38;/g, '&');
 
     return text;

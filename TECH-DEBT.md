@@ -40,6 +40,20 @@ requests for its ID. Then:
 If a claim is abandoned (the draft PR is closed without merging), flip the
 row back to `open`.
 
+## TD26071501 yaml-to-poem entity decoding is order-fragile, not structurally single-pass
+
+`convertEntitiesToMarkup` in `src/tools/yaml-to-poem.js` decodes HTML entities
+as a sequence of independent `String.prototype.replace` passes whose
+correctness depends on their relative order: `&#38;` must run strictly last so
+the `&` it emits can't recombine into an entity a later pass re-decodes (the
+`js/double-escaping` fix in #38). That is correct today but fragile — adding a
+new entity replace, or any other decode that emits a `&`, can silently
+reintroduce double-decoding. Suggested fix: replace the ordered passes with a
+single non-overlapping pass — one regex alternation over all handled entities
+resolved via a replacement function or lookup map — so the output is immune to
+ordering by construction. A code comment at the `&#38;` replace references this
+entry. Filed 2026-07-15.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -77,3 +91,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071202 | Preamble grammar omits comment blocks despite the prose | resolved | 2026-07-12 | #24 |
 | TD26071301 | Browser renderer is not yet packaged for consumption | resolved | 2026-07-13 | #33 |
 | TD26071302 | Aggregate (index + all-poems) renderers are not browser-safe | resolved | 2026-07-13 | #34 |
+| TD26071501 | yaml-to-poem entity decoding is order-fragile, not structurally single-pass | open | | |

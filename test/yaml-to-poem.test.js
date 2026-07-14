@@ -11,8 +11,8 @@ const assert = require('node:assert');
 
 const { YamlToPoemConverter } = require('../src/tools/yaml-to-poem');
 
-// convertEntitiesToMarkup only reads `this.data`, so an empty converter
-// instance is enough to exercise it directly.
+// convertEntitiesToMarkup operates purely on its `text` argument and reads no
+// instance state, so a bare converter instance is enough to exercise it.
 const converter = new YamlToPoemConverter({});
 const convert = (text) => converter.convertEntitiesToMarkup(text);
 
