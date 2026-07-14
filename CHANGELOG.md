@@ -58,6 +58,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- **`poem-parser.js`'s line-continuation folding no longer risks catastrophic
+  regex backtracking.** `joinContinuedLines()` located a trailing backslash
+  run with `/(\\+)(\r?)$/`, which can backtrack polynomially on a long
+  backslash run that turns out not to be anchored at the string end (CodeQL
+  `js/polynomial-redos`, high severity) — a `.poem` body line with many
+  thousands of trailing backslashes could hang the parser. The trailing run
+  is now located with a plain backward character scan instead of a regex, so
+  matching is linear regardless of input.
 - **`blogger-auth.js` no longer echoes credentials in its "Next steps" summary.**
   The closing summary reprinted `BLOGGER_CLIENT_ID`, `BLOGGER_CLIENT_SECRET`, and
   `BLOGGER_REFRESH_TOKEN` in plain text (CodeQL `js/clear-text-logging`, high
