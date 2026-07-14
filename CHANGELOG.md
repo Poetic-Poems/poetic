@@ -74,6 +74,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   before it's assigned to an anchor's `href` or `window.location.href`, so a
   scheme (e.g. `javascript:`) or a protocol-relative `//host` can't be used
   as a navigation target.
+- **`serve-static.js`'s generated directory listing no longer interpolates
+  filenames and the requested path into HTML unescaped.** `generateDirectoryListing()`
+  built each entry's link and the page's title/path directly from
+  `fs.readdirSync` filenames and the request path, so a file or directory
+  named with HTML markup would have that markup execute in the browser of
+  anyone who viewed the listing (CodeQL `js/stored-xss`, high severity).
+  Entry names and the current path are now HTML-escaped before insertion,
+  and `href`s are built from percent-encoded path segments so a crafted name
+  can't break out of the attribute or be read as a URI scheme.
 
 ## [6.0.0] — 2026-07-12
 
