@@ -64,6 +64,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tag stripped while reconstituting the outer one, leaving a literal `<script>`
   in the "sanitised" plain-text output (CodeQL `js/incomplete-multi-character-sanitization`,
   high severity). The replacements now loop until the string stops changing.
+- **`yaml-to-poem.js`'s entity decoding no longer double-decodes.**
+  `convertEntitiesToMarkup` decoded `&#38;` (the numeric entity for `&`) partway
+  through its pass, so its output `&` could combine with left-over
+  digits/punctuation into a new entity-shaped sequence — e.g. `&#38;#8220;`,
+  literally the text `&#8220;`, reconstituted into `&#8220;` mid-pipeline — which
+  a still-pending replace then decoded a second time, corrupting literal text
+  into markup (CodeQL `js/double-escaping`, high severity). `&#38;` is now
+  decoded last, after every other entity pattern has already run, so no
+  replace can ever see reconstituted output from an earlier one.
 
 ## [6.0.0] — 2026-07-12
 

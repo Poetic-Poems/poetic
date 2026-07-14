@@ -316,19 +316,27 @@ class YamlToPoemConverter {
     text = text.replace(/&#8212;/g, '---');
     text = text.replace(/&#8211;/g, '--');
 
-    // Convert remaining entities to characters (not markup)
-    // These will just be plain characters in the .poem file
-    text = text.replace(/&#38;/g, '&');
-    text = text.replace(/&#39;/g, "'");
-    text = text.replace(/&#34;/g, '"');
-    text = text.replace(/&#60;/g, '<');
-    text = text.replace(/&#62;/g, '>');
-
     // Handle unpaired smart quotes (convert to regular quotes)
     text = text.replace(/&#8220;/g, '"');
     text = text.replace(/&#8221;/g, '"');
     text = text.replace(/&#8216;/g, '`');
     text = text.replace(/&#8217;/g, '`');
+
+    // Convert remaining entities to characters (not markup)
+    // These will just be plain characters in the .poem file
+    text = text.replace(/&#39;/g, "'");
+    text = text.replace(/&#34;/g, '"');
+    text = text.replace(/&#60;/g, '<');
+    text = text.replace(/&#62;/g, '>');
+
+    // Decode &#38; (ampersand) last. Every entity pattern above starts with
+    // a literal "&", so decoding it any earlier would let the "&" it
+    // produces combine with leftover text into a new entity-shaped sequence
+    // -- e.g. "&#38;#8220;" (literally the text "&#8220;") reconstitutes
+    // into "&#8220;" mid-pipeline -- which an earlier replace above would
+    // then never see, but a later one still pending would decode a second
+    // time, corrupting literal text into markup (CodeQL js/double-escaping).
+    text = text.replace(/&#38;/g, '&');
 
     return text;
   }
