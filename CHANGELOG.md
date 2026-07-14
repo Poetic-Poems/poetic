@@ -64,6 +64,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   tag stripped while reconstituting the outer one, leaving a literal `<script>`
   in the "sanitised" plain-text output (CodeQL `js/incomplete-multi-character-sanitization`,
   high severity). The replacements now loop until the string stops changing.
+- **`public/index.js`'s poem card rendering no longer builds HTML via
+  `innerHTML` template literals.** `renderPoems()` interpolated `poem.title`
+  and `poem.labels` values directly into an `innerHTML` string, so a crafted
+  title or label could inject arbitrary HTML/JavaScript into the page
+  (CodeQL `js/xss-through-dom`, high severity). Poem cards are now built with
+  `createElement`/`textContent`/`appendChild`, so poem data is never parsed
+  as HTML. `poem.file` is also validated by a new `safePoemHref()` allowlist
+  before it's assigned to an anchor's `href` or `window.location.href`, so a
+  scheme (e.g. `javascript:`) or a protocol-relative `//host` can't be used
+  as a navigation target.
 
 ## [6.0.0] — 2026-07-12
 
