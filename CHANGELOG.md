@@ -83,6 +83,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Entry names and the current path are now HTML-escaped before insertion,
   and `href`s are built from percent-encoded path segments so a crafted name
   can't break out of the attribute or be read as a URI scheme.
+- **`yaml-to-poem.js`'s entity decoding no longer double-decodes reconstituted
+  entities.** `convertEntitiesToMarkup` decoded `&#38;` (the numeric entity for
+  `&`) partway through its pass, so the `&` it produced could combine with
+  leftover text into a fresh entity-shaped sequence that a still-pending replace
+  then decoded a second time — e.g. the literal text `&#38;#8220;` (an author
+  writing about an HTML entity) became a curly quote that was never in the
+  source (CodeQL `js/double-escaping`, high severity). `&#38;` now decodes
+  strictly last, after every other entity pattern has run, so no earlier replace
+  can ever see its output — a single, deterministic, non-overlapping pass.
 
 ## [6.0.0] — 2026-07-12
 
