@@ -51,14 +51,44 @@ function renderPoems() {
     matches.forEach(poem => {
         const card = document.createElement('div');
         card.className = 'poem-card';
-        card.innerHTML = `
-            <div class="poem-title">
-                <a href="${poem.file}">${poem.title}</a>
-                ${poem.hasAudio ? '<span class="audio-indicator">🎵</span>' : ''}
-            </div>
-            ${poem.date ? `<div class="poem-date">${formatPoemDate(poem.date)}</div>` : ''}
-            ${poem.labels && poem.labels.length ? '<div class="poem-card-labels">' + poem.labels.map(function (label) { return '<a class="poem-card-label" href="all-poems.html?scope=labels&q=' + encodeURIComponent(label) + '" onclick="event.stopPropagation()">' + label + '</a>'; }).join('') + '</div>' : ''}
-        `;
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'poem-title';
+
+        const link = document.createElement('a');
+        link.href = poem.file;
+        link.textContent = poem.title;
+        titleDiv.appendChild(link);
+
+        if (poem.hasAudio) {
+            const audio = document.createElement('span');
+            audio.className = 'audio-indicator';
+            audio.textContent = '🎵';
+            titleDiv.appendChild(audio);
+        }
+
+        card.appendChild(titleDiv);
+
+        if (poem.date) {
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'poem-date';
+            dateDiv.textContent = formatPoemDate(poem.date);
+            card.appendChild(dateDiv);
+        }
+
+        if (poem.labels && poem.labels.length) {
+            const labelsDiv = document.createElement('div');
+            labelsDiv.className = 'poem-card-labels';
+            poem.labels.forEach(label => {
+                const labelLink = document.createElement('a');
+                labelLink.className = 'poem-card-label';
+                labelLink.href = 'all-poems.html?scope=labels&q=' + encodeURIComponent(label);
+                labelLink.textContent = label;
+                labelLink.addEventListener('click', event => event.stopPropagation());
+                labelsDiv.appendChild(labelLink);
+            });
+            card.appendChild(labelsDiv);
+        }
 
         card.addEventListener('click', () => {
             window.location.href = poem.file;
