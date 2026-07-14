@@ -9,6 +9,56 @@ const path = require('path');
 const yaml = require('js-yaml');
 
 /**
+ * Every entity convertEntitiesToMarkup understands, keyed by its exact
+ * matched text, for the singleton (unpaired) case. Looked up by
+ * ENTITY_PATTERN's replace callback -- see there for why a single lookup
+ * beats ordered passes.
+ */
+const ENTITY_REPLACEMENTS = {
+  '&ldquo;': '"',
+  '&rdquo;': '"',
+  '&lsquo;': '`',
+  '&rsquo;': '`',
+  '&mdash;': '---',
+  '&ndash;': '--',
+  '&apos;': "'",
+  '&nbsp;': ' ',
+  '&#8220;': '"',
+  '&#8221;': '"',
+  '&#8216;': '`',
+  '&#8217;': '`',
+  '&#8212;': '---',
+  '&#8211;': '--',
+  '&#39;': "'",
+  '&#34;': '"',
+  '&#60;': '<',
+  '&#62;': '>',
+  '&#38;': '&',
+};
+
+/**
+ * Matches, in priority order: a paired double smart quote, a paired single
+ * smart quote (each accepting either the named or numeric entity as its
+ * open/close marker), or any one entity from ENTITY_REPLACEMENTS. A single
+ * replace() with this pattern resolves every entity -- including &#38; --
+ * in one non-overlapping left-to-right scan of the original text. That
+ * makes the result immune to entity-ordering by construction: a decoded
+ * "&" can never recombine with neighbouring text into an entity a later
+ * pass re-decodes, because the scan never revisits text it has already
+ * emitted (the `js/double-escaping` fix in #38 relied on `&#38;` running
+ * strictly last; this makes that ordering unnecessary rather than just
+ * preserving it).
+ */
+const ENTITY_PATTERN = new RegExp(
+  [
+    '(?:&ldquo;|&#8220;)(.*?)(?:&rdquo;|&#8221;)',
+    '(?:&lsquo;|&#8216;)(.*?)(?:&rsquo;|&#8217;)',
+    Object.keys(ENTITY_REPLACEMENTS).join('|'),
+  ].join('|'),
+  'g'
+);
+
+/**
  * Convert YAML data structure to .poem format
  */
 class YamlToPoemConverter {
@@ -298,49 +348,15 @@ class YamlToPoemConverter {
    * Convert HTML entities back to markup
    */
   convertEntitiesToMarkup(text) {
-    // First decode common named entities
-    text = text.replace(/&ldquo;/g, '&#8220;');
-    text = text.replace(/&rdquo;/g, '&#8221;');
-    text = text.replace(/&lsquo;/g, '&#8216;');
-    text = text.replace(/&rsquo;/g, '&#8217;');
-    text = text.replace(/&mdash;/g, '&#8212;');
-    text = text.replace(/&ndash;/g, '&#8211;');
-    text = text.replace(/&apos;/g, '&#39;');
-    text = text.replace(/&nbsp;/g, ' ');
-
-    // Convert smart quotes to markup (paired quotes)
-    text = text.replace(/&#8220;(.*?)&#8221;/g, '"$1"');
-    text = text.replace(/&#8216;(.*?)&#8217;/g, '`$1`');
-
-    // Convert dashes to markup
-    text = text.replace(/&#8212;/g, '---');
-    text = text.replace(/&#8211;/g, '--');
-
-    // Handle unpaired smart quotes (convert to regular quotes)
-    text = text.replace(/&#8220;/g, '"');
-    text = text.replace(/&#8221;/g, '"');
-    text = text.replace(/&#8216;/g, '`');
-    text = text.replace(/&#8217;/g, '`');
-
-    // Convert remaining entities to characters (not markup)
-    // These will just be plain characters in the .poem file
-    text = text.replace(/&#39;/g, "'");
-    text = text.replace(/&#34;/g, '"');
-    text = text.replace(/&#60;/g, '<');
-    text = text.replace(/&#62;/g, '>');
-
-    // Decode &#38; (ampersand) last. Every entity pattern above starts with
-    // a literal "&", so decoding it any earlier would let the "&" it
-    // produces combine with leftover text into a new entity-shaped sequence
-    // -- e.g. "&#38;#8220;" (literally the text "&#8220;") reconstitutes
-    // into "&#8220;" mid-pipeline -- which an earlier replace above would
-    // then never see, but a later one still pending would decode a second
-    // time, corrupting literal text into markup (CodeQL js/double-escaping).
-    // This ordered-pass approach is correct but order-fragile; see TD26071501
-    // in TECH-DEBT.md for a structurally single-pass alternative.
-    text = text.replace(/&#38;/g, '&');
-
-    return text;
+    return text.replace(ENTITY_PATTERN, (match, doubleQuoted, singleQuoted) => {
+      if (doubleQuoted !== undefined) {
+        return `"${this.convertEntitiesToMarkup(doubleQuoted)}"`;
+      }
+      if (singleQuoted !== undefined) {
+        return `\`${this.convertEntitiesToMarkup(singleQuoted)}\``;
+      }
+      return ENTITY_REPLACEMENTS[match];
+    });
   }
 }
 

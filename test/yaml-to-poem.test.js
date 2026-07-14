@@ -71,3 +71,7 @@ test('convertEntitiesToMarkup: literal text about a dash entity is not double-de
 test('convertEntitiesToMarkup: a genuine standalone ampersand still decodes', () => {
   assert.strictEqual(convert('Tom &#38; Jerry'), 'Tom & Jerry');
 });
+
+test('convertEntitiesToMarkup: an entity nested inside a paired smart quote still decodes', () => {
+  assert.strictEqual(convert('&#8220;Tom &#38; Jerry&#8221;'), '"Tom & Jerry"');
+});
