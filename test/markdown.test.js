@@ -79,13 +79,27 @@ test('a long backslash run with no "?" does not hang (ReDoS guard)', () => {
   // `?` need not exist anywhere in the text — backtracks polynomially
   // trying every start position within a long backslash run (empirically
   // ~33s for a 200,000-backslash input pre-fix; must now be near-instant).
-  // Exercised directly, bypassing convertMarkup(), whose unrelated
-  // escape-restoration loop is itself quadratic in the number of escapes
-  // and would dominate the timing at this input size.
+  // Exercised directly, bypassing convertMarkup(), to isolate this guard from
+  // the escape-restoration pass tested separately below.
   const p = new PoemParser('');
   const t0 = Date.now();
   p.checkReservedEscape('\\'.repeat(200000));
   const elapsed = Date.now() - t0;
+  assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
+});
+
+test('convertMarkup restores a large number of escapes without quadratic slowdown', () => {
+  // Regression guard for TD26071502: escape restoration used to call
+  // String.prototype.replace() once per escape inside a loop, each call
+  // rescanning the whole placeholder-laden string from the start —
+  // O(N^2) for N escapes (empirically ~900ms for 50,000 escapes pre-fix,
+  // tens of seconds projected for 200,000). Must now be near-instant.
+  const p = new PoemParser('');
+  const input = '\\'.repeat(400000); // 200,000 escaped backslash pairs
+  const t0 = Date.now();
+  const result = p.convertMarkup(input);
+  const elapsed = Date.now() - t0;
+  assert.strictEqual(result, '\\'.repeat(200000));
   assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
 });
 

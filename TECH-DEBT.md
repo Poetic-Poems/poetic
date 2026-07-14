@@ -40,28 +40,6 @@ requests for its ID. Then:
 If a claim is abandoned (the draft PR is closed without merging), flip the
 row back to `open`.
 
-## TD26071502 convertMarkup's escape-restoration loop is quadratic in the number of escapes
-
-`convertMarkup` in `src/tools/poem-parser.js` collects escaped characters into
-a `Map` keyed by a unique placeholder, then restores them with
-`text = text.replace(placeholder, char)` inside a `for...of` loop over the
-map — one non-global `String.prototype.replace` call per escape, each of
-which rescans the (still placeholder-laden) string from the start to find
-its target substring. With `N` escapes in a text of length proportional to
-`N`, that's `O(N)` rescans of an `O(N)`-length string: `O(N^2)` overall.
-Empirically, a run of 50,000 escaped backslashes (100,000 raw backslash
-characters) takes ~900ms; scaling to 200,000 escapes would take on the order
-of tens of seconds. Not a CodeQL-flagged regex issue (no backtracking regex is involved) so it
-wasn't part of `js/polynomial-redos` code-scanning alerts 11/12/13 (directive
-lines, label lines, and the `\?` reserved-escape scan), but it's the same
-class of problem — quadratic cost driven by adversarial input size — noticed
-while adding a regression test for alert 13 that had to be restructured to
-call `checkReservedEscape()` directly instead of the full `convertMarkup()`
-pipeline to avoid tripping over this. Suggested
-fix: build the restored string in one pass (e.g. split on the placeholder
-pattern with a single regex and rejoin, or track escape positions and splice
-once) instead of one `replace` per escape.
-
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -100,4 +78,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071301 | Browser renderer is not yet packaged for consumption | resolved | 2026-07-13 | #33 |
 | TD26071302 | Aggregate (index + all-poems) renderers are not browser-safe | resolved | 2026-07-13 | #34 |
 | TD26071501 | yaml-to-poem entity decoding is order-fragile, not structurally single-pass | resolved | 2026-07-15 | #47 |
-| TD26071502 | convertMarkup's escape-restoration loop is quadratic in the number of escapes | in-progress | | |
+| TD26071502 | convertMarkup's escape-restoration loop is quadratic in the number of escapes | resolved | 2026-07-15 | #49 |
