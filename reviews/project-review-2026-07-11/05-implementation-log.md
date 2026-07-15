@@ -1,6 +1,6 @@
 # Implementation log — remediation of project-review-2026-07-11
 
-**Skill:** project-remediation · **Started:** 2026-07-11 · **Project root:** `/home/wallen/Code/poetic`
+**Skill:** project-remediation · **Started:** 2026-07-11 · **Project root:** `/home/wallen/Code/Poetic-Poems/poetic`
 **Revision at start:** `06b5e63` (main) · **Commit policy:** working-tree (changes left uncommitted; a suggested Conventional Commit subject is recorded per unit)
 
 This log is the durable record of the campaign. It consumes
