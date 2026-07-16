@@ -42,6 +42,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Blogger themes build again.** `public/poetic.css` described HTML elements
+  in its comments as `<button>`, `<th>` and `<a>`, and used `<service>` as a
+  placeholder. `build-blogger.js` injects that CSS into the theme's `b:skin`
+  block, and Blogger scans the whole block — comments included — for skin
+  variable declarations, so those seven fragments arrived as unclosed elements
+  and Blogger rejected the theme on save with "Invalid variable declaration in
+  page skin: ... not well-formed", naming no file or line. The comments now
+  name elements in prose and write placeholders in braces
+  (`.song-embed--{service}`); no rule changed. `build-blogger.js` now fails the
+  build with the offending file and line if tag-shaped text appears in
+  `poetic.css` or a consumer's `custom.css`, rather than writing a theme
+  Blogger will refuse.
 - **`convertMarkup()`'s escape restoration is no longer quadratic in the number
   of escapes.** It restored each escaped character with its own
   `String.prototype.replace()` call inside a loop over the escapes `Map`, and

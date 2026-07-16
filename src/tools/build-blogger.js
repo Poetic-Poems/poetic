@@ -66,6 +66,36 @@ function resolveTemplatePath(config, publicDir) {
 }
 
 /**
+ * Find text in CSS that Blogger will mistake for a skin-variable declaration.
+ *
+ * The injected CSS lands inside the theme's b:skin block, and Blogger scans
+ * that entire block — comments included — for `<...>` declarations, gathers
+ * them into one SkinVariables document, and parses it. Prose like
+ * `/* the sort <button> fills the whole <th> ... * /` therefore arrives as two
+ * unclosed elements and the theme is rejected with "Invalid variable
+ * declaration in page skin: ... not well-formed", quoting a variable block the
+ * author never wrote and naming no file or line.
+ *
+ * Nothing in CSS legitimately looks like a tag, so a match is always a mistake.
+ * Reporting it here — with a file and line — is the difference between a
+ * one-line fix and reverse-engineering Blogger's error.
+ *
+ * `<=` and friends don't match: a tag needs a name directly after the `<`.
+ *
+ * @param {string} css - CSS file contents
+ * @returns {Array<{line: number, tag: string}>} - one entry per occurrence
+ */
+function findSkinUnsafeTags(css) {
+  const found = [];
+  css.split("\n").forEach((text, index) => {
+    for (const match of text.matchAll(/<\/?[A-Za-z][A-Za-z0-9:._-]*\s*\/?>/g)) {
+      found.push({ line: index + 1, tag: match[0] });
+    }
+  });
+  return found;
+}
+
+/**
  * Replace the content between startMarker and endMarker with payload,
  * formatted as `\n\n${payload}\n\n`.
  *
@@ -111,11 +141,32 @@ function injectCSSIntoTemplate() {
     // CSS injection
     // -----------------------------------------------------------------------
     let stylesContent = "";
+    const unsafeTags = [];
     for (const file of ["poetic.css", "custom.css"]) {
       const filePath = path.join(publicDir, file);
       if (!fs.existsSync(filePath)) continue;
-      const content = fs.readFileSync(filePath, "utf8").trim();
+      // Scanned before trimming, so the reported line numbers match the file.
+      const raw = fs.readFileSync(filePath, "utf8");
+      for (const { line, tag } of findSkinUnsafeTags(raw)) {
+        unsafeTags.push(`  public/${file}:${line}: ${tag}`);
+      }
+      const content = raw.trim();
       if (content) stylesContent += (stylesContent ? "\n\n" : "") + content;
+    }
+
+    // Refuse to write a theme Blogger will reject on save (see
+    // findSkinUnsafeTags). Failing here names the file and line; Blogger's own
+    // error names neither.
+    if (unsafeTags.length) {
+      console.error(
+        "Error: CSS contains tag-shaped text. Blogger reads anything shaped " +
+          'like a tag inside its b:skin block as a skin variable declaration\n' +
+          'and rejects the theme ("Invalid variable declaration in page skin"). ' +
+          "Name the element in prose (a \"button element\") or write a\n" +
+          "placeholder in braces (.song-embed--{service}):\n" +
+          unsafeTags.join("\n")
+      );
+      process.exit(1);
     }
 
     // Blogger's own theme scaffolding already lists each post's labels, so hide
@@ -181,4 +232,5 @@ module.exports = {
   injectCSSIntoTemplate,
   resolveTemplatePath,
   injectBetween,
+  findSkinUnsafeTags,
 };

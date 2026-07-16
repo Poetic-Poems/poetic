@@ -1,4 +1,12 @@
-/* Poem site CSS */
+/* Poem site CSS
+ *
+ * Do not write tag-shaped text (an element name in angle brackets) anywhere in
+ * this file, comments included. build-blogger.js injects this CSS into a
+ * Blogger theme's b:skin block, and Blogger scans that whole block for skin
+ * variable declarations — anything shaped like a tag is swept into its parsed
+ * variables and rejected as malformed, breaking the theme. Name elements in
+ * prose instead (a "button element"), and write placeholders in braces
+ * (.song-embed--{service}). build-blogger.js fails the build if this slips. */
 
 .hidden {
   display: none !important;
@@ -393,7 +401,7 @@ h2.poem-title {
   user-select: none;
 }
 
-/* The sort <button> fills the whole <th> so the clickable/keyboard-focusable
+/* The sort button element fills the whole th cell so the clickable/keyboard-focusable
    area matches the previous whole-header onclick target exactly (no visual
    or interaction regression for mouse users). */
 .toc-table th .sort-button {
@@ -662,7 +670,7 @@ div.analysis {
 
 /* Embedded song players (lazy-loaded) and song links.
    Service-agnostic base classes below; per-service tweaks use the
-   .song-embed--<service> / .song-item--<service> modifiers. Consumers style
+   .song-embed--{service} / .song-item--{service} modifiers. Consumers style
    their own handlers the same way in custom.css. */
 
 .song-embed-btn {
@@ -701,7 +709,7 @@ div.analysis {
      custom property on .song-embed-player (see song-handlers.js /
      docs/BUILD.md). 252px is the framework fallback when a handler declares no
      size. A consumer can still hard-override a single service with a
-     .song-embed--<service> .song-embed-player iframe rule in custom.css. */
+     .song-embed--{service} .song-embed-player iframe rule in custom.css. */
   height: var(--song-embed-height, 252px);
 }
 
@@ -716,8 +724,8 @@ div.analysis {
 /* Parentheses around link-type song items are decorative — CSS, not markup — so a
    consumer can remove them by overriding `content` in custom.css. The generic
    .song-item-link wrapper brackets every link handler (not just suno); pair with
-   .song-item--<service> for per-service overrides. Placing them on the wrapper
-   div keeps the parentheses outside the <a>, so they are not part of the link. */
+   .song-item--{service} for per-service overrides. Placing them on the wrapper
+   div keeps the parentheses outside the link element, so they are not part of the link. */
 div.song-item-link::before { content: "("; }
 div.song-item-link::after  { content: ")"; }
 
