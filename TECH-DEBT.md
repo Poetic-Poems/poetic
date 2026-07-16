@@ -40,6 +40,29 @@ requests for its ID. Then:
 If a claim is abandoned (the draft PR is closed without merging), flip the
 row back to `open`.
 
+## Review provenance
+
+Where an item was filed from a project review's recommendation, record the
+mapping here, and add the row when the item is filed — not when it is
+resolved. A review's recommendations and this register are two channels onto
+the same work, and the autonomous pipeline's Co-Ordinator uses exactly this
+cross-reference to tell that they are: it skips a recommendation whose `R-NN`
+is named in this file, on the grounds that this curated, status-tracked
+channel owns it. Without the mapping it has only one other way to know a
+recommendation is done — a merged PR referencing it — so work that landed as a
+direct commit reads as outstanding forever, and the recommendation is selected
+and re-investigated every cycle.
+
+Only record a mapping once the Ledger item is known to cover the
+recommendation's whole *Intended end state*. A recommendation that is broader
+than the item mirroring it keeps the remainder in the review channel, where it
+is still visible; claiming it here would silently retire work nobody has done.
+
+| Review | Recommendation | Ledger ID |
+|--------|----------------|-----------|
+| [project-review-2026-07-11](reviews/project-review-2026-07-11/) | R-01 — Add a licence | TD26071101 |
+| [project-review-2026-07-11](reviews/project-review-2026-07-11/) | R-06 — Complete package.json metadata | TD26071106 |
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
