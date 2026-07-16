@@ -42,6 +42,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`renderPoem()`'s fragment now shows the poem's title.** `public/poetic.css`
+  hides the fragment's inline `.poem-info .title` span unconditionally,
+  because every other caller of the shared fragment template (single-poem
+  pages, `all-poems.html`) already renders its own visible `h2.poem-title`
+  heading around the fragment. `renderPoem()` — used directly for a live
+  preview, e.g. Poetic Fiddle's editor, with no such wrapping heading — left
+  the title with no visible representation at all: a blank line where the
+  title should be. `renderPoem()` (and `renderFragment()`, for symmetry) now
+  accepts a `standalone` option, defaulting to `true` for `renderPoem()`, that
+  includes a visible `h2.poem-title` heading in the fragment; existing callers
+  that already supply their own heading are unaffected. See "API" in
+  `docs/RENDERER-BROWSER.md`.
 - **Blogger themes build again.** `public/poetic.css` described HTML elements
   in its comments as `<button>`, `<th>` and `<a>`, and used `<service>` as a
   placeholder. `build-blogger.js` injects that CSS into the theme's `b:skin`

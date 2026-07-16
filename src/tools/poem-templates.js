@@ -21,7 +21,7 @@ var pug_match_html=/["&<>]/;
 function pug_style(r){if(!r)return"";if("object"==typeof r){var t="";for(var e in r)pug_has_own_property.call(r,e)&&(t=t+e+":"+r[e]+";");return t}return r+""}function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;
     var locals_for_with = (locals || {});
 
-    (function (analysis, author, date, encodeURIComponent, isNaN, labelBase, labels, parseInt, postscript, slug, songs, title, versions) {
+    (function (analysis, author, date, encodeURIComponent, isNaN, labelBase, labels, parseInt, postscript, slug, songs, standalone, title, versions) {
       function slugify(text) {
 text = text.toLowerCase().trim()
 text = text.replace(/[^a-z0-9 -]/g, '')
@@ -80,6 +80,9 @@ index++
 };
 pug_mixins["poemContent"] = pug_interp = function(){
 var block = (this && this.block), attributes = (this && this.attributes) || {};
+if (standalone) {
+pug_html = pug_html + "\u003Ch2 class=\"poem-title\"\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fh2\u003E";
+}
 pug_html = pug_html + "\u003Cdiv" + (pug_attr("id", `poem--${slug}`, true, false)) + "\u003E\u003Cdiv class=\"poem-info\"\u003E\u003Cspan" + (" class=\"title\""+pug_attr("id", `title--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"author\""+pug_attr("id", `author--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = author) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"date\""+pug_attr("id", `date--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = date) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\u003Cdiv class=\"poem-body\"\u003E";
 if (versions && versions.length > 0) {
 // iterate versions
@@ -476,7 +479,9 @@ pug_mixins["poemContent"]();
         locals_for_with.slug :
         typeof slug !== 'undefined' ? slug : undefined, "songs" in locals_for_with ?
         locals_for_with.songs :
-        typeof songs !== 'undefined' ? songs : undefined, "title" in locals_for_with ?
+        typeof songs !== 'undefined' ? songs : undefined, "standalone" in locals_for_with ?
+        locals_for_with.standalone :
+        typeof standalone !== 'undefined' ? standalone : undefined, "title" in locals_for_with ?
         locals_for_with.title :
         typeof title !== 'undefined' ? title : undefined, "versions" in locals_for_with ?
         locals_for_with.versions :
@@ -496,7 +501,7 @@ var pug_match_html=/["&<>]/;
 function pug_style(r){if(!r)return"";if("object"==typeof r){var t="";for(var e in r)pug_has_own_property.call(r,e)&&(t=t+e+":"+r[e]+";");return t}return r+""}function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;
     var locals_for_with = (locals || {});
 
-    (function (analysis, author, date, encodeURIComponent, favicon, isNaN, labelBase, labels, parseInt, postscript, slug, songs, title, versions) {
+    (function (analysis, author, date, encodeURIComponent, favicon, isNaN, labelBase, labels, parseInt, postscript, slug, songs, standalone, title, versions) {
       function slugify(text) {
 text = text.toLowerCase().trim()
 text = text.replace(/[^a-z0-9 -]/g, '')
@@ -555,6 +560,9 @@ index++
 };
 pug_mixins["poemContent"] = pug_interp = function(){
 var block = (this && this.block), attributes = (this && this.attributes) || {};
+if (standalone) {
+pug_html = pug_html + "\u003Ch2 class=\"poem-title\"\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fh2\u003E";
+}
 pug_html = pug_html + "\u003Cdiv" + (pug_attr("id", `poem--${slug}`, true, false)) + "\u003E\u003Cdiv class=\"poem-info\"\u003E\u003Cspan" + (" class=\"title\""+pug_attr("id", `title--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"author\""+pug_attr("id", `author--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = author) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"date\""+pug_attr("id", `date--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = date) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\u003Cdiv class=\"poem-body\"\u003E";
 if (versions && versions.length > 0) {
 // iterate versions
@@ -955,7 +963,9 @@ pug_html = pug_html + "\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv
         locals_for_with.slug :
         typeof slug !== 'undefined' ? slug : undefined, "songs" in locals_for_with ?
         locals_for_with.songs :
-        typeof songs !== 'undefined' ? songs : undefined, "title" in locals_for_with ?
+        typeof songs !== 'undefined' ? songs : undefined, "standalone" in locals_for_with ?
+        locals_for_with.standalone :
+        typeof standalone !== 'undefined' ? standalone : undefined, "title" in locals_for_with ?
         locals_for_with.title :
         typeof title !== 'undefined' ? title : undefined, "versions" in locals_for_with ?
         locals_for_with.versions :

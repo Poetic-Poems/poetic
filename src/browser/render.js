@@ -54,16 +54,21 @@ function parseAndAugment(text, opts) {
  * matching poem-render.js's renderFragment().
  *
  * @param {string} text - raw `.poem` source
- * @param {{ config?: object, slug?: string }} [opts]
- *   config - the friendly subset of `.poetic-config` that drives song handlers
- *   slug   - override the title-derived slug
+ * @param {{ config?: object, slug?: string, standalone?: boolean }} [opts]
+ *   config     - the friendly subset of `.poetic-config` that drives song handlers
+ *   slug       - override the title-derived slug
+ *   standalone - include a visible `h2.poem-title` heading (default true — a
+ *     caller of this fragment renderer, e.g. Poetic Fiddle's live preview,
+ *     supplies no title heading of its own, unlike the Node build's
+ *     all-poems.html/single-poem-page callers; pass `false` to match
+ *     renderFragment()'s bare-fragment default instead)
  * @returns {string} HTML fragment — UNTRUSTED; sanitise before display
  */
 function renderPoem(text, opts = {}) {
-  const { config = {} } = opts;
+  const { config = {}, standalone = true } = opts;
   const data = resolveContextVars(parseAndAugment(text, opts));
   const songs = songsFor(data, config);
-  return renderFragmentTemplate({ ...data, songs, labelBase: '' });
+  return renderFragmentTemplate({ ...data, songs, labelBase: '', standalone });
 }
 
 /**

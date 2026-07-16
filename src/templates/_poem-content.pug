@@ -44,8 +44,14 @@ mixin processLines(text)
       - index++
 
 //- Main poem-content mixin.
-//- Locals used: title, author, date, slug, versions, songs, postscript, analysis, labels, labelBase
+//- Locals used: title, author, date, slug, versions, songs, postscript, analysis, labels, labelBase, standalone
 mixin poemContent
+  if standalone
+    //- A caller that embeds this fragment with no title heading of its own
+    //- (renderPoem's live preview) needs one here; poem-page.pug and
+    //- all-poems.html already supply their own external h2.poem-title, so
+    //- they leave `standalone` unset to avoid a duplicate.
+    h2.poem-title= title
   div(id=`poem--${slug}`)
     div.poem-info
       span(id=`title--${slug}` class="title")= title

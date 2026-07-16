@@ -279,15 +279,20 @@ function loadPoemData(yamlPath) {
  * Render a poem as an HTML fragment (no html/head/body wrapper).
  *
  * @param {object} poemData
- * @param {{ config?: object }} opts - parsed .poetic-config.yaml (drives song handlers)
+ * @param {{ config?: object, standalone?: boolean }} opts
+ *   config - parsed .poetic-config.yaml (drives song handlers)
+ *   standalone - include a visible `h2.poem-title` heading, for a caller that
+ *     embeds the fragment with no title heading of its own (default false;
+ *     build-all-poems.js supplies its own external heading per poem, so it
+ *     leaves this unset)
  * @returns {string} HTML fragment string
  */
 function renderFragment(poemData, opts = {}) {
-  const { config = {} } = opts;
+  const { config = {}, standalone = false } = opts;
   const data = resolveContextVars(poemData);
   const songs = songsFor(data, config);
   const compiledFn = pug.compileFile(FRAGMENT_TEMPLATE, { pretty: false, cache: false });
-  return compiledFn({ ...data, songs, labelBase: '' });
+  return compiledFn({ ...data, songs, labelBase: '', standalone });
 }
 
 /**

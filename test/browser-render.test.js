@@ -64,8 +64,12 @@ test('renderPoem matches the Node build fragment byte-for-byte across the corpus
     const text = fs.readFileSync(poemPath, 'utf8');
     const slug = slugFromFile(poemPath);
 
+    // renderPoem defaults to `standalone: true` (a live preview supplies no
+    // title heading of its own, unlike renderFragment's build-all-poems.js
+    // caller) — pass the same flag here so the parity check still compares
+    // like with like rather than tripping on that deliberate default.
     const browser = renderPoem(text, { slug, config: {} });
-    const build = renderFragment(buildPathData(poemPath), { config: {} });
+    const build = renderFragment(buildPathData(poemPath), { config: {}, standalone: true });
 
     assert.strictEqual(browser, build, `renderPoem drifted from renderFragment for ${f}`);
   }

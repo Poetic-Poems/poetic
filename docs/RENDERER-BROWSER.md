@@ -15,22 +15,27 @@ const { renderPoem, renderPoemPage } = require('poetic/browser');
 // or: import { renderPoem, renderPoemPage } from 'poetic/browser';
 
 // A styled HTML fragment (no <html>/<head>/<body>) — for a live preview.
+// Includes a visible `h2.poem-title` heading by default (see `standalone`
+// below) since a live preview supplies no title heading of its own.
 const fragment = renderPoem(sourceText, { config, slug });
 
 // A full standalone HTML document (correct <title>, linked assets) — for SSR.
 const page = renderPoemPage(sourceText, { config, slug, favicon, subtitle });
 ```
 
-| Option     | Applies to        | Default            | Meaning |
-|------------|-------------------|--------------------|---------|
-| `config`   | both              | `{}`               | The friendly subset of `.poetic-config` (drives song handlers). Passed as an object — there is no file read. |
-| `slug`     | both              | slug of the title  | The build derives a poem's slug from its source filename; an in-editor poem has none, so it defaults to `slugify(title)`. |
-| `favicon`  | `renderPoemPage`  | `poetic-logo.svg`  | Favicon href (must already have any leading `public/` stripped). |
-| `subtitle` | `renderPoemPage`  | `My Poems`         | Nav subtitle. |
+| Option       | Applies to        | Default            | Meaning |
+|--------------|-------------------|--------------------|---------|
+| `config`     | both              | `{}`               | The friendly subset of `.poetic-config` (drives song handlers). Passed as an object — there is no file read. |
+| `slug`       | both              | slug of the title  | The build derives a poem's slug from its source filename; an in-editor poem has none, so it defaults to `slugify(title)`. |
+| `standalone` | `renderPoem`      | `true`             | Include a visible `h2.poem-title` heading in the fragment. Pass `false` to get a bare fragment matching `renderFragment()`'s own default — e.g. when embedding under a heading you supply yourself, as `all-poems.html`/single-poem pages do. |
+| `favicon`    | `renderPoemPage`  | `poetic-logo.svg`  | Favicon href (must already have any leading `public/` stripped). |
+| `subtitle`   | `renderPoemPage`  | `My Poems`         | Nav subtitle. |
 
 `renderPoem`/`renderPoemPage` produce output **byte-for-byte identical** to the
 Node build path (`poem-render.js`'s `renderFragment`/`renderPage`) for the same
-poem. This is asserted over the whole poem corpus by
+poem and the same options — `renderFragment` accepts the same `standalone`
+option, defaulting to `false` to match its own callers. This parity is
+asserted over the whole poem corpus by
 [`test/browser-render.test.js`](../test/browser-render.test.js), so the two
 paths cannot silently diverge.
 
