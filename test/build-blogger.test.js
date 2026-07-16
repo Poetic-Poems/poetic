@@ -6,7 +6,7 @@ const fs     = require('node:fs');
 const os     = require('node:os');
 const path   = require('node:path');
 
-const { resolveTemplatePath, injectBetween } = require('../src/tools/build-blogger.js');
+const { resolveTemplatePath, injectBetween, findSkinUnsafeTags } = require('../src/tools/build-blogger.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -110,5 +110,44 @@ describe('injectBetween', () => {
     const content = 'no markers here';
     const result  = injectBetween(content, JS_START, JS_END, 'payload');
     assert.equal(result, content, 'unchanged when no markers');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// findSkinUnsafeTags
+// ---------------------------------------------------------------------------
+
+describe('findSkinUnsafeTags', () => {
+  it('finds tag-shaped text in a comment, which is where prose lives', () => {
+    const css = '/* The sort <button> fills the whole <th> so the target matches. */';
+    assert.deepEqual(findSkinUnsafeTags(css), [
+      { line: 1, tag: '<button>' },
+      { line: 1, tag: '<th>' },
+    ]);
+  });
+
+  it('reports the line of each occurrence', () => {
+    const css = 'a { color: red; }\n/* wraps the <a> element */\n/* and a <span> */';
+    assert.deepEqual(findSkinUnsafeTags(css), [
+      { line: 2, tag: '<a>' },
+      { line: 3, tag: '<span>' },
+    ]);
+  });
+
+  it('passes clean CSS, including a less-than that is not a tag', () => {
+    const css = [
+      'body { margin: 0 }',
+      '/* suppress the control when truncation would hide <= 1 line */',
+      '/* per-service tweaks use the .song-embed--{service} modifier */',
+      '.a > .b { top: 0 }',
+    ].join('\n');
+    assert.deepEqual(findSkinUnsafeTags(css), []);
+  });
+
+  it('finds closing and self-closing tags too', () => {
+    assert.deepEqual(findSkinUnsafeTags('/* </b:skin> <br/> */'), [
+      { line: 1, tag: '</b:skin>' },
+      { line: 1, tag: '<br/>' },
+    ]);
   });
 });
