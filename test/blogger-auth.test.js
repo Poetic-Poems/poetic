@@ -4,12 +4,16 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 const http = require('http');
 const crypto = require('crypto');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 const {
   waitForCode,
   generateState,
   generatePkce,
   describeBlogAccess,
+  saveFileMode0600,
 } = require('../src/tools/blogger-auth');
 
 function getFreePort() {
@@ -136,4 +140,47 @@ test('describeBlogAccess: no configured blog_id lists blogs and says to set one'
   assert.match(text, /Copy the ID/);
   assert.match(text, /quoted/);
   assert.doesNotMatch(text, /←/);
+});
+
+// ── saveFileMode0600 ──────────────────────────────────────────────────────────
+
+function withTempDir(fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'blogger-auth-test-'));
+  try {
+    return fn(dir);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+test('saveFileMode0600 creates a new file with mode 0600', () => {
+  withTempDir((dir) => {
+    const target = path.join(dir, '.blogger-credentials.json');
+    saveFileMode0600(target, JSON.stringify({ refresh_token: 'first-token' }));
+    assert.strictEqual(fs.readFileSync(target, 'utf8'), JSON.stringify({ refresh_token: 'first-token' }));
+    assert.strictEqual(fs.statSync(target).mode & 0o777, 0o600);
+  });
+});
+
+test('saveFileMode0600 overwrites a pre-existing read-only (0400) file, ending up at mode 0600', () => {
+  withTempDir((dir) => {
+    const target = path.join(dir, '.blogger-credentials.json');
+    fs.writeFileSync(target, JSON.stringify({ refresh_token: 'stale-token' }), { mode: 0o400 });
+    fs.chmodSync(target, 0o400);
+
+    saveFileMode0600(target, JSON.stringify({ refresh_token: 'fresh-token' }));
+
+    const reloaded = JSON.parse(fs.readFileSync(target, 'utf8'));
+    assert.strictEqual(reloaded.refresh_token, 'fresh-token');
+    assert.strictEqual(fs.statSync(target).mode & 0o777, 0o600);
+  });
+});
+
+test('saveFileMode0600 leaves no temp file behind after a successful save', () => {
+  withTempDir((dir) => {
+    const target = path.join(dir, '.blogger-credentials.json');
+    saveFileMode0600(target, JSON.stringify({ refresh_token: 'token' }));
+    const entries = fs.readdirSync(dir);
+    assert.deepStrictEqual(entries, ['.blogger-credentials.json']);
+  });
 });
