@@ -129,4 +129,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071302 | Aggregate (index + all-poems) renderers are not browser-safe | resolved | 2026-07-13 | #34 |
 | TD26071501 | yaml-to-poem entity decoding is order-fragile, not structurally single-pass | resolved | 2026-07-15 | #47 |
 | TD26071502 | convertMarkup's escape-restoration loop is quadratic in the number of escapes | resolved | 2026-07-15 | #49 |
-| TD26071701 | blogger-auth cannot overwrite a read-only credentials file | open | | |
+| TD26071701 | blogger-auth cannot overwrite a read-only credentials file | in-progress | | |
