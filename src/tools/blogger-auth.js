@@ -46,6 +46,43 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const BLOGGER_API = 'https://www.googleapis.com/blogger/v3';
 const CREDENTIALS_FILE = path.join(process.cwd(), '.blogger-credentials.json');
 
+// Write `contents` to `filePath` with mode 0600, tolerating a pre-existing
+// read-only file at that path. `fs.writeFileSync`'s `mode` option only takes
+// effect when a file is *created*; against an existing file it's ignored and
+// the open is checked against the on-disk permissions, so a deliberately
+// read-only credentials file would otherwise fail the save with EACCES.
+// Writing to a temp file and renaming it over the target sidesteps the
+// target's permissions (a rename only needs write access to the directory)
+// and is atomic — no truncated file if the process dies mid-write. The temp
+// name keeps the target's own leading dot and a random suffix, so a single
+// `.gitignore` pattern covers it and it can't be pre-planted as a symlink
+// (flag 'wx' — O_CREAT|O_EXCL — refuses to follow or reuse an existing path).
+function saveFileMode0600(filePath, contents) {
+  const dir = path.dirname(filePath);
+  const suffix = crypto.randomBytes(6).toString('hex');
+  const tmpFile = path.join(dir, `${path.basename(filePath)}.${suffix}.tmp`);
+  try {
+    fs.writeFileSync(tmpFile, contents, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    fs.chmodSync(tmpFile, 0o600);
+    fs.renameSync(tmpFile, filePath);
+  } catch (err) {
+    try {
+      fs.unlinkSync(tmpFile);
+    } catch {
+      // Nothing to clean up if the temp file was never created or the
+      // rename already moved it away.
+    }
+    if (err.code === 'EACCES') {
+      throw new Error(
+        `Could not save ${filePath}: permission denied (${err.code}). ` +
+        `Check that ${dir} is writable.`,
+        { cause: err }
+      );
+    }
+    throw err;
+  }
+}
+
 // ── CLI argument parsing ──────────────────────────────────────────────────────
 
 function parseArgs(argv) {
@@ -497,7 +534,7 @@ After running:
       refresh_token: refreshToken,
       note: 'Local dev only — do NOT commit this file. Add these as GitHub Actions secrets instead.',
     };
-    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 });
+    saveFileMode0600(CREDENTIALS_FILE, JSON.stringify(creds, null, 2) + '\n');
     console.log(`Saved to ${CREDENTIALS_FILE}`);
     console.log('Make sure .blogger-credentials.json is in .gitignore!');
   }
@@ -535,4 +572,5 @@ module.exports = {
   describeBlogAccess,
   generateState,
   generatePkce,
+  saveFileMode0600,
 };

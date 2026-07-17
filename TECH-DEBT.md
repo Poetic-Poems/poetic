@@ -63,33 +63,6 @@ is still visible; claiming it here would silently retire work nobody has done.
 | [project-review-2026-07-11](reviews/project-review-2026-07-11/) | R-01 — Add a licence | TD26071101 |
 | [project-review-2026-07-11](reviews/project-review-2026-07-11/) | R-06 — Complete package.json metadata | TD26071106 |
 
-## TD26071701 blogger-auth cannot overwrite a read-only credentials file
-
-`blogger-auth.js` saves the minted token with
-`fs.writeFileSync(CREDENTIALS_FILE, …, { mode: 0o600 })`. A `mode` option only
-applies when the file is *created*; against an existing file it is ignored and
-the open is checked against the on-disk permissions. So if
-`.blogger-credentials.json` is read-only (`0400`), the re-mint fails with
-`EACCES: permission denied` and the whole flow is lost after the user has
-already completed the browser consent step.
-
-This matters because a `0400` credentials file is a reasonable thing for a
-security-minded user to do deliberately — the file holds a refresh token with
-full blog write access — and re-minting is not rare: a Google OAuth consent
-screen left in Testing status expires refresh tokens every 7 days. The failure
-is also badly timed, arriving after consent rather than before, and the message
-points at permissions without saying that deleting the file is the fix.
-
-Suggested fix: in the save path, write to a temp file in the same directory
-with mode `0600` and `fs.renameSync` it over the target, so the existing file's
-mode cannot block the write and the replacement is atomic (no truncated
-credentials file if the process dies mid-write). Failing that, `chmod` the
-target to `0600` before writing when it already exists. Either way, the mode of
-the resulting file should still end up `0600`.
-
-Reported 2026-07-17 against v6.0.1, hit on a real re-mint in the
-fragments-and-unity consumer.
-
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -129,4 +102,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071302 | Aggregate (index + all-poems) renderers are not browser-safe | resolved | 2026-07-13 | #34 |
 | TD26071501 | yaml-to-poem entity decoding is order-fragile, not structurally single-pass | resolved | 2026-07-15 | #47 |
 | TD26071502 | convertMarkup's escape-restoration loop is quadratic in the number of escapes | resolved | 2026-07-15 | #49 |
-| TD26071701 | blogger-auth cannot overwrite a read-only credentials file | open | | |
+| TD26071701 | blogger-auth cannot overwrite a read-only credentials file | resolved | 2026-07-17 | #57 |

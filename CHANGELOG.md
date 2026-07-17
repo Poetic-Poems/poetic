@@ -61,6 +61,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`blogger-auth` can overwrite a read-only credentials file.** Saving the
+  minted token used `fs.writeFileSync(CREDENTIALS_FILE, …, { mode: 0o600 })`;
+  the `mode` option only applies when a file is created, so against an
+  existing, deliberately read-only (`0400`) `.blogger-credentials.json` the
+  write failed with `EACCES: permission denied` — after the browser OAuth
+  consent step had already completed. The save now writes to a temp file
+  (mode `0600`) and atomically renames it over the target, so existing
+  permissions on the target can't block the write; the resulting file is
+  always mode `0600`.
 - **`renderPoem()`'s fragment now shows the poem's title.** `public/poetic.css`
   hides the fragment's inline `.poem-info .title` span unconditionally,
   because every other caller of the shared fragment template (single-poem
