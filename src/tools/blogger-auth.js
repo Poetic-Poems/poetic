@@ -53,14 +53,18 @@ const CREDENTIALS_FILE = path.join(process.cwd(), '.blogger-credentials.json');
 // read-only credentials file would otherwise fail the save with EACCES.
 // Writing to a temp file and renaming it over the target sidesteps the
 // target's permissions (a rename only needs write access to the directory)
-// and is atomic — no truncated file if the process dies mid-write.
+// and is atomic — no truncated file if the process dies mid-write. The temp
+// name keeps the target's own leading dot and a random suffix, so a single
+// `.gitignore` pattern covers it and it can't be pre-planted as a symlink
+// (flag 'wx' — O_CREAT|O_EXCL — refuses to follow or reuse an existing path).
 function saveFileMode0600(filePath, contents) {
   const dir = path.dirname(filePath);
-  const tmpFile = path.join(dir, `.${path.basename(filePath)}.${process.pid}.tmp`);
+  const suffix = crypto.randomBytes(6).toString('hex');
+  const tmpFile = path.join(dir, `${path.basename(filePath)}.${suffix}.tmp`);
   try {
-    fs.writeFileSync(tmpFile, contents, { encoding: 'utf8', mode: 0o600 });
+    fs.writeFileSync(tmpFile, contents, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    fs.chmodSync(tmpFile, 0o600);
     fs.renameSync(tmpFile, filePath);
-    fs.chmodSync(filePath, 0o600);
   } catch (err) {
     try {
       fs.unlinkSync(tmpFile);
@@ -71,7 +75,7 @@ function saveFileMode0600(filePath, contents) {
     if (err.code === 'EACCES') {
       throw new Error(
         `Could not save ${filePath}: permission denied (${err.code}). ` +
-        `Check that ${dir} is writable, or remove the existing file and retry.`,
+        `Check that ${dir} is writable.`,
         { cause: err }
       );
     }
