@@ -11,6 +11,10 @@
     "./browser": "./src/browser/render.js",
     "./browser/poetic.css": "./public/poetic.css"
   },
+  "files": [
+    "src",
+    "public/poetic.css"
+  ],
   "dependencies": {
     "js-beautify": "^2.0.3",
     "js-yaml": "^5.2.1",

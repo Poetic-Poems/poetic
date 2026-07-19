@@ -52,3 +52,11 @@ jobs:
           gh release create "${{ steps.version.outputs.tag }}" \
             --title "Poetic ${{ steps.version.outputs.tag }}" \
             --generate-notes
+
+      - name: Pack and upload release tarball
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tarball=$(npm pack)
+          gh release upload "${{ steps.version.outputs.tag }}" "$tarball"
