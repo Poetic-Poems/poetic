@@ -75,7 +75,7 @@ it is always obvious where a new item's body belongs.
 ### TD26071902 Index grid and all-poems listing don't render title inline markup
 
 **What:** A poem's visible title on the single-poem page renders restricted
-inline markup — `*em*`/`_em_`, `**strong**`/`__strong__`, `~strike~` — via
+inline markup — `*em*`/`_em_`, `**strong**`/`__strong__`, `~~strike~~` — via
 `titleHtml`, but the index grid (`public/index.html` / `public/index.js`) and
 the all-poems listing (`public/all-poems.html`) still show the plain,
 unmarked-up title.
