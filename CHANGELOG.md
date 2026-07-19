@@ -9,6 +9,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [6.1.0] — 2026-07-19
+
 ### Added
 
 - **Restricted inline markup in poem titles.** A poem's visible heading now
