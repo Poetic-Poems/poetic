@@ -127,4 +127,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071501 | yaml-to-poem entity decoding is order-fragile, not structurally single-pass | resolved | 2026-07-15 | #47 |
 | TD26071502 | convertMarkup's escape-restoration loop is quadratic in the number of escapes | resolved | 2026-07-15 | #49 |
 | TD26071701 | blogger-auth cannot overwrite a read-only credentials file | resolved | 2026-07-17 | #57 |
-| TD26071901 | All-poems template interpolates the poem title unescaped | open | | |
+| TD26071901 | All-poems template interpolates the poem title unescaped | in-progress | | |
