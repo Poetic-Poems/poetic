@@ -77,8 +77,10 @@ function summarizePoem({ data, slug }, config = {}) {
  * No further HTML-escaping of `title` is needed here: index.js only ever
  * uses it for lowercase text comparison (filtering), never DOM assignment.
  * `titleHtml` (see renderTitleMarkup in render-core.js) is escape-first by
- * construction, so index.js may assign it via `innerHTML` directly — it can
- * never carry a live tag regardless of its JSON encoding.
+ * construction — its only "<...>" runs are the literal <em>/<strong>/<s>
+ * tokens — so index.js can safely walk it into DOM nodes token by token
+ * (see appendTitleHtml there) without ever calling innerHTML or another
+ * HTML-reinterpretation API.
  */
 function buildPoemDataIsland(entries) {
   const json = JSON.stringify(entries, null, 2).replace(/</g, '\\u003c');

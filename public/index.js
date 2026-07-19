@@ -16,6 +16,43 @@ function safePoemHref(file) {
     return typeof file === 'string' && /^[a-zA-Z0-9._-]+(?:\/[a-zA-Z0-9._-]+)*\/?$/.test(file) ? file : '#';
 }
 
+// poem.titleHtml (see renderTitleMarkup in src/tools/render-core.js) is
+// escape-first by construction: every "&"/"<"/">" from the source is
+// HTML-entity-escaped before any tag is emitted, so the only "<...>" runs it
+// can ever contain are the six literal tokens matched below. Rather than
+// hand that string to innerHTML — a DOM-based-XSS sink a static analyser
+// must treat as unsafe for any string merely read back from the page,
+// regardless of how it was built — walk it token by token and construct DOM
+// nodes directly, so no HTML-reinterpretation API is ever called.
+const TITLE_HTML_TAG = /<(\/?)(em|strong|s)>/g;
+const TITLE_HTML_ENTITY = { '&amp;': '&', '&lt;': '<', '&gt;': '>' };
+
+function decodeTitleHtmlEntities(text) {
+    return text.replace(/&amp;|&lt;|&gt;/g, (entity) => TITLE_HTML_ENTITY[entity]);
+}
+
+function appendTitleHtml(parent, titleHtml) {
+    const stack = [parent];
+    let lastIndex = 0;
+    TITLE_HTML_TAG.lastIndex = 0;
+    let match;
+    while ((match = TITLE_HTML_TAG.exec(titleHtml))) {
+        const textRun = titleHtml.slice(lastIndex, match.index);
+        if (textRun) stack[stack.length - 1].appendChild(document.createTextNode(decodeTitleHtmlEntities(textRun)));
+        const [, closing, tag] = match;
+        if (closing) {
+            if (stack.length > 1) stack.pop();
+        } else {
+            const el = document.createElement(tag);
+            stack[stack.length - 1].appendChild(el);
+            stack.push(el);
+        }
+        lastIndex = TITLE_HTML_TAG.lastIndex;
+    }
+    const rest = titleHtml.slice(lastIndex);
+    if (rest) stack[stack.length - 1].appendChild(document.createTextNode(decodeTitleHtmlEntities(rest)));
+}
+
 function formatPoemDate(dateStr) {
     const parts = dateStr.split('-').map(Number);
     if (parts.length !== 3 || parts.some(isNaN)) return dateStr;
@@ -68,11 +105,7 @@ function renderPoems() {
 
         const link = document.createElement('a');
         link.href = safePoemHref(poem.file);
-        // poem.titleHtml is escape-first by construction (renderTitleMarkup in
-        // render-core.js: "&"/"<"/">" are HTML-escaped before any <em>/<strong>/<s>
-        // tag is emitted), so it is safe to assign via innerHTML here — it can
-        // never carry a live tag, even from an attacker-controlled title.
-        link.innerHTML = poem.titleHtml;
+        appendTitleHtml(link, poem.titleHtml);
         titleDiv.appendChild(link);
 
         if (poem.hasAudio) {
