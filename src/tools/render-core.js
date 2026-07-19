@@ -79,13 +79,71 @@ function applyContextVars(value, ctx) {
 }
 
 /**
+ * Render the restricted inline-markup subset permitted in a poem title into
+ * HTML for the visible heading only. Unlike the body renderer (convertMarkup in
+ * poem-parser.js), this is deliberately *escape-first* and recognises ONLY:
+ *
+ *   *word* / _word_     -> <em>word</em>
+ *   **word** / __word__ -> <strong>word</strong>
+ *   ~word~              -> <s>word</s>
+ *   \* \_ \~ \\         -> literal * _ ~ \
+ *
+ * No dashes, smart quotes, entity expansion, links, spans, raw HTML, or `\%`/
+ * `\?` handling (the `\%` decode already happened once, in the parser). The only
+ * tags this can ever emit are <em>, <strong>, <s> and their closers.
+ *
+ * Security keystone: `&`, `<`, `>` are HTML-escaped BEFORE any tag is emitted, so
+ * no `<`/`>`/`&` from the source — or from a substituted variable value — can
+ * ever produce a live tag. Because of this, callers may interpolate the result
+ * unescaped (Pug `!=`). Pass the FULLY-SUBSTITUTED plain title (see §5.3 of
+ * docs/design/title-inline-markup.md).
+ */
+function renderTitleMarkup(text) {
+  if (text == null) return '';
+  let out = String(text);
+
+  // 1. HTML-escape metacharacters first (& before < > to avoid double-escaping).
+  out = out.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // 2. Protect the four backslash escapes via placeholders so their literal
+  //    character survives the transforms below untouched.
+  const escapes = new Map();
+  let escapeIndex = 0;
+  out = out.replace(/\\([*_~\\])/g, (match, char) => {
+    const placeholder = `\x00ESCAPE${escapeIndex++}\x00`;
+    escapes.set(placeholder, char);
+    return placeholder;
+  });
+
+  // 3. Apply the three inline transforms, in the same order and with the same
+  //    tokenisation as convertMarkup (strong before emphasis), so nesting
+  //    degrades identically to body text (§11 Q3).
+  out = out.replace(/~([^~]+)~/g, '<s>$1</s>'); // Strikethrough
+  out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); // Strong
+  out = out.replace(/__([^_]+)__/g, '<strong>$1</strong>'); // Strong (underscore)
+  out = out.replace(/\*([^*]+)\*/g, '<em>$1</em>'); // Emphasis
+  out = out.replace(/_([^_]+)_/g, '<em>$1</em>'); // Emphasis (underscore)
+
+  // 4. Restore the protected literals.
+  // eslint-disable-next-line no-control-regex -- \x00 matches the placeholder format built above
+  out = out.replace(/\x00ESCAPE\d+\x00/g, (placeholder) => escapes.get(placeholder));
+
+  return out;
+}
+
+/**
  * Resolve the `%{...}` context references in a poem's content from its own
- * fields, returning a new poem-data object (the input is left untouched).
+ * fields, returning a new poem-data object (the input is left untouched). The
+ * returned object also carries `titleHtml`, the restricted-markup rendering of
+ * the fully-substituted title for the visible heading (see renderTitleMarkup);
+ * `title` itself stays plain text for every non-heading sink.
  */
 function resolveContextVars(poemData) {
   const ctx = {};
   for (const name of CONTEXT_VAR_NAMES) ctx[name] = poemData[name];
-  return applyContextVars(poemData, ctx);
+  const resolved = applyContextVars(poemData, ctx);
+  resolved.titleHtml = renderTitleMarkup(resolved.title);
+  return resolved;
 }
 
 /**
@@ -104,5 +162,6 @@ module.exports = {
   substituteContextVars,
   applyContextVars,
   resolveContextVars,
+  renderTitleMarkup,
   songsFor,
 };

@@ -22,6 +22,6 @@ html(lang="en")
         |  ·&nbsp;
         a(href="../all-poems.html") All Poems
       div.poem-section(id=`poem-${slug}`)
-        h2.poem-title= title
+        h2.poem-title!= titleHtml
         div.poem-content
           +poemContent

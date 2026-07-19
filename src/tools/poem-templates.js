@@ -21,7 +21,7 @@ var pug_match_html=/["&<>]/;
 function pug_style(r){if(!r)return"";if("object"==typeof r){var t="";for(var e in r)pug_has_own_property.call(r,e)&&(t=t+e+":"+r[e]+";");return t}return r+""}function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;
     var locals_for_with = (locals || {});
 
-    (function (analysis, author, date, encodeURIComponent, isNaN, labelBase, labels, parseInt, postscript, slug, songs, standalone, title, versions) {
+    (function (analysis, author, date, encodeURIComponent, isNaN, labelBase, labels, parseInt, postscript, slug, songs, standalone, titleHtml, versions) {
       function slugify(text) {
 text = text.toLowerCase().trim()
 text = text.replace(/[^a-z0-9 -]/g, '')
@@ -81,9 +81,9 @@ index++
 pug_mixins["poemContent"] = pug_interp = function(){
 var block = (this && this.block), attributes = (this && this.attributes) || {};
 if (standalone) {
-pug_html = pug_html + "\u003Ch2 class=\"poem-title\"\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fh2\u003E";
+pug_html = pug_html + "\u003Ch2 class=\"poem-title\"\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fh2\u003E";
 }
-pug_html = pug_html + "\u003Cdiv" + (pug_attr("id", `poem--${slug}`, true, false)) + "\u003E\u003Cdiv class=\"poem-info\"\u003E\u003Cspan" + (" class=\"title\""+pug_attr("id", `title--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"author\""+pug_attr("id", `author--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = author) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"date\""+pug_attr("id", `date--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = date) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\u003Cdiv class=\"poem-body\"\u003E";
+pug_html = pug_html + "\u003Cdiv" + (pug_attr("id", `poem--${slug}`, true, false)) + "\u003E\u003Cdiv class=\"poem-info\"\u003E\u003Cspan" + (" class=\"title\""+pug_attr("id", `title--${slug}`, true, false)) + "\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"author\""+pug_attr("id", `author--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = author) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"date\""+pug_attr("id", `date--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = date) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\u003Cdiv class=\"poem-body\"\u003E";
 if (versions && versions.length > 0) {
 // iterate versions
 ;(function(){
@@ -441,14 +441,14 @@ pug_html = pug_html + "\u003C\u002Fdiv\u003E";
 if (analysis) {
 pug_html = pug_html + "\u003Cbutton" + (" class=\"analysis show\""+pug_attr("id", `show-analysis--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `document.getElementById('analysis--${slug}').style.display = 'block'; document.getElementById('show-analysis--${slug}').style.display = 'none';`, true, false)) + "\u003EShow analysis\u003C\u002Fbutton\u003E\u003Cdiv" + (" class=\"analysis\""+pug_attr("id", `analysis--${slug}`, true, false)) + "\u003E\u003Cbutton" + (" class=\"analysis hide\""+pug_attr("id", `hide-analysis--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `document.getElementById('analysis--${slug}').style.display = 'none'; document.getElementById('show-analysis--${slug}').style.display = 'block';`, true, false)) + "\u003EHide analysis\u003C\u002Fbutton\u003E";
 if (analysis.synopsis && analysis.full) {
-pug_html = pug_html + "\u003Cdiv class=\"full-or-synopsis-selector\"\u003E\u003Cbutton" + (" class=\"analysis selector selected\""+pug_attr("id", `analysis-select-syno--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'none'; el('syno').style.display = 'block'; el('select-full').classList.remove('selected'); el('select-syno').classList.add('selected');`, true, false)) + "\u003ESynopsis\u003C\u002Fbutton\u003E\u003Cbutton" + (" class=\"analysis selector\""+pug_attr("id", `analysis-select-full--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'block'; el('syno').style.display = 'none'; el('select-full').classList.add('selected'); el('select-syno').classList.remove('selected');`, true, false)) + "\u003EFull Analysis\u003C\u002Fbutton\u003E\u003C\u002Fdiv\u003E\u003Cdiv" + (pug_attr("id", `analysis-syno--${slug}`, true, false)) + "\u003E\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fem\u003E (synopsis)\u003C\u002Fh2\u003E";
+pug_html = pug_html + "\u003Cdiv class=\"full-or-synopsis-selector\"\u003E\u003Cbutton" + (" class=\"analysis selector selected\""+pug_attr("id", `analysis-select-syno--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'none'; el('syno').style.display = 'block'; el('select-full').classList.remove('selected'); el('select-syno').classList.add('selected');`, true, false)) + "\u003ESynopsis\u003C\u002Fbutton\u003E\u003Cbutton" + (" class=\"analysis selector\""+pug_attr("id", `analysis-select-full--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'block'; el('syno').style.display = 'none'; el('select-full').classList.add('selected'); el('select-syno').classList.remove('selected');`, true, false)) + "\u003EFull Analysis\u003C\u002Fbutton\u003E\u003C\u002Fdiv\u003E\u003Cdiv" + (pug_attr("id", `analysis-syno--${slug}`, true, false)) + "\u003E\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fem\u003E (synopsis)\u003C\u002Fh2\u003E";
 const processedSynopsis = processAnalysisText(analysis.synopsis)
-pug_html = pug_html + (null == (pug_interp = processedSynopsis) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cdiv" + (" class=\"hidden\""+pug_attr("id", `analysis-full--${slug}`, true, false)) + "\u003E\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fem\u003E\u003C\u002Fh2\u003E";
+pug_html = pug_html + (null == (pug_interp = processedSynopsis) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cdiv" + (" class=\"hidden\""+pug_attr("id", `analysis-full--${slug}`, true, false)) + "\u003E\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fem\u003E\u003C\u002Fh2\u003E";
 const processedFull = processAnalysisText(analysis.full)
 pug_html = pug_html + (null == (pug_interp = processedFull) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E";
 }
 else {
-pug_html = pug_html + "\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fem\u003E\u003C\u002Fh2\u003E";
+pug_html = pug_html + "\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fem\u003E\u003C\u002Fh2\u003E";
 const processedFull = processAnalysisText(analysis.full)
 pug_html = pug_html + (null == (pug_interp = processedFull) ? "" : pug_interp);
 }
@@ -481,9 +481,9 @@ pug_mixins["poemContent"]();
         locals_for_with.songs :
         typeof songs !== 'undefined' ? songs : undefined, "standalone" in locals_for_with ?
         locals_for_with.standalone :
-        typeof standalone !== 'undefined' ? standalone : undefined, "title" in locals_for_with ?
-        locals_for_with.title :
-        typeof title !== 'undefined' ? title : undefined, "versions" in locals_for_with ?
+        typeof standalone !== 'undefined' ? standalone : undefined, "titleHtml" in locals_for_with ?
+        locals_for_with.titleHtml :
+        typeof titleHtml !== 'undefined' ? titleHtml : undefined, "versions" in locals_for_with ?
         locals_for_with.versions :
         typeof versions !== 'undefined' ? versions : undefined));
     ;;return pug_html;}
@@ -501,7 +501,7 @@ var pug_match_html=/["&<>]/;
 function pug_style(r){if(!r)return"";if("object"==typeof r){var t="";for(var e in r)pug_has_own_property.call(r,e)&&(t=t+e+":"+r[e]+";");return t}return r+""}function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;
     var locals_for_with = (locals || {});
 
-    (function (analysis, author, date, encodeURIComponent, favicon, isNaN, labelBase, labels, parseInt, postscript, slug, songs, standalone, title, versions) {
+    (function (analysis, author, date, encodeURIComponent, favicon, isNaN, labelBase, labels, parseInt, postscript, slug, songs, standalone, title, titleHtml, versions) {
       function slugify(text) {
 text = text.toLowerCase().trim()
 text = text.replace(/[^a-z0-9 -]/g, '')
@@ -561,9 +561,9 @@ index++
 pug_mixins["poemContent"] = pug_interp = function(){
 var block = (this && this.block), attributes = (this && this.attributes) || {};
 if (standalone) {
-pug_html = pug_html + "\u003Ch2 class=\"poem-title\"\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fh2\u003E";
+pug_html = pug_html + "\u003Ch2 class=\"poem-title\"\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fh2\u003E";
 }
-pug_html = pug_html + "\u003Cdiv" + (pug_attr("id", `poem--${slug}`, true, false)) + "\u003E\u003Cdiv class=\"poem-info\"\u003E\u003Cspan" + (" class=\"title\""+pug_attr("id", `title--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"author\""+pug_attr("id", `author--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = author) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"date\""+pug_attr("id", `date--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = date) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\u003Cdiv class=\"poem-body\"\u003E";
+pug_html = pug_html + "\u003Cdiv" + (pug_attr("id", `poem--${slug}`, true, false)) + "\u003E\u003Cdiv class=\"poem-info\"\u003E\u003Cspan" + (" class=\"title\""+pug_attr("id", `title--${slug}`, true, false)) + "\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"author\""+pug_attr("id", `author--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = author) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003Cspan" + (" class=\"date\""+pug_attr("id", `date--${slug}`, true, false)) + "\u003E" + (pug_escape(null == (pug_interp = date) ? "" : pug_interp)) + "\u003C\u002Fspan\u003E\u003Cbr\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\u003Cdiv class=\"poem-body\"\u003E";
 if (versions && versions.length > 0) {
 // iterate versions
 ;(function(){
@@ -921,14 +921,14 @@ pug_html = pug_html + "\u003C\u002Fdiv\u003E";
 if (analysis) {
 pug_html = pug_html + "\u003Cbutton" + (" class=\"analysis show\""+pug_attr("id", `show-analysis--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `document.getElementById('analysis--${slug}').style.display = 'block'; document.getElementById('show-analysis--${slug}').style.display = 'none';`, true, false)) + "\u003EShow analysis\u003C\u002Fbutton\u003E\u003Cdiv" + (" class=\"analysis\""+pug_attr("id", `analysis--${slug}`, true, false)) + "\u003E\u003Cbutton" + (" class=\"analysis hide\""+pug_attr("id", `hide-analysis--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `document.getElementById('analysis--${slug}').style.display = 'none'; document.getElementById('show-analysis--${slug}').style.display = 'block';`, true, false)) + "\u003EHide analysis\u003C\u002Fbutton\u003E";
 if (analysis.synopsis && analysis.full) {
-pug_html = pug_html + "\u003Cdiv class=\"full-or-synopsis-selector\"\u003E\u003Cbutton" + (" class=\"analysis selector selected\""+pug_attr("id", `analysis-select-syno--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'none'; el('syno').style.display = 'block'; el('select-full').classList.remove('selected'); el('select-syno').classList.add('selected');`, true, false)) + "\u003ESynopsis\u003C\u002Fbutton\u003E\u003Cbutton" + (" class=\"analysis selector\""+pug_attr("id", `analysis-select-full--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'block'; el('syno').style.display = 'none'; el('select-full').classList.add('selected'); el('select-syno').classList.remove('selected');`, true, false)) + "\u003EFull Analysis\u003C\u002Fbutton\u003E\u003C\u002Fdiv\u003E\u003Cdiv" + (pug_attr("id", `analysis-syno--${slug}`, true, false)) + "\u003E\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fem\u003E (synopsis)\u003C\u002Fh2\u003E";
+pug_html = pug_html + "\u003Cdiv class=\"full-or-synopsis-selector\"\u003E\u003Cbutton" + (" class=\"analysis selector selected\""+pug_attr("id", `analysis-select-syno--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'none'; el('syno').style.display = 'block'; el('select-full').classList.remove('selected'); el('select-syno').classList.add('selected');`, true, false)) + "\u003ESynopsis\u003C\u002Fbutton\u003E\u003Cbutton" + (" class=\"analysis selector\""+pug_attr("id", `analysis-select-full--${slug}`, true, false)+" type=\"button\""+pug_attr("onclick", `el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'block'; el('syno').style.display = 'none'; el('select-full').classList.add('selected'); el('select-syno').classList.remove('selected');`, true, false)) + "\u003EFull Analysis\u003C\u002Fbutton\u003E\u003C\u002Fdiv\u003E\u003Cdiv" + (pug_attr("id", `analysis-syno--${slug}`, true, false)) + "\u003E\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fem\u003E (synopsis)\u003C\u002Fh2\u003E";
 const processedSynopsis = processAnalysisText(analysis.synopsis)
-pug_html = pug_html + (null == (pug_interp = processedSynopsis) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cdiv" + (" class=\"hidden\""+pug_attr("id", `analysis-full--${slug}`, true, false)) + "\u003E\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fem\u003E\u003C\u002Fh2\u003E";
+pug_html = pug_html + (null == (pug_interp = processedSynopsis) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cdiv" + (" class=\"hidden\""+pug_attr("id", `analysis-full--${slug}`, true, false)) + "\u003E\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fem\u003E\u003C\u002Fh2\u003E";
 const processedFull = processAnalysisText(analysis.full)
 pug_html = pug_html + (null == (pug_interp = processedFull) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E";
 }
 else {
-pug_html = pug_html + "\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fem\u003E\u003C\u002Fh2\u003E";
+pug_html = pug_html + "\u003Ch2\u003EAnalysis of \u003Cem\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fem\u003E\u003C\u002Fh2\u003E";
 const processedFull = processAnalysisText(analysis.full)
 pug_html = pug_html + (null == (pug_interp = processedFull) ? "" : pug_interp);
 }
@@ -936,7 +936,7 @@ pug_html = pug_html + "\u003C\u002Fdiv\u003E";
 }
 pug_html = pug_html + "\u003C\u002Fdiv\u003E";
 };
-pug_html = pug_html + "\u003C!DOCTYPE html\u003E\u003Chtml lang=\"en\"\u003E\u003Chead\u003E\u003Cmeta charset=\"utf-8\"\u003E\u003Cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"\u003E\u003Ctitle\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Ftitle\u003E\u003Clink" + (" rel=\"icon\""+pug_attr("href", `../${favicon}`, true, true)) + "\u003E\u003Clink rel=\"stylesheet\" href=\"..\u002Fpoetic.css\"\u003E\u003Clink rel=\"stylesheet\" href=\"..\u002Fcustom.css\"\u003E\u003Cscript" + (" src=\"..\u002Fpoetic.js\""+pug_attr("defer", true, true, true)) + "\u003E\u003C\u002Fscript\u003E\u003C\u002Fhead\u003E\u003Cbody\u003E\u003Cdiv class=\"container\"\u003E\u003Cnav class=\"poem-page-nav\"\u003E\u003Ca href=\"..\u002F\"\u003E← Poems\u003C\u002Fa\u003E ·&nbsp;\u003Ca href=\"..\u002Fall-poems.html\"\u003EAll Poems\u003C\u002Fa\u003E\u003C\u002Fnav\u003E\u003Cdiv" + (" class=\"poem-section\""+pug_attr("id", `poem-${slug}`, true, true)) + "\u003E\u003Ch2 class=\"poem-title\"\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Fh2\u003E\u003Cdiv class=\"poem-content\"\u003E";
+pug_html = pug_html + "\u003C!DOCTYPE html\u003E\u003Chtml lang=\"en\"\u003E\u003Chead\u003E\u003Cmeta charset=\"utf-8\"\u003E\u003Cmeta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"\u003E\u003Ctitle\u003E" + (pug_escape(null == (pug_interp = title) ? "" : pug_interp)) + "\u003C\u002Ftitle\u003E\u003Clink" + (" rel=\"icon\""+pug_attr("href", `../${favicon}`, true, true)) + "\u003E\u003Clink rel=\"stylesheet\" href=\"..\u002Fpoetic.css\"\u003E\u003Clink rel=\"stylesheet\" href=\"..\u002Fcustom.css\"\u003E\u003Cscript" + (" src=\"..\u002Fpoetic.js\""+pug_attr("defer", true, true, true)) + "\u003E\u003C\u002Fscript\u003E\u003C\u002Fhead\u003E\u003Cbody\u003E\u003Cdiv class=\"container\"\u003E\u003Cnav class=\"poem-page-nav\"\u003E\u003Ca href=\"..\u002F\"\u003E← Poems\u003C\u002Fa\u003E ·&nbsp;\u003Ca href=\"..\u002Fall-poems.html\"\u003EAll Poems\u003C\u002Fa\u003E\u003C\u002Fnav\u003E\u003Cdiv" + (" class=\"poem-section\""+pug_attr("id", `poem-${slug}`, true, true)) + "\u003E\u003Ch2 class=\"poem-title\"\u003E" + (null == (pug_interp = titleHtml) ? "" : pug_interp) + "\u003C\u002Fh2\u003E\u003Cdiv class=\"poem-content\"\u003E";
 pug_mixins["poemContent"]();
 pug_html = pug_html + "\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003C\u002Fbody\u003E\u003C\u002Fhtml\u003E";
     }.call(this, "analysis" in locals_for_with ?
@@ -967,7 +967,9 @@ pug_html = pug_html + "\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv
         locals_for_with.standalone :
         typeof standalone !== 'undefined' ? standalone : undefined, "title" in locals_for_with ?
         locals_for_with.title :
-        typeof title !== 'undefined' ? title : undefined, "versions" in locals_for_with ?
+        typeof title !== 'undefined' ? title : undefined, "titleHtml" in locals_for_with ?
+        locals_for_with.titleHtml :
+        typeof titleHtml !== 'undefined' ? titleHtml : undefined, "versions" in locals_for_with ?
         locals_for_with.versions :
         typeof versions !== 'undefined' ? versions : undefined));
     ;;return pug_html;}

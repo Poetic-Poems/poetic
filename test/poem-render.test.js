@@ -301,6 +301,47 @@ test('renderPage: title element contains poem title', () => {
   assert.ok(html.includes('<title>Test Poem</title>'), 'must contain <title>Test Poem</title>');
 });
 
+// Restricted inline markup in titles: the visible heading renders em/strong/
+// strike; the <head><title> and other plain sinks stay plain/escaped.
+const MARKUP_TITLE_YAML = `
+title: A **bold** and _soft_ <tag> & co
+author: Test Author
+date: 1970-01-31
+versions:
+  - segments:
+      - lines: "Hello world\\n"
+`;
+
+test('renderPage: h2.poem-title renders restricted markup, head <title> stays plain', () => {
+  const { yamlPath } = writeTempYaml(MARKUP_TITLE_YAML);
+  const poemData = loadPoemData(yamlPath);
+  const html = renderPage(poemData, { favicon: 'poetic-logo.svg' });
+
+  assert.ok(
+    html.includes('<h2 class="poem-title">A <strong>bold</strong> and <em>soft</em> &lt;tag&gt; &amp; co</h2>'),
+    'visible heading must render markup and escape < & to inert text',
+  );
+  assert.ok(
+    !html.includes('<tag>'),
+    'a raw < from the title must never emit a live tag in the heading',
+  );
+  assert.ok(
+    html.includes('<title>A **bold** and _soft_ &lt;tag&gt; &amp; co</title>'),
+    'head <title> must use the plain (escaped) title, markup left literal',
+  );
+});
+
+test('renderFragment (standalone): h2.poem-title renders restricted markup', () => {
+  const { yamlPath } = writeTempYaml(MARKUP_TITLE_YAML);
+  const poemData = loadPoemData(yamlPath);
+  const html = renderFragment(poemData, { standalone: true });
+
+  assert.ok(
+    html.includes('<h2 class="poem-title">A <strong>bold</strong> and <em>soft</em> &lt;tag&gt; &amp; co</h2>'),
+    'fragment heading must render markup and escape metacharacters',
+  );
+});
+
 test('renderPage: favicon uses ../ prefix (already public/-stripped)', () => {
   const { yamlPath } = writeTempYaml(FIXTURE_YAML);
   const poemData = loadPoemData(yamlPath);

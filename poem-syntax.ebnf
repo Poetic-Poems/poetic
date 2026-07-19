@@ -81,7 +81,20 @@ header = title_line,
          date_line,
          newline ;
 
-title_line = text_content ;
+title_line = { title_char | title_markup } ;
+
+(* A title supports a RESTRICTED inline-markup subset - emphasis, strong and
+   strikethrough only - rendered escape-first into the visible heading's
+   `titleHtml` (see renderTitleMarkup in render-core.js). It does NOT support
+   links, spans, smart quotes, dashes, entity expansion or raw HTML; those stay
+   literal. The title's escaped_char set is likewise restricted to the four
+   markup escapes below (plus the pre-existing `\%` / `\%{` handling in
+   parseHeader, unchanged - see constraint 41). *)
+title_markup = strong | emphasis | strikethrough ;
+
+title_char = text_char | title_escaped_char ;
+
+title_escaped_char = "\", ( "*" | "_" | "~" | "\" ) ;
 
 author_line = text_content ;
 
@@ -871,7 +884,11 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
          as usual, and the `?` is then an ordinary character, not part of
          an escape. This reservation does not apply inside raw
          `<<<...>>>` blocks or the Markdown analysis/postscript sections,
-         which have their own escaping.
+         which have their own escaping. It also does NOT newly apply to
+         title_line: the restricted title renderer (renderTitleMarkup)
+         recognises only its four escapes (`\*` `\_` `\~` `\\`) and leaves
+         `\?` - and any other `\x` - untouched, exactly as titles behave
+         today, so titles keep their current lenient escape behaviour.
 
       40. A directive_line may be declared in the preamble (see
          preamble_item) as well as in the metadata_section. Scanning the
@@ -887,17 +904,20 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
 
       41. `\%` decodes to a literal `%` wherever escaped_char applies (poem
          segments and labels, per constraint 6), and additionally in
-         title_line specifically, even though title_line does not
-         otherwise go through text_with_markup - this lets a title begin
-         with a literal `%` without its line being read as a preamble
-         directive_line (a bare `%...` line, unescaped, opens a
-         directive_line instead). The one exception is the sequence
-         `\%{`: it is left completely untouched by escaped_char decoding,
-         because `\%{name}` is context_variable_substitution's literal-
-         escape alternative, decoded later, at the render stage, by
-         substituteContextVars - decoding the leading `\%` here would
-         destroy the backslash that later stage depends on. This carve-out
-         applies equally in title_line.
+         title_line specifically. A title's inline markup is the restricted
+         subset above (title_markup), not the full text_with_markup dialect,
+         so its `\%` decode does NOT come from that dialect - it happens
+         exactly once, in parseHeader, before any markup rendering. This lets
+         a title begin with a literal `%` without its line being read as a
+         preamble directive_line (a bare `%...` line, unescaped, opens a
+         directive_line instead). renderTitleMarkup does NOT re-run any
+         `\%` / `\%{` handling, so there is no double-decode. The one
+         exception is the sequence `\%{`: it is left completely untouched by
+         escaped_char decoding, because `\%{name}` is
+         context_variable_substitution's literal-escape alternative, decoded
+         later, at the render stage, by substituteContextVars - decoding the
+         leading `\%` here would destroy the backslash that later stage
+         depends on. This carve-out applies equally in title_line.
 *)
 
 (* ============================================================================

@@ -182,6 +182,84 @@ test('J: resolveContextVars - Date values pass through unchanged', () => {
   assert.strictEqual(resolved.nested.when, when);
 });
 
+// ── K: renderTitleMarkup + titleHtml (restricted title inline markup) ────────
+
+const { renderTitleMarkup } = require('../src/tools/render-core');
+
+test('K: renderTitleMarkup - emphasis (* and _) becomes <em>', () => {
+  assert.strictEqual(renderTitleMarkup('a *word* b'), 'a <em>word</em> b');
+  assert.strictEqual(renderTitleMarkup('a _word_ b'), 'a <em>word</em> b');
+});
+
+test('K: renderTitleMarkup - strong (** and __) becomes <strong>', () => {
+  assert.strictEqual(renderTitleMarkup('a **word** b'), 'a <strong>word</strong> b');
+  assert.strictEqual(renderTitleMarkup('a __word__ b'), 'a <strong>word</strong> b');
+});
+
+test('K: renderTitleMarkup - strikethrough (~) becomes <s>', () => {
+  assert.strictEqual(renderTitleMarkup('a ~word~ b'), 'a <s>word</s> b');
+});
+
+test('K: renderTitleMarkup - backslash escapes the four markers literally', () => {
+  assert.strictEqual(renderTitleMarkup('a \\*b\\* c'), 'a *b* c');
+  assert.strictEqual(renderTitleMarkup('a \\_b\\_ c'), 'a _b_ c');
+  assert.strictEqual(renderTitleMarkup('a \\~b\\~ c'), 'a ~b~ c');
+  assert.strictEqual(renderTitleMarkup('a \\\\ c'), 'a \\ c');
+});
+
+test('K: renderTitleMarkup - HTML metacharacters are escaped, never a live tag', () => {
+  assert.strictEqual(
+    renderTitleMarkup('<script>alert(1)</script>'),
+    '&lt;script&gt;alert(1)&lt;/script&gt;',
+  );
+  assert.strictEqual(renderTitleMarkup('Tom & Jerry'), 'Tom &amp; Jerry');
+  assert.strictEqual(renderTitleMarkup('a <b>c</b>'), 'a &lt;b&gt;c&lt;/b&gt;');
+});
+
+test('K: renderTitleMarkup - escaping happens before transforms (no injected tag)', () => {
+  // A `<` in the source cannot combine with an emitted tag to form live markup.
+  assert.strictEqual(renderTitleMarkup('*<em>*'), '<em>&lt;em&gt;</em>');
+});
+
+test('K: renderTitleMarkup - only \\* \\_ \\~ \\\\ escape; other \\x is left literal', () => {
+  // Matches titles' current lenient escape behaviour: \? and friends are untouched.
+  assert.strictEqual(renderTitleMarkup('a \\? b'), 'a \\? b');
+  assert.strictEqual(renderTitleMarkup('a \\n b'), 'a \\n b');
+});
+
+test('K: renderTitleMarkup - literal-only titles are byte-stable', () => {
+  assert.strictEqual(renderTitleMarkup("Ruru's First Call"), "Ruru's First Call");
+  assert.strictEqual(renderTitleMarkup('Dimly-Lit Path'), 'Dimly-Lit Path');
+  assert.strictEqual(renderTitleMarkup('Plain Title'), 'Plain Title');
+});
+
+test('K: renderTitleMarkup - cross-delimiter nesting works (strong first)', () => {
+  assert.strictEqual(
+    renderTitleMarkup('**bold _and italic_**'),
+    '<strong>bold <em>and italic</em></strong>',
+  );
+});
+
+test('K: resolveContextVars - attaches titleHtml from the substituted title', () => {
+  const poemData = {
+    slug: 's1', title: '%{author} said *hi*', author: 'Sam', date: '2026-01-01',
+  };
+  const resolved = resolveContextVars(poemData);
+  // title stays plain (substituted); titleHtml renders markup on the final text.
+  assert.strictEqual(resolved.title, 'Sam said *hi*');
+  assert.strictEqual(resolved.titleHtml, 'Sam said <em>hi</em>');
+});
+
+test('K: resolveContextVars - a variable value with markup chars cannot inject a tag', () => {
+  const poemData = {
+    slug: 's1', title: '%{author}', author: '<b>x</b> & *y*', date: '2026-01-01',
+  };
+  const resolved = resolveContextVars(poemData);
+  assert.strictEqual(resolved.title, '<b>x</b> & *y*');
+  // metacharacters escaped; the value's *y* at worst renders emphasis, never HTML.
+  assert.strictEqual(resolved.titleHtml, '&lt;b&gt;x&lt;/b&gt; &amp; <em>y</em>');
+});
+
 // ── Edge cases and integration ──────────────────────────────────────────────
 
 test('multiple variables with interdependencies resolve correctly', () => {

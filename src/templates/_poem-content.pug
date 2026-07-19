@@ -51,10 +51,10 @@ mixin poemContent
     //- (renderPoem's live preview) needs one here; poem-page.pug and
     //- all-poems.html already supply their own external h2.poem-title, so
     //- they leave `standalone` unset to avoid a duplicate.
-    h2.poem-title= title
+    h2.poem-title!= titleHtml
   div(id=`poem--${slug}`)
     div.poem-info
-      span(id=`title--${slug}` class="title")= title
+      span(id=`title--${slug}` class="title")!= titleHtml
       br
       span(id=`author--${slug}` class="author")= author
       br
@@ -191,18 +191,18 @@ mixin poemContent
           //- end full-or-synopsis-selector
 
           div(id=`analysis-syno--${slug}`)
-            h2 Analysis of <em>#{title}</em> (synopsis)
+            h2 Analysis of <em>!{titleHtml}</em> (synopsis)
             - const processedSynopsis = processAnalysisText(analysis.synopsis)
             != processedSynopsis
           //- end analysis-syno
 
           div(id=`analysis-full--${slug}` class="hidden")
-            h2 Analysis of <em>#{title}</em>
+            h2 Analysis of <em>!{titleHtml}</em>
             - const processedFull = processAnalysisText(analysis.full)
             != processedFull
           //- end analysis-full
         else
-          h2 Analysis of <em>#{title}</em>
+          h2 Analysis of <em>!{titleHtml}</em>
           - const processedFull = processAnalysisText(analysis.full)
           != processedFull
       //- end analysis

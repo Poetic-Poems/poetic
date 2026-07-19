@@ -11,6 +11,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Restricted inline markup in poem titles.** A poem's visible heading now
+  renders emphasis (`*word*` / `_word_`), strong (`**word**` / `__word__`) and
+  strikethrough (`~word~`); escape a literal marker with `\* \_ \~ \\`. Only
+  these three forms are supported — no links, spans, smart quotes, dashes,
+  entities or raw HTML — and rendering is escape-first, so a title can never
+  inject a tag. The plain title is unchanged and still used everywhere else
+  (`<title>`, slugs, Open Graph, attributes, `%{title}`, Blogger, and the index
+  / all-poems listings). Existing titles are byte-stable. See
+  `docs/POEM-SYNTAX.md`.
 - **Browser-safe renderer (`src/browser/render.js`).** `renderPoem(text, opts)`
   and `renderPoemPage(text, opts)` render a `.poem` to HTML in a plain JS
   runtime — no filesystem, `__dirname`, or Pug compiler — so a web app can share
