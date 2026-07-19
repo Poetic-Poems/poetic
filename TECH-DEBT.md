@@ -150,4 +150,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071502 | convertMarkup's escape-restoration loop is quadratic in the number of escapes | resolved | 2026-07-15 | #49 |
 | TD26071701 | blogger-auth cannot overwrite a read-only credentials file | resolved | 2026-07-17 | #57 |
 | TD26071901 | All-poems template interpolates the poem title unescaped | resolved | 2026-07-19 | #63 |
-| TD26071902 | Index grid and all-poems listing don't render title inline markup | open | | |
+| TD26071902 | Index grid and all-poems listing don't render title inline markup | in-progress | | |
