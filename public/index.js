@@ -68,7 +68,11 @@ function renderPoems() {
 
         const link = document.createElement('a');
         link.href = safePoemHref(poem.file);
-        link.textContent = poem.title;
+        // poem.titleHtml is escape-first by construction (renderTitleMarkup in
+        // render-core.js: "&"/"<"/">" are HTML-escaped before any <em>/<strong>/<s>
+        // tag is emitted), so it is safe to assign via innerHTML here — it can
+        // never carry a live tag, even from an attacker-controlled title.
+        link.innerHTML = poem.titleHtml;
         titleDiv.appendChild(link);
 
         if (poem.hasAudio) {

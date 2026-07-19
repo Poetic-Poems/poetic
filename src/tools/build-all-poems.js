@@ -17,6 +17,7 @@ const { parseDateForSorting, formatDateForDisplay, toISODate } = require("./date
 const { readPoeticConfig, CONFIG_FILENAME } = require("./poetic-config");
 const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, FRAGMENT_TEMPLATE } = require("./poem-render");
 const { hasResolvableSongs } = require("./song-handlers");
+const { renderTitleMarkup } = require("./render-core");
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
 const { needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested } = require("./needs-rebuild");
@@ -88,11 +89,12 @@ function concatenateAllHtmlFiles(
           return;
         }
 
+        const titleHtml = renderTitleMarkup(title);
         const date = data.date ? formatDateForDisplay(data.date) : "Unknown Date";
         const isoDate = data.date ? toISODate(data.date) : "";
         const hasAudio = hasResolvableSongs(data.audio, config);
 
-        poemData.push({ slug, title, date, isoDate, yamlPath, hasAudio });
+        poemData.push({ slug, title, titleHtml, date, isoDate, yamlPath, hasAudio });
       } catch (err) {
         console.warn(`Warning: Could not read ${file}:`, err.message);
       }
@@ -184,6 +186,7 @@ function generateIndexHtml(
 
         // Clean URL: point to slug/ directory instead of slug.html
         const file = `${slug}/`;
+        const titleHtml = renderTitleMarkup(title);
         const hasAudio = hasResolvableSongs(data.audio, config);
         const date = toISODate(data.date);
         const labels = Array.isArray(data.labels) ? data.labels : [];
@@ -191,6 +194,7 @@ function generateIndexHtml(
         poemData.push({
           file: file,
           title: title,
+          titleHtml: titleHtml,
           hasAudio: hasAudio,
           date: date,
           labels: labels,

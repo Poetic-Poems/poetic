@@ -72,43 +72,6 @@ it is always obvious where a new item's body belongs.
 
 <!-- Add new items directly below, as `### <id> <title>` sections. -->
 
-### TD26071902 Index grid and all-poems listing don't render title inline markup
-
-**What:** A poem's visible title on the single-poem page renders restricted
-inline markup — `*em*`/`_em_`, `**strong**`/`__strong__`, `~~strike~~` — via
-`titleHtml`, but the index grid (`public/index.html` / `public/index.js`) and
-the all-poems listing (`public/all-poems.html`) still show the plain,
-unmarked-up title.
-
-**Why:** A title using markup (e.g. `*Fragments* & Unity`) looks inconsistent
-between the single-poem page (rendered) and these two aggregate views
-(literal asterisks/underscores/tildes), which is a visible authoring surface
-poem authors will notice.
-
-**Where:** Deliberately deferred as a non-goal in the title-markup design
-(§3, "Rendering markup in the index grid and all-poems listing titles") and
-listed as follow-up work in §10 ("Index grid and all-poems listing markup")
-of `docs/design/title-inline-markup.md` — since removed from the repo now
-that the feature has shipped (see `git show 000b9f4:docs/design/title-inline-markup.md`
-to recover it), landed via PR #64 (`feat(render): restricted inline markup in
-poem titles`).
-
-**Suggested fix:** Thread `titleHtml` through the JSON data island that
-`summarizePoem()` builds in `src/tools/aggregate-render-core.js` (currently
-only `title` is included; see the `<script type="application/json"
-id="poem-data">` island it feeds) so the client has the rendered markup
-available, then:
-- `public/index.js` — set the title link's content from `titleHtml` via
-  `innerHTML` instead of `link.textContent = poem.title`, matching the
-  escape-first, tag-injection-safe construction already used server-side.
-- `public/all-poems.html` / its build path in `aggregate-render-core.js` —
-  use `titleHtml` in place of the plain title in the table-of-contents row
-  and the poem-section heading.
-
-Keep the plain `title` alongside `titleHtml` in the JSON island (needed for
-search filtering, `safePoemHref`, alt text, etc.) — this is additive, not a
-replacement.
-
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -150,4 +113,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071502 | convertMarkup's escape-restoration loop is quadratic in the number of escapes | resolved | 2026-07-15 | #49 |
 | TD26071701 | blogger-auth cannot overwrite a read-only credentials file | resolved | 2026-07-17 | #57 |
 | TD26071901 | All-poems template interpolates the poem title unescaped | resolved | 2026-07-19 | #63 |
-| TD26071902 | Index grid and all-poems listing don't render title inline markup | in-progress | | |
+| TD26071902 | Index grid and all-poems listing don't render title inline markup | resolved | 2026-07-20 | #72 |

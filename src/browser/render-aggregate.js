@@ -102,7 +102,7 @@ function renderIndex(poems, opts = {}) {
     .map(({ data, slug }) => summarizePoem({ data, slug }, config))
     .sort((a, b) => a.slug.localeCompare(b.slug)) // alphabetical, matching the Node build
     .map((e) => ({
-      file: `${e.slug}/`, title: e.title, hasAudio: e.hasAudio, date: e.isoDate, labels: e.labels,
+      file: `${e.slug}/`, title: e.title, titleHtml: e.titleHtml, hasAudio: e.hasAudio, date: e.isoDate, labels: e.labels,
     }));
 
   return renderFreshIndexHtml(islandEntries, { siteTitle: escapeAmpersand(title), subtitle, favicon });

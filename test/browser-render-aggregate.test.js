@@ -136,8 +136,8 @@ test('renderIndex: embeds a poem-data JSON island sorted alphabetically by slug'
 
   const data = poemDataFrom(html);
   assert.deepStrictEqual(data, [
-    { file: 'alpha-poem/', title: 'Alpha Poem', hasAudio: false, date: '2020-01-01', labels: [] },
-    { file: 'beta-song/', title: 'Beta Song', hasAudio: true, date: '2019-06-15', labels: ['test-label', 'another-label'] },
+    { file: 'alpha-poem/', title: 'Alpha Poem', titleHtml: 'Alpha Poem', hasAudio: false, date: '2020-01-01', labels: [] },
+    { file: 'beta-song/', title: 'Beta Song', titleHtml: 'Beta Song', hasAudio: true, date: '2019-06-15', labels: ['test-label', 'another-label'] },
   ]);
 });
 

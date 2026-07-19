@@ -126,6 +126,7 @@ test('generateIndexHtml: fresh build embeds poem data as a JSON island and loads
   assert.deepStrictEqual(data, [{
     file: `${FIXTURE_SLUG}/`,
     title: FIXTURE_TITLE,
+    titleHtml: FIXTURE_TITLE,
     hasAudio: false,
     date: '2020-05-04',
     labels: ['fixture-label'],
@@ -205,12 +206,14 @@ test('a title containing quotes and "&" is HTML-escaped in the all-poems.html ta
 
   const { html: allPoemsHtml } = concatenateAllHtmlFiles(publicDir, undefined, undefined, { poemsDir });
   assert.ok(
-    allPoemsHtml.includes('He said &quot;Go!&quot; &amp; left'),
+    // titleHtml (renderTitleMarkup) escapes "&"/"<"/">" but not quotes — safe
+    // here since both interpolation sites are text content, not an attribute.
+    allPoemsHtml.includes('He said "Go!" &amp; left'),
     'all-poems.html table row should contain the HTML-escaped title text'
   );
   assert.ok(
-    !allPoemsHtml.includes(title),
-    'all-poems.html should not contain the raw, unescaped title'
+    !allPoemsHtml.includes('He said "Go!" & left'),
+    'all-poems.html should not contain the raw, unescaped "&"'
   );
 
   let indexHtml;

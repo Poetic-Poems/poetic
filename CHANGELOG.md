@@ -9,6 +9,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Restricted title inline markup now also renders on the index grid and
+  all-poems listing**, matching the single-poem page. A title using
+  `*emphasis*`, `**strong**` or `~~strikethrough~~` previously showed the
+  literal markers on these two aggregate views; it now renders the same way
+  everywhere. The plain title is still used for search filtering, `<title>`,
+  slugs, attributes, `%{title}` and Blogger. See `docs/POEM-SYNTAX.md`.
+
 ## [6.1.1] — 2026-07-19
 
 ### Changed

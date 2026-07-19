@@ -13,6 +13,7 @@ const {
   escapeAmpersand, escapeHtml, summarizePoem, buildPoemDataIsland, renderFreshIndexHtml,
   renderAllPoemsHtml,
 } = require('../src/tools/aggregate-render-core');
+const { renderTitleMarkup } = require('../src/tools/render-core');
 
 test('escapeAmpersand: escapes only "&"', () => {
   assert.strictEqual(escapeAmpersand('Fish & Chips <b>'), 'Fish &#38; Chips <b>');
@@ -30,6 +31,7 @@ test('summarizePoem: derives display date, ISO date, hasAudio and labels from ra
   assert.deepStrictEqual(summary, {
     slug: 'a-song',
     title: 'A Song',
+    titleHtml: 'A Song',
     date: 'Monday, 4 May 2020',
     isoDate: '2020-05-04',
     hasAudio: true,
@@ -37,11 +39,18 @@ test('summarizePoem: derives display date, ISO date, hasAudio and labels from ra
   });
 });
 
+test('summarizePoem: titleHtml renders the restricted inline-markup subset', () => {
+  const summary = summarizePoem({ data: { title: '*Fragments* & Unity' }, slug: 'fragments' }, {});
+  assert.strictEqual(summary.title, '*Fragments* & Unity');
+  assert.strictEqual(summary.titleHtml, '<em>Fragments</em> &amp; Unity');
+});
+
 test('summarizePoem: missing date/audio/labels fall back to safe defaults', () => {
   const summary = summarizePoem({ data: { title: 'No Date' }, slug: 'no-date' }, {});
   assert.deepStrictEqual(summary, {
     slug: 'no-date',
     title: 'No Date',
+    titleHtml: 'No Date',
     date: 'Unknown Date',
     isoDate: '',
     hasAudio: false,
@@ -85,11 +94,11 @@ test('renderAllPoemsHtml: returns the "No Poems Found" page for an empty entry l
 test('renderAllPoemsHtml: renders a table-of-contents row and poem-section per entry, with a working audio icon', () => {
   const entries = [
     {
-      slug: 'first', title: 'First Poem', date: 'Wednesday, 1 January 2020', isoDate: '2020-01-01',
+      slug: 'first', title: 'First Poem', titleHtml: 'First Poem', date: 'Wednesday, 1 January 2020', isoDate: '2020-01-01',
       hasAudio: true, content: '<p>first content</p>',
     },
     {
-      slug: 'second', title: 'Second Poem', date: 'Thursday, 2 January 2020', isoDate: '2020-01-02',
+      slug: 'second', title: 'Second Poem', titleHtml: 'Second Poem', date: 'Thursday, 2 January 2020', isoDate: '2020-01-02',
       hasAudio: false, content: '<p>second content</p>',
     },
   ];
@@ -110,22 +119,25 @@ test('renderAllPoemsHtml: renders a table-of-contents row and poem-section per e
   assert.match(html, /id="dateFrom" class="filter-date" min="2020-01-01" max="2020-01-02"/);
 });
 
-test('renderAllPoemsHtml: HTML-escapes a title containing "<", "&" and \'"\' at both interpolation sites', () => {
+test('renderAllPoemsHtml: HTML-escapes a title\'s titleHtml at both interpolation sites, so it cannot inject a live tag', () => {
+  const rawTitle = `<img src=x onerror=alert(1)> & "quoted"`;
   const entries = [{
-    slug: 'x', title: `<img src=x onerror=alert(1)> & "quoted"`, date: 'Wednesday, 1 January 2020',
+    slug: 'x', title: rawTitle, titleHtml: renderTitleMarkup(rawTitle), date: 'Wednesday, 1 January 2020',
     isoDate: '2020-01-01', hasAudio: false, content: '<p>content</p>',
   }];
   const html = renderAllPoemsHtml(entries, { siteTitle: 'My Site', favicon: 'icon.svg' });
 
   // Neither interpolation site lets the title break out of its markup or
-  // introduce a live tag/attribute — it must appear only as escaped text.
+  // introduce a live tag/attribute — it must appear only as escaped text
+  // (renderTitleMarkup escapes "&"/"<"/">" but not quotes, which is safe
+  // here since both sites interpolate into text content, not an attribute).
   assert.doesNotMatch(html, /<img src=x onerror=alert\(1\)>/);
   assert.match(
     html,
-    /<td><a href="#poem-x">&lt;img src=x onerror=alert\(1\)&gt; &amp; &quot;quoted&quot;<\/a><\/td>/
+    /<td><a href="#poem-x">&lt;img src=x onerror=alert\(1\)&gt; &amp; "quoted"<\/a><\/td>/
   );
   assert.match(
     html,
-    /<h2 class="poem-title"><a href="x\/">&lt;img src=x onerror=alert\(1\)&gt; &amp; &quot;quoted&quot;<\/a><\/h2>/
+    /<h2 class="poem-title"><a href="x\/">&lt;img src=x onerror=alert\(1\)&gt; &amp; "quoted"<\/a><\/h2>/
   );
 });

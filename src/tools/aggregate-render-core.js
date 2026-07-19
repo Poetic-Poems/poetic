@@ -4,13 +4,14 @@
  * renderer (src/browser/render-aggregate.js) — the aggregate analogue of
  * render-core.js's single-poem sharing.
  *
- * Keep this module browser-safe: its only dependencies are date-utils.js and
- * song-handlers.js (both themselves fs-free), so do NOT add `fs`/`path`/
- * `__dirname` or any other Node-only dependency here.
+ * Keep this module browser-safe: its only dependencies are date-utils.js,
+ * song-handlers.js and render-core.js (all themselves fs-free), so do NOT add
+ * `fs`/`path`/`__dirname` or any other Node-only dependency here.
  */
 
 const { formatDateForDisplay, toISODate } = require('./date-utils');
 const { hasResolvableSongs } = require('./song-handlers');
+const { renderTitleMarkup } = require('./render-core');
 
 /**
  * HTML-entity-escape "&" only (matching the em-dash-style entities already
@@ -48,14 +49,15 @@ function escapeHtml(str) {
  *   slug (an in-memory poem has no filename to derive one from, same
  *   convention as renderPoem's opts.slug in src/browser/render.js).
  * @param {object} [config] - parsed .poetic-config.yaml (drives song handlers)
- * @returns {{ slug: string, title: string, date: string, isoDate: string,
- *   hasAudio: boolean, labels: string[] }}
+ * @returns {{ slug: string, title: string, titleHtml: string, date: string,
+ *   isoDate: string, hasAudio: boolean, labels: string[] }}
  */
 function summarizePoem({ data, slug }, config = {}) {
   const rawDate = data.date;
   return {
     slug,
     title: data.title,
+    titleHtml: renderTitleMarkup(data.title),
     date: rawDate ? formatDateForDisplay(rawDate) : 'Unknown Date',
     isoDate: rawDate ? (toISODate(rawDate) || '') : '',
     hasAudio: hasResolvableSongs(data.audio, config),
@@ -66,15 +68,17 @@ function summarizePoem({ data, slug }, config = {}) {
 /**
  * Build the `<script type="application/json" id="poem-data">...</script>`
  * island consumed client-side by public/index.js. `entries` are objects
- * shaped `{ file, title, hasAudio, date, labels }` (`date` here is the raw
- * ISO yyyy-mm-dd string, or `""` — index.js formats it client-side).
+ * shaped `{ file, title, titleHtml, hasAudio, date, labels }` (`date` here is
+ * the raw ISO yyyy-mm-dd string, or `""` — index.js formats it client-side).
  *
  * JSON.stringify does not escape "<", so a poem title containing
  * "</script>" would end the <script> element early in the browser; escape
  * every "<" as the equivalent JSON string escape (JSON.parse restores it).
- * No further HTML-escaping of `title` is needed here: index.js reads the
- * parsed JSON back and assigns it via `textContent` (never `innerHTML`), so
- * "&"/">"/`"` reach the DOM as inert text regardless of their JSON encoding.
+ * No further HTML-escaping of `title` is needed here: index.js only ever
+ * uses it for lowercase text comparison (filtering), never DOM assignment.
+ * `titleHtml` (see renderTitleMarkup in render-core.js) is escape-first by
+ * construction, so index.js may assign it via `innerHTML` directly — it can
+ * never carry a live tag regardless of its JSON encoding.
  */
 function buildPoemDataIsland(entries) {
   const json = JSON.stringify(entries, null, 2).replace(/</g, '\\u003c');
@@ -134,9 +138,11 @@ function renderFreshIndexHtml(islandEntries, { siteTitle, subtitle, favicon }) {
  * entries (see summarizePoem above); `entries[i].content` is the poem's
  * rendered fragment HTML (see render-core.js / poem-templates.js), and
  * `entries` must already be sorted into display order (oldest first,
- * matching the Node build).
+ * matching the Node build). `entries[i].titleHtml` (see renderTitleMarkup in
+ * render-core.js) is interpolated unescaped — it is escape-first by
+ * construction, so it can never carry a live tag.
  *
- * @param {Array<{slug, title, date, isoDate, hasAudio, content}>} entries
+ * @param {Array<{slug, title, titleHtml, date, isoDate, hasAudio, content}>} entries
  * @param {{ siteTitle: string, favicon: string }} opts
  * @returns {string} full HTML document
  */
@@ -221,7 +227,7 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
   entries.forEach((poem) => {
     const audioIcon = poem.hasAudio ? '🎵' : '';
     html += `<tr>
-                        <td><a href="#poem-${poem.slug}">${escapeHtml(poem.title)}</a></td>
+                        <td><a href="#poem-${poem.slug}">${poem.titleHtml}</a></td>
                         <td>${poem.date}</td>
                         <td class="audio-cell">${audioIcon}</td>
                     </tr>`;
@@ -234,7 +240,7 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
   entries.forEach((poem) => {
     html += `
         <div class="poem-section" id="poem-${poem.slug}" data-date="${poem.isoDate || ''}">
-            <h2 class="poem-title"><a href="${poem.slug}/">${escapeHtml(poem.title)}</a></h2>
+            <h2 class="poem-title"><a href="${poem.slug}/">${poem.titleHtml}</a></h2>
             <div class="poem-content">${poem.content}</div>
         </div>`;
   });
