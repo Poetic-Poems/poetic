@@ -9,6 +9,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [6.1.1] — 2026-07-19
+
 ### Changed
 
 - **Strikethrough is now `~~text~~` (double tilde), matching Markdown
