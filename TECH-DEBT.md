@@ -2,13 +2,14 @@
 
 Deferred work and known gaps in the Poetic framework. Record an entry here
 whenever you defer something, rather than leaving it only in a commit message or
-in chat. Keep entries short and dated. Once an issue has been resolved, remove
-its `## <id> <title>` section below — but never remove its row from the
-Ledger table at the bottom of this file; see "Ledger" below.
+in chat. Keep entries short and dated. Live items live under the "Current Items"
+heading as `### <id> <title>` sections. Once an issue has been resolved, remove
+its `### <id> <title>` section from Current Items below — but never remove its
+row from the Ledger table at the bottom of this file; see "Ledger" below.
 
 Format:
 ```
-## <id> <short title>
+### <id> <short title>
 
 A description of what, why it matters, where, and a suggested fix.
 
@@ -34,8 +35,8 @@ requests for its ID. Then:
    can be the Ledger status flip itself.
 3. Do the work, pushing further commits to the same branch/PR.
 4. Once verified, flip the Ledger row to `resolved` (fill in `Resolved` and
-   `Ref`), remove the entry's `## <id>` section, and mark the PR ready for
-   review.
+   `Ref`), remove the entry's `### <id>` section from Current Items, and mark
+   the PR ready for review.
 
 If a claim is abandoned (the draft PR is closed without merging), flip the
 row back to `open`.
@@ -63,6 +64,14 @@ is still visible; claiming it here would silently retire work nobody has done.
 | [project-review-2026-07-11](reviews/project-review-2026-07-11/) | R-01 — Add a licence | TD26071101 |
 | [project-review-2026-07-11](reviews/project-review-2026-07-11/) | R-06 — Complete package.json metadata | TD26071106 |
 
+## Current Items
+
+The open and in-progress items, each as a `### <id> <title>` section. This
+heading is permanent: when there are no current items it stays here (empty), so
+it is always obvious where a new item's body belongs.
+
+<!-- Add new items directly below, as `### <id> <title>` sections. -->
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -73,7 +82,7 @@ a body above.
 
 A row can also close as `not-debt`: the item was filed here but turned out, on
 reflection, not to be a deferred cost at all (e.g. deliberately reserved
-syntax awaiting a future feature). Its `## <id>` section is removed like a
+syntax awaiting a future feature). Its `### <id>` section is removed like a
 resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 `Ref` column instead points to wherever the content moved.
 
