@@ -43,7 +43,16 @@ function appendTitleHtml(parent, titleHtml) {
         if (closing) {
             if (stack.length > 1) stack.pop();
         } else {
-            const el = document.createElement(tag);
+            // Branch on literal tag names rather than passing the matched
+            // `tag` group straight to createElement(): even though
+            // TITLE_HTML_TAG's alternation already restricts it to
+            // em/strong/s, a static analyser can't verify that, and flags
+            // createElement(<any string derived from page content>) as a
+            // tag-injection sink regardless.
+            let el;
+            if (tag === 'em') el = document.createElement('em');
+            else if (tag === 'strong') el = document.createElement('strong');
+            else el = document.createElement('s');
             stack[stack.length - 1].appendChild(el);
             stack.push(el);
         }
