@@ -22,7 +22,7 @@
 [{]=poemSegmentLabelDelim [Stanza 1]=poemSegmentLabelLineOnly [}]=poemSegmentLabelDelim [  # segment label ]=poemSegmentLabelLineOnly [(]=poemParamsDelim [optional]=poemParamKey [)]=poemParamsDelim
 [These are the lines]=-
 [   with leading indentation preserved]=-
-[of ]=- [*stanza*]=poemEmphasis [ one, with ]=- [_emphasis_]=poemEmphasis [, ]=- [**]=poemEmphasis [strong*]=poemStrong [*]=poemEmphasis [, and ]=- [~struck~]=poemStrikethrough [ words.]=-
+[of ]=- [*stanza*]=poemEmphasis [ one, with ]=- [_emphasis_]=poemEmphasis [, ]=- [**]=poemEmphasis [strong*]=poemStrong [*]=poemEmphasis [, and ]=- [~~struck~~]=poemStrikethrough [ words.]=-
 [A ]=- ["double-quoted"]=poemSmartDoubleQuote [ phrase and a ]=- [`single-quoted`]=poemSmartSingleQuote [ one,]=-
 [an en]=- [--]=poemEnDash [dash, an em]=- [---]=poemEmDash [dash, an ampersand &, an apostrophe's tail.]=-
 

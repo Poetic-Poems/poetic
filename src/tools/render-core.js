@@ -85,8 +85,11 @@ function applyContextVars(value, ctx) {
  *
  *   *word* / _word_     -> <em>word</em>
  *   **word** / __word__ -> <strong>word</strong>
- *   ~word~              -> <s>word</s>
+ *   ~~word~~            -> <s>word</s>
  *   \* \_ \~ \\         -> literal * _ ~ \
+ *
+ * A single `~` is never itself markup: it is plain literal text, deliberately
+ * left unassigned and reserved for a possible future subscript syntax.
  *
  * No dashes, smart quotes, entity expansion, links, spans, raw HTML, or `\%`/
  * `\?` handling (the `\%` decode already happened once, in the parser). The only
@@ -118,7 +121,7 @@ function renderTitleMarkup(text) {
   // 3. Apply the three inline transforms, in the same order and with the same
   //    tokenisation as convertMarkup (strong before emphasis), so nesting
   //    degrades identically to body text (§11 Q3).
-  out = out.replace(/~([^~]+)~/g, '<s>$1</s>'); // Strikethrough
+  out = out.replace(/~~([^~]+)~~/g, '<s>$1</s>'); // Strikethrough
   out = out.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); // Strong
   out = out.replace(/__([^_]+)__/g, '<strong>$1</strong>'); // Strong (underscore)
   out = out.replace(/\*([^*]+)\*/g, '<em>$1</em>'); // Emphasis

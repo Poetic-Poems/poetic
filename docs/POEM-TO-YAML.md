@@ -80,7 +80,7 @@ Converts text markup to HTML entities:
 |--------|--------|
 | `_text_` | `<em>text</em>` |
 | `*text*` | `<strong>text</strong>` |
-| `~text~` | `<s>text</s>` |
+| `~~text~~` | `<s>text</s>` |
 | `[text\|url]` | `<a href="https://url">text</a>` |
 | `` `text` `` | `&#8216;text&#8217;` (smart single quotes) |
 | `"text"` | `&#8220;text&#8221;` (smart double quotes) |

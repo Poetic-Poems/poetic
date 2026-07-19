@@ -196,8 +196,20 @@ test('K: renderTitleMarkup - strong (** and __) becomes <strong>', () => {
   assert.strictEqual(renderTitleMarkup('a __word__ b'), 'a <strong>word</strong> b');
 });
 
-test('K: renderTitleMarkup - strikethrough (~) becomes <s>', () => {
-  assert.strictEqual(renderTitleMarkup('a ~word~ b'), 'a <s>word</s> b');
+test('K: renderTitleMarkup - strikethrough (~~) becomes <s>', () => {
+  assert.strictEqual(renderTitleMarkup('a ~~word~~ b'), 'a <s>word</s> b');
+});
+
+test('K: renderTitleMarkup - a single ~ is left literal (reserved for a future subscript syntax)', () => {
+  assert.strictEqual(renderTitleMarkup('a ~word~ b'), 'a ~word~ b');
+});
+
+test('K: renderTitleMarkup - unmatched ~~ stays literal', () => {
+  assert.strictEqual(renderTitleMarkup('a ~~word b'), 'a ~~word b');
+});
+
+test('K: renderTitleMarkup - escaping both tildes of a pair prevents strikethrough, leaving two literal ~~', () => {
+  assert.strictEqual(renderTitleMarkup('a \\~\\~word\\~\\~ b'), 'a ~~word~~ b');
 });
 
 test('K: renderTitleMarkup - backslash escapes the four markers literally', () => {

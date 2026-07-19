@@ -531,7 +531,11 @@ emphasis = ( "*", markup_content, "*" ) | ( "_", markup_content, "_" ) ;
 
 strong = ( "**", markup_content, "**" ) | ( "__", markup_content, "__" ) ;
 
-strikethrough = "~", markup_content, "~" ;
+(* A two-character delimiter pair, exactly like strong's "**"/"__" above. A
+   single "~" is never itself markup - it is plain literal text, deliberately
+   left unassigned and reserved for a possible future subscript syntax (see
+   constraint 42). *)
+strikethrough = "~~", markup_content, "~~" ;
 
 link = "[", link_text, "|", link_url, "]" ;
 
@@ -918,6 +922,15 @@ leading_whitespace = ( " " | tab ), { " " | tab } ;
          later, at the render stage, by substituteContextVars - decoding the
          leading `\%` here would destroy the backslash that later stage
          depends on. This carve-out applies equally in title_line.
+
+      42. Strikethrough (strikethrough, and title_markup's use of it) uses a
+         two-character delimiter pair "~~...~~", exactly like strong's
+         "**...**"/"__...__" - not a single "~". A single "~" is never itself
+         markup: it is plain literal text, deliberately left unassigned and
+         reserved for a possible future subscript syntax. `\~` still decodes
+         to a literal "~" wherever escaped_char / title_escaped_char applies,
+         e.g. to write two adjacent literal tildes ("\~\~") without them
+         being read as a "~~" pair.
 *)
 
 (* ============================================================================

@@ -1823,7 +1823,10 @@ class PoemParser {
     });
 
     // Basic formatting (Markdown-style emphasis: ** = strong, * = em)
-    text = text.replace(/~([^~]+)~/g, '<s>$1</s>'); // Strikethrough
+    // Strikethrough is a two-character delimiter pair, like ** for strong: a
+    // single ~ is deliberately left unassigned (plain literal text), reserved
+    // for a possible future subscript syntax.
+    text = text.replace(/~~([^~]+)~~/g, '<s>$1</s>'); // Strikethrough
     // Strong (double markers) must run before emphasis (single markers)
     text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); // Strong
     text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>'); // Strong (underscore)
