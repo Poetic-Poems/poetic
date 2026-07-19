@@ -61,6 +61,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **All-poems page no longer breaks on titles containing `<`, `&`, or `"`.**
+  The table-of-contents row and the poem-section heading in
+  `src/tools/aggregate-render-core.js` interpolated each poem's title into
+  raw HTML unescaped, unlike the single-poem view (which escapes it via
+  Pug's `=`). A title containing those characters could break the surrounding
+  markup or inject HTML on the all-poems page. Both sites now HTML-escape the
+  title, matching the single-poem view.
 - **`blogger-auth` can overwrite a read-only credentials file.** Saving the
   minted token used `fs.writeFileSync(CREDENTIALS_FILE, …, { mode: 0o600 })`;
   the `mode` option only applies when a file is created, so against an
