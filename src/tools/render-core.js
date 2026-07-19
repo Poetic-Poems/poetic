@@ -95,8 +95,8 @@ function applyContextVars(value, ctx) {
  * Security keystone: `&`, `<`, `>` are HTML-escaped BEFORE any tag is emitted, so
  * no `<`/`>`/`&` from the source — or from a substituted variable value — can
  * ever produce a live tag. Because of this, callers may interpolate the result
- * unescaped (Pug `!=`). Pass the FULLY-SUBSTITUTED plain title (see §5.3 of
- * docs/design/title-inline-markup.md).
+ * unescaped (Pug `!=`). Pass the FULLY-SUBSTITUTED plain title, so a variable
+ * value that happens to contain markup chars is escaped, never rendered as a tag.
  */
 function renderTitleMarkup(text) {
   if (text == null) return '';
