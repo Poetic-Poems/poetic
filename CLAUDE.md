@@ -95,6 +95,24 @@ owner reviews there and requests changes if needed. This does not extend to acti
 itself (direct commits/pushes are rejected by the branch protection anyway) or to
 force-pushing/merging, which still require explicit instruction.
 
+All Poetic repositories, this one included, operate in a multi-agent environment: autonomous
+and interactive agents, and the maintainer, may push branches, merge pull requests, and move
+`main` at any time. Before commencing any changes, make your own dedicated shallow clone of
+`origin/main` and work in that — never in a checkout shared with anyone else, such as the
+user's working copy (which may be edited at any moment) or a clone another agent is already
+using:
+
+```bash
+git clone --depth 1 https://github.com/Poetic-Poems/poetic.git <scratch-dir>/poetic
+```
+
+Deepen the clone if the task turns out to need history — for example, a rebase onto a `main`
+that has moved needs the merge base (`git fetch --unshallow`, or `git fetch --depth=<n>`).
+Commit, push the feature branch, and open the pull request from that clone; delete the clone
+once the work has landed. And when you open the PR, do not assume `origin/main` is still in
+the state it was when you cloned — another change may have merged meanwhile, which is why the
+post-PR mergeable check below is mandatory.
+
 Keep feature branches short-lived and narrowly scoped. Prefer breaking a large piece of
 work into a series of small pull requests, each a safe, self-contained, independently
 reviewable and mergeable unit, over accumulating many changes on one long-running branch.
