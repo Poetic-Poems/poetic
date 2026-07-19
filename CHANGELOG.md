@@ -9,6 +9,20 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Strikethrough is now `~~text~~` (double tilde), matching Markdown
+  convention — was `~text~`.** This applies to both the poem-body WYSIWYG
+  dialect and the restricted title-markup subset added in v6.1.0. A single `~`
+  is now plain literal text, deliberately left unassigned and reserved for a
+  possible future subscript syntax; `\~` still escapes to a literal `~` (e.g.
+  `\~\~` for two adjacent literal tildes that should not read as a `~~` pair).
+  Unmatched `~~` remains literal, consistent with the existing unmatched-pair
+  rule, and `~~…~~` pairs match across lines within a paragraph but not across
+  paragraph boundaries, exactly like `**…**`. No poem in this repo's corpus
+  used single-tilde strikethrough except the canonical example fixture
+  (`_example.poem`), which is updated here. See `docs/POEM-SYNTAX.md`.
+
 ## [6.1.0] — 2026-07-19
 
 ### Added

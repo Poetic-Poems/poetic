@@ -338,7 +338,7 @@ class YamlToPoemConverter {
     // Convert inline HTML tags back to markup
     text = text.replace(/<em>(.*?)<\/em>/g, '_$1_');
     text = text.replace(/<strong>(.*?)<\/strong>/g, '*$1*');
-    text = text.replace(/<s>(.*?)<\/s>/g, '~$1~');
+    text = text.replace(/<s>(.*?)<\/s>/g, '~~$1~~');
     text = text.replace(/<a href="https?:\/\/(.*?)">(.*?)<\/a>/g, '[$2|$1]');
 
     return this.convertEntitiesToMarkup(text);

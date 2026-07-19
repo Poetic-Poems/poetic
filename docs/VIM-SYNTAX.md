@@ -19,7 +19,7 @@ The syntax highlighting provides colour-coding for:
   (`Suno:`, `YouTube:`, ...)
 - **Analysis section**: rendered with the embedded **Markdown** syntax (it is GitHub-Flavoured Markdown), keyed on the `{Synopsis}`/`{Full}` labels
 - **Markdown blocks**: `<<<markdown` … `>>>` (and `<<<md`) blocks use the embedded Markdown syntax
-- **Inline markup** (poem body and labels): italic (`*text*` or `_text_`), bold (`**text**` or `__text__`), strikethrough (`~text~`), links (`[text|url]`), smart quotes (`` `text` `` and `"text"`), and span elements (`/.class{text}`). These pairs may span multiple lines within a paragraph (but not across a blank line).
+- **Inline markup** (poem body and labels): italic (`*text*` or `_text_`), bold (`**text**` or `__text__`), strikethrough (`~~text~~`), links (`[text|url]`), smart quotes (`` `text` `` and `"text"`), and span elements (`/.class{text}`). These pairs may span multiple lines within a paragraph (but not across a blank line). A single `~` is never itself markup (it is reserved for a possible future subscript syntax).
 - **Special characters**: Escaped characters (`\*`, `\%`), em dashes (`---`), and en dashes (`--`) — `\%{...}` is highlighted separately, as the context-variable literal escape, not as an escaped character
 - **Trailing text**: Inline comments after line-anchored tokens (e.g., `----  # comment`)
 

@@ -212,7 +212,9 @@ syn match poemDirectiveComment "#.*$" contained
 
 " Inline markup (poem body and labels).
 " Emphasis follows Markdown conventions: single markers (* or _) = italic,
-" double markers (** or __) = bold.
+" double markers (** or __) = bold. Strikethrough is also a double-marker
+" (~~) pair, like strong; a single ~ is never itself markup (reserved for a
+" possible future subscript syntax).
 " Each pair may span multiple lines within a paragraph but must NOT cross a
 " blank line (a paragraph boundary). The extra `end=/^$/` stops a region at the
 " blank line so an unmatched marker cannot run away to the end of the file.
@@ -222,7 +224,7 @@ syn region poemEmphasis start="\*" end="\*" end="^$" keepend contains=poemStrong
 syn region poemEmphasis start="_" end="_" end="^$" keepend contains=poemStrong,poemStrikethrough,poemVariableRef,poemEscaped
 syn region poemStrong start="\*\*" end="\*\*" end="^$" keepend contains=poemEmphasis,poemStrikethrough,poemVariableRef,poemEscaped
 syn region poemStrong start="__" end="__" end="^$" keepend contains=poemEmphasis,poemStrikethrough,poemVariableRef,poemEscaped
-syn region poemStrikethrough start="\~" end="\~" end="^$" keepend contains=poemEmphasis,poemStrong,poemVariableRef,poemEscaped
+syn region poemStrikethrough start="\~\~" end="\~\~" end="^$" keepend contains=poemEmphasis,poemStrong,poemVariableRef,poemEscaped
 syn region poemLink start="\[" end="\]" end="^$" keepend contains=poemLinkPipe,poemEmphasis,poemStrong,poemStrikethrough,poemSmartSingleQuote,poemSmartDoubleQuote,poemVariableRef
 syn match poemLinkPipe "|" contained
 syn region poemSmartSingleQuote start="`" end="`" end="^$" keepend

@@ -22,7 +22,7 @@ ${author_name}
 {Stanza 1}  # segment label (optional)
 These are the lines
    with leading indentation preserved
-of *stanza* one, with _emphasis_, **strong**, and ~struck~ words.
+of *stanza* one, with _emphasis_, **strong**, and ~~struck~~ words.
 A "double-quoted" phrase and a `single-quoted` one,
 an en--dash, an em---dash, an ampersand &, an apostrophe's tail.
 
