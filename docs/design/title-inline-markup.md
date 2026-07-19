@@ -1,6 +1,6 @@
 # Design: inline markup in poem titles
 
-- **Status:** Draft / proposed (not yet implemented)
+- **Status:** Accepted / ready to implement (not yet implemented)
 - **Date:** 2026-07-19
 - **Repo:** `poetic` (framework) — a framework change, propagated to consumers via `scripts/sync-framework.sh`
 - **Scope decision:** restricted inline subset only — **emphasis, strong, strikethrough**. No links, spans, smart quotes, dashes, entity expansion, or raw HTML.
@@ -72,7 +72,7 @@ Everything else in a title stays literal: `-`, `'`, `"`, `` ` ``, `&`, `<`, `>`,
 `[`, `]`, `{`, `}`, `/`, `#`, `$`, `^`, `|`, `.`, digits, letters, whitespace. In
 particular `--`/`---` do **not** become dashes, `` ` ``/`"` do **not** become smart
 quotes, and `&…;` is **not** treated as an entity — all differences from the body
-renderer, chosen so existing titles are byte-stable (§9).
+renderer, chosen so existing titles are byte-stable (§8).
 
 ## 5. Design
 
@@ -88,9 +88,13 @@ no change and no new escaping obligations.
 
 ### 5.2 The restricted renderer
 
-Add a dedicated function, e.g. `renderTitleMarkup(text)` (sibling to `convertMarkup`
-in [poem-parser.js](../../src/tools/poem-parser.js)), that is **escape-first** and
-recognises only the four escapes and three transforms above:
+Add a dedicated function, `renderTitleMarkup(text)`, defined in
+[render-core.js](../../src/tools/render-core.js) — *not* in `poem-parser.js`. It is a
+render-stage concern (the parser stores only the plain title), and placing it in
+`render-core` keeps that module's lean dependency contract (its only require is
+`song-handlers.js`) while giving both the Node and browser render paths one shared
+implementation. It mirrors `convertMarkup`'s tokenisation approach but is
+**escape-first** and recognises only the four escapes and three transforms above:
 
 1. **HTML-escape metacharacters first:** `&` → `&amp;`, `<` → `&lt;`, `>` → `&gt;`.
    This is the security keystone: because escaping happens before any tag is emitted,
@@ -122,11 +126,16 @@ final text and — combined with escape-first rendering — a variable value tha
 to contain `<`, `&`, `*`, `_`, or `~` cannot inject a tag; its metacharacters are
 escaped, and `*/_/~` in a *value* would at worst render emphasis, never HTML.
 
-Recommended integration point: compute `titleHtml` in **`render-core`**, after
-`applyContextVars`, so both the Node build and the browser renderer
-([src/browser/render.js](../../src/browser/render.js)) share one code path and one
-ordering guarantee. `titleHtml` is added to the render model passed to the templates;
-it is a render-stage artefact and need not be persisted in YAML.
+Integration point: attach `titleHtml` inside **`resolveContextVars()`**
+([render-core.js:85](../../src/tools/render-core.js)), immediately after
+`applyContextVars` returns the substituted poem data. All four render entry points
+funnel through it — `renderFragment`/`renderPage` in
+[poem-render.js:292,312](../../src/tools/poem-render.js) and
+`renderPoem`/`renderPoemPage` in [render.js:69,85](../../src/browser/render.js) — so
+one change gives the Node build and the browser renderer the same code path and the
+same ordering guarantee. `titleHtml` is thereby part of the render model passed to
+the templates; it is a render-stage artefact and is **not** persisted in YAML (§11
+Q2), which keeps the YAML schema and golden fixtures stable.
 
 ### 5.4 Sink routing
 
@@ -138,11 +147,11 @@ Only the visible single-poem heading consumes `titleHtml`. Everything else keeps
 | Poem-page heading | [poem-page.pug:25](../../src/templates/poem-page.pug) `h2.poem-title` | `!= titleHtml` |
 | Fragment heading | [_poem-content.pug:54](../../src/templates/_poem-content.pug) `h2.poem-title` | `!= titleHtml` |
 | Fragment title span | [_poem-content.pug:57](../../src/templates/_poem-content.pug) `span.title` | `!= titleHtml` |
-| Analysis headings | [_poem-content.pug:194,200,205](../../src/templates/_poem-content.pug) | `!= titleHtml` inside the existing `<em>` wrapper — see open question Q1 |
+| Analysis headings | [_poem-content.pug:194,200,205](../../src/templates/_poem-content.pug) | `!= titleHtml` inside the existing `<em>` wrapper (decision — see §11 Q1) |
 | `<head><title>` | [poem-page.pug:13](../../src/templates/poem-page.pug), [poem-templates.js:939](../../src/tools/poem-templates.js) | **`title` (plain)** — element cannot hold tags |
 | Slug (browser path) | [render.js:47](../../src/browser/render.js) | **`title` (plain)** |
 | Song embed `data-title` → iframe | [song-handlers.js:362](../../src/tools/song-handlers.js) → [poetic.js:32](../../public/poetic.js) | **`title` (plain)** — attribute |
-| `%{title}` context var | [render-core.js:97](../../src/tools/render-core.js) | **`title` (plain)** |
+| `%{title}` context var | [render-core.js:87](../../src/tools/render-core.js) | **`title` (plain)** |
 | Blogger post title + permalink | [sync-blogger.js:791,808](../../src/tools/sync-blogger.js) | **`title` (plain)** |
 | Index grid card / all-poems listing | [index.js:71](../../public/index.js), [aggregate-render-core.js:206,219](../../src/tools/aggregate-render-core.js) | **`title` (plain)** — out of scope this iteration |
 
@@ -179,9 +188,16 @@ no attacker-controllable tags.
 - **Constraint 40** ([poem-syntax.ebnf:876-886](../../poem-syntax.ebnf)): unchanged —
   the preamble/title boundary and the bare-`%` directive rule are unaffected.
 
-- **[docs/POEM-SYNTAX.md](../POEM-SYNTAX.md):** update the Title section (currently
-  "any text, may include variable references") to document the three markup forms and
-  the `\* \_ \~` escapes.
+- **[docs/POEM-SYNTAX.md](../POEM-SYNTAX.md):** two places must change, and one must
+  not:
+  - the **Fields** section's Title bullet (~line 83, currently "any text, may include
+    variable references") — document the three markup forms and the `\* \_ \~ \\`
+    escapes;
+  - the **markup-dialect note** (~line 988, "The **title** does not go through this
+    dialect (no emphasis, links, smart quotes …)") — reword to say the title supports
+    the restricted em/strong/strikethrough subset only;
+  - the **Escaped Characters** `\%`-in-title note (~line 954) stays as-is — that
+    behaviour is unchanged.
 
 ## 7. Security analysis
 
@@ -190,9 +206,10 @@ The escape-first design closes the injection concern that a naive
 
 - Raw HTML in a title (`<script>`, `<img onerror=…>`, `<a href=javascript:…>`) is
   HTML-escaped to inert text before any transform runs — it can never emit a tag.
-- The only tags `titleHtml` can contain are `<em>`, `<strong>`, `<s>`. These are within
-  poetic-fiddle's DOMPurify allow-list
-  ([PoemPreview.tsx:73](../../../poetic-fiddle/src/components/PoemPreview.tsx)) already.
+- The only tags `titleHtml` can contain are `<em>`, `<strong>`, `<s>`. poetic-fiddle
+  sanitises the rendered fragment with DOMPurify's **default** configuration
+  ([PoemPreview.tsx:73](../../../poetic-fiddle/src/components/PoemPreview.tsx)), which
+  already permits all three, so title markup survives the preview unchanged.
 - Variable-substitution injection (substitute-then-render) is neutralised because
   escaping happens *after* substitution (§5.3).
 - The plain `title` continues to flow to `<title>`, attributes, slugs, OG and Blogger
@@ -204,8 +221,8 @@ Net: titles become *strictly no less safe* than today, and safer than body text
 ## 8. Backward compatibility
 
 Because the subset excludes dashes, smart quotes and entity handling, the only
-characters that gain new meaning are `* _ ~ \`. A corpus scan (~80 `.poem` files across
-`poetic` and `fragments-and-unity`) found:
+characters that gain new meaning are `* _ ~ \`. A corpus scan (84 `.poem` files across
+`poetic` and `fragments-and-unity`, re-verified 2026-07-19) found:
 
 - **No** title containing `*`, `_`, `~`, or `**` → no title renders unintended markup.
 - Apostrophe titles (e.g. `Ruru's First Call`, `Simplicity's Virtue`,
@@ -221,15 +238,17 @@ text, and is documented in the spec change.
 ## 9. Consumer propagation
 
 This is a framework change touching
-[poem-parser.js](../../src/tools/poem-parser.js) (or `render-core.js`), the templates,
-[poem-syntax.ebnf](../../poem-syntax.ebnf) and [docs/POEM-SYNTAX.md](../POEM-SYNTAX.md).
+[render-core.js](../../src/tools/render-core.js), the templates (and generated
+`poem-templates.js`), [poem-syntax.ebnf](../../poem-syntax.ebnf) and
+[docs/POEM-SYNTAX.md](../POEM-SYNTAX.md); `poem-parser.js` itself is untouched (§5.2).
 It reaches consumers only through `scripts/sync-framework.sh`. Note:
 
 - `fragments-and-unity` carries a synced copy of the framework **test suite**, so the
   test updates below duplicate there after a sync.
 - poetic-fiddle renders titles via the framework's browser renderer, so title markup
   flows into the live preview automatically once `titleHtml` is emitted — subject to
-  the DOMPurify allow-list, which already permits `<em>/<strong>/<s>`. The fiddle's own
+  DOMPurify's default sanitiser configuration, which already permits
+  `<em>/<strong>/<s>` (§7). The fiddle's own
   plain-text assumptions ([SharedPoemView.tsx:30](../../../poetic-fiddle/src/components/SharedPoemView.tsx)
   `escapeHtml(title)` and the OG metadata in
   [share/[share_id]/page.tsx:20](../../../poetic-fiddle/src/app/share/%5Bshare_id%5D/page.tsx))
@@ -245,31 +264,42 @@ It reaches consumers only through `scripts/sync-framework.sh`. Note:
 - **Pre-existing unescaped-title bug.** The all-poems template already interpolates the
   raw title **unescaped** ([aggregate-render-core.js:206,219](../../src/tools/aggregate-render-core.js)),
   inconsistent with the escaped single-poem view. This is independent of this feature
-  but should be fixed (escape it, or move to `titleHtml`) — track separately in
-  `TECH-DEBT.md`.
+  but should be fixed (escape it, or move to `titleHtml`) — tracked as **TD26071901**
+  in [TECH-DEBT.md](../../TECH-DEBT.md).
 
-## 11. Open questions
+## 11. Resolved questions
 
-- **Q1 — Analysis headings.** [_poem-content.pug:194,200,205](../../src/templates/_poem-content.pug)
-  wrap the title in a template `<em>`: `Analysis of <em>#{title}</em>`. Injecting
-  `titleHtml` here nests markup inside that `<em>` (e.g. `<em>…<strong>x</strong>…</em>`).
-  Acceptable, but decide whether to keep the wrapper, drop it in favour of the title's
-  own markup, or leave these headings on plain `title`.
-- **Q2 — Field persistence.** Compute `titleHtml` purely at render time (recommended,
-  no YAML change), or also persist it in YAML? Render-time keeps the YAML schema and
-  golden fixtures stable.
-- **Q3 — Nesting depth.** Confirm the tokeniser handles `**bold _and italic_**`
-  sensibly in the restricted renderer (it should, mirroring body behaviour).
+- **Q1 — Analysis headings: keep the `<em>` wrapper, inject `titleHtml` inside it.**
+  [_poem-content.pug:194,200,205](../../src/templates/_poem-content.pug) become
+  `Analysis of <em>!{titleHtml}</em>`, consistent with the other visible headings and
+  with no visible change to existing poems (the wrapper's italics are untouched).
+  Accepted quirk: `<em>` nested inside `<em>` renders as plain italic in browsers, so
+  a title's `*emphasis*` is visually invisible in these headings — `**strong**` and
+  `~strike~` render normally. Decided 2026-07-19.
+- **Q2 — Field persistence: render-time only, no YAML change.** `titleHtml` is
+  attached in `resolveContextVars()` (§5.3) and never persisted, keeping the YAML
+  schema, `poem-to-yaml` output, and golden fixtures stable. Decided 2026-07-19.
+- **Q3 — Nesting: confirmed against the body tokeniser**
+  ([poem-parser.js:1826-1831](../../src/tools/poem-parser.js)). Cross-delimiter
+  nesting works: `**bold _and italic_**` → strong runs first, and the later `_…_`
+  pass matches inside the emitted tag's content, giving
+  `<strong>bold <em>and italic</em></strong>`. Same-delimiter nesting
+  (`**bold *and em* bold**`) degrades — the `[^*]+` content classes cannot span the
+  inner marker — but it degrades identically to body text, so the restricted renderer
+  matches body behaviour by construction and needs no extra handling. Resolved
+  2026-07-19.
 
 ## 12. Implementation checklist
 
-- [ ] Add `renderTitleMarkup()` (escape-first; em/strong/strike; `\* \_ \~ \\` only).
-- [ ] Compute `titleHtml` in `render-core` after `applyContextVars`; add to render model.
-- [ ] Switch the visible-heading sinks (§5.4) to `!= titleHtml`; regenerate
+- [ ] Add `renderTitleMarkup()` to `render-core.js` (escape-first; em/strong/strike;
+      `\* \_ \~ \\` only; no `\%`/`\?` handling).
+- [ ] Attach `titleHtml` in `resolveContextVars()` after `applyContextVars` (§5.3).
+- [ ] Switch the visible-heading sinks (§5.4) to `!= titleHtml`, including the
+      analysis headings' `<em>` wrappers (§11 Q1); regenerate
       `poem-templates.js` (`npm run build:generated`).
 - [ ] Update [poem-syntax.ebnf](../../poem-syntax.ebnf) (title_line + constraints 39/40/41).
-- [ ] Update [docs/POEM-SYNTAX.md](../POEM-SYNTAX.md) Title section; add a `CHANGELOG.md`
-      entry under `[Unreleased]`.
+- [ ] Update [docs/POEM-SYNTAX.md](../POEM-SYNTAX.md) — Fields Title bullet and the
+      markup-dialect note (§6); add a `CHANGELOG.md` entry under `[Unreleased]`.
 - [ ] Update tests asserting escaped/plain titles: e.g.
       [poem-render.test.js:301](../../test/poem-render.test.js),
       [aggregate-render-core.test.js](../../test/aggregate-render-core.test.js),
