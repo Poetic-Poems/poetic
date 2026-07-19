@@ -153,7 +153,7 @@ Only the visible single-poem heading consumes `titleHtml`. Everything else keeps
 | Song embed `data-title` → iframe | [song-handlers.js:362](../../src/tools/song-handlers.js) → [poetic.js:32](../../public/poetic.js) | **`title` (plain)** — attribute |
 | `%{title}` context var | [render-core.js:87](../../src/tools/render-core.js) | **`title` (plain)** |
 | Blogger post title + permalink | [sync-blogger.js:791,808](../../src/tools/sync-blogger.js) | **`title` (plain)** |
-| Index grid card / all-poems listing | [index.js:71](../../public/index.js), [aggregate-render-core.js:206,219](../../src/tools/aggregate-render-core.js) | **`title` (plain)** — out of scope this iteration |
+| Index grid card / all-poems listing | [index.js:71](../../public/index.js), [aggregate-render-core.js:224,237](../../src/tools/aggregate-render-core.js) | **`title` (plain)** — out of scope this iteration |
 
 Wherever a sink switches to `titleHtml`, the Pug interpolation changes from the
 escaping `=` / `#{}` to the unescaped `!=` / `!{}`. This is safe **only** because
@@ -258,14 +258,9 @@ It reaches consumers only through `scripts/sync-framework.sh`. Note:
 
 - **Index grid and all-poems listing markup.** Showing `titleHtml` there requires
   threading it through the JSON data island
-  ([aggregate-render-core.js:61](../../src/tools/aggregate-render-core.js)) and setting
+  ([aggregate-render-core.js:76](../../src/tools/aggregate-render-core.js)) and setting
   `innerHTML` instead of `textContent` ([index.js:71](../../public/index.js)) — a
   larger change deferred to a follow-up.
-- **Pre-existing unescaped-title bug.** The all-poems template already interpolates the
-  raw title **unescaped** ([aggregate-render-core.js:206,219](../../src/tools/aggregate-render-core.js)),
-  inconsistent with the escaped single-poem view. This is independent of this feature
-  but should be fixed (escape it, or move to `titleHtml`) — tracked as **TD26071901**
-  in [TECH-DEBT.md](../../TECH-DEBT.md).
 
 ## 11. Resolved questions
 

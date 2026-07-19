@@ -22,30 +22,6 @@ so the Ledger (not memory or scrollback) is the source of truth for the next
 free ID. Compute it with `scripts/next-tech-debt-id.pl` rather than counting
 by hand.
 
-## TD26071901 All-poems template interpolates the poem title unescaped
-
-The all-poems aggregate page interpolates each poem's title into raw HTML
-**without escaping**, unlike the single-poem view which escapes it via Pug's
-`=` / `#{}`. See `src/tools/aggregate-render-core.js:206`
-(`<td><a href="#poem-${poem.slug}">${poem.title}</a></td>`) and `:219`
-(`<h2 class="poem-title"><a href="${poem.slug}/">${poem.title}</a></h2>`).
-`summarizePoem` (`:43`) copies `data.title` verbatim, and only the *site*
-title is passed through `escapeAmpersand()` — the per-poem title is not
-escaped at all.
-
-Why it matters: a title containing `<`, `&`, or `"` breaks the cell/heading
-markup or injects HTML on the all-poems page, while the same title renders as
-inert text on the single-poem page — an inconsistency and a latent
-injection/breakage risk. It is latent today only because no current poem title
-contains those characters. (The JSON data island at `:61-64` escapes only `<`
-for `</script>` safety, so it shares the same plain-text assumption.)
-
-Suggested fix: HTML-escape `poem.title` at both interpolation sites (matching
-the single-poem view), or route it through the `titleHtml` representation
-proposed in `docs/design/title-inline-markup.md` once that lands — see that
-doc's §10 "Out of scope / future work", which references this entry. This is
-independent of the title-markup feature and can be fixed on its own.
-
 ## Claiming an item
 
 Before starting work on an open item, confirm nobody else already has:
@@ -127,4 +103,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071501 | yaml-to-poem entity decoding is order-fragile, not structurally single-pass | resolved | 2026-07-15 | #47 |
 | TD26071502 | convertMarkup's escape-restoration loop is quadratic in the number of escapes | resolved | 2026-07-15 | #49 |
 | TD26071701 | blogger-auth cannot overwrite a read-only credentials file | resolved | 2026-07-17 | #57 |
-| TD26071901 | All-poems template interpolates the poem title unescaped | open | | |
+| TD26071901 | All-poems template interpolates the poem title unescaped | resolved | 2026-07-19 | #63 |

@@ -197,14 +197,21 @@ test('generateIndexHtml: rebuilding an already-migrated index.html refreshes the
 
 // ── Special-character titles ─────────────────────────────────────────────────
 
-test('a title containing quotes and "&" round-trips through the JSON island and appears in the all-poems.html table row', (t) => {
+test('a title containing quotes and "&" is HTML-escaped in the all-poems.html table row, and round-trips unescaped through the JSON island', (t) => {
   const poemsDir = tmpPoemsDir(t);
   const publicDir = tmpPublicDir(t);
   const title = 'He said "Go!" & left';
   writeFixturePoem(poemsDir, 'quotes-poem.yaml', { title });
 
   const { html: allPoemsHtml } = concatenateAllHtmlFiles(publicDir, undefined, undefined, { poemsDir });
-  assert.ok(allPoemsHtml.includes(title), 'all-poems.html table row should contain the title text');
+  assert.ok(
+    allPoemsHtml.includes('He said &quot;Go!&quot; &amp; left'),
+    'all-poems.html table row should contain the HTML-escaped title text'
+  );
+  assert.ok(
+    !allPoemsHtml.includes(title),
+    'all-poems.html should not contain the raw, unescaped title'
+  );
 
   let indexHtml;
   assert.doesNotThrow(() => {

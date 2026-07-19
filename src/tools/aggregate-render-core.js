@@ -23,6 +23,21 @@ function escapeAmpersand(str) {
 }
 
 /**
+ * General-purpose HTML escaping for text/attribute interpolation, matching
+ * Pug's default `=`/`#{}` escaping (pug-runtime's `escape`: "&", "<", ">",
+ * '"') — used for per-poem titles, which (unlike the site title above) are
+ * attacker-controllable (poem authors) and are interpolated outside Pug's
+ * own escaping on the all-poems page.
+ */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
  * Summarise a poem's raw parsed data (e.g. `new PoemParser(text).parse()`,
  * or a YAML-loaded poem-data object, in either case *before* slug/date
  * augmentation) into the flat shape both aggregate renderers need: display
@@ -57,6 +72,9 @@ function summarizePoem({ data, slug }, config = {}) {
  * JSON.stringify does not escape "<", so a poem title containing
  * "</script>" would end the <script> element early in the browser; escape
  * every "<" as the equivalent JSON string escape (JSON.parse restores it).
+ * No further HTML-escaping of `title` is needed here: index.js reads the
+ * parsed JSON back and assigns it via `textContent` (never `innerHTML`), so
+ * "&"/">"/`"` reach the DOM as inert text regardless of their JSON encoding.
  */
 function buildPoemDataIsland(entries) {
   const json = JSON.stringify(entries, null, 2).replace(/</g, '\\u003c');
@@ -203,7 +221,7 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
   entries.forEach((poem) => {
     const audioIcon = poem.hasAudio ? '🎵' : '';
     html += `<tr>
-                        <td><a href="#poem-${poem.slug}">${poem.title}</a></td>
+                        <td><a href="#poem-${poem.slug}">${escapeHtml(poem.title)}</a></td>
                         <td>${poem.date}</td>
                         <td class="audio-cell">${audioIcon}</td>
                     </tr>`;
@@ -216,7 +234,7 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
   entries.forEach((poem) => {
     html += `
         <div class="poem-section" id="poem-${poem.slug}" data-date="${poem.isoDate || ''}">
-            <h2 class="poem-title"><a href="${poem.slug}/">${poem.title}</a></h2>
+            <h2 class="poem-title"><a href="${poem.slug}/">${escapeHtml(poem.title)}</a></h2>
             <div class="poem-content">${poem.content}</div>
         </div>`;
   });
@@ -231,6 +249,7 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
 
 module.exports = {
   escapeAmpersand,
+  escapeHtml,
   summarizePoem,
   buildPoemDataIsland,
   renderFreshIndexHtml,

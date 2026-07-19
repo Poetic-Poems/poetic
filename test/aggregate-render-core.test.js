@@ -10,11 +10,16 @@ const { test } = require('node:test');
 const assert = require('node:assert');
 
 const {
-  escapeAmpersand, summarizePoem, buildPoemDataIsland, renderFreshIndexHtml, renderAllPoemsHtml,
+  escapeAmpersand, escapeHtml, summarizePoem, buildPoemDataIsland, renderFreshIndexHtml,
+  renderAllPoemsHtml,
 } = require('../src/tools/aggregate-render-core');
 
 test('escapeAmpersand: escapes only "&"', () => {
   assert.strictEqual(escapeAmpersand('Fish & Chips <b>'), 'Fish &#38; Chips <b>');
+});
+
+test('escapeHtml: escapes "&", "<", ">" and \'"\' (matching Pug\'s default escaping)', () => {
+  assert.strictEqual(escapeHtml(`Fish & Chips <b>"tasty"</b>`), 'Fish &amp; Chips &lt;b&gt;&quot;tasty&quot;&lt;/b&gt;');
 });
 
 test('summarizePoem: derives display date, ISO date, hasAudio and labels from raw poem-data', () => {
@@ -103,4 +108,24 @@ test('renderAllPoemsHtml: renders a table-of-contents row and poem-section per e
 
   // Date-range filter bounds reflect the min/max ISO dates across entries.
   assert.match(html, /id="dateFrom" class="filter-date" min="2020-01-01" max="2020-01-02"/);
+});
+
+test('renderAllPoemsHtml: HTML-escapes a title containing "<", "&" and \'"\' at both interpolation sites', () => {
+  const entries = [{
+    slug: 'x', title: `<img src=x onerror=alert(1)> & "quoted"`, date: 'Wednesday, 1 January 2020',
+    isoDate: '2020-01-01', hasAudio: false, content: '<p>content</p>',
+  }];
+  const html = renderAllPoemsHtml(entries, { siteTitle: 'My Site', favicon: 'icon.svg' });
+
+  // Neither interpolation site lets the title break out of its markup or
+  // introduce a live tag/attribute — it must appear only as escaped text.
+  assert.doesNotMatch(html, /<img src=x onerror=alert\(1\)>/);
+  assert.match(
+    html,
+    /<td><a href="#poem-x">&lt;img src=x onerror=alert\(1\)&gt; &amp; &quot;quoted&quot;<\/a><\/td>/
+  );
+  assert.match(
+    html,
+    /<h2 class="poem-title"><a href="x\/">&lt;img src=x onerror=alert\(1\)&gt; &amp; &quot;quoted&quot;<\/a><\/h2>/
+  );
 });
