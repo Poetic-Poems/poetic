@@ -52,3 +52,19 @@ jobs:
           gh release create "${{ steps.version.outputs.tag }}" \
             --title "Poetic ${{ steps.version.outputs.tag }}" \
             --generate-notes
+
+      # Attach an `npm pack` tarball as an immutable release asset so consumers
+      # can depend on `.../releases/download/<tag>/poetic-<version>.tgz` instead
+      # of a git URL. Registry-style tarball deps are exempt from npm's
+      # EALLOWGIT rule (npm 11.x/12.x refuse to fetch git-type deps), and asset
+      # bytes are immutable — unlike GitHub's auto-generated source archives,
+      # whose checksums are not guaranteed stable. The `files` whitelist in
+      # package.json keeps the tarball to what the `exports` map needs.
+      - name: Attach npm-pack tarball to the release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          npm pack
+          gh release upload "${{ steps.version.outputs.tag }}" "poetic-${version}.tgz"
