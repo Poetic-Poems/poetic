@@ -17,6 +17,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   literal markers on these two aggregate views; it now renders the same way
   everywhere. The plain title is still used for search filtering, `<title>`,
   slugs, attributes, `%{title}` and Blogger. See `docs/POEM-SYNTAX.md`.
+- **Tech-debt tooling is now multi-repo- and concurrency-aware.**
+  `scripts/get-tech-debt-record.pl` and `scripts/next-tech-debt-id.pl` accept
+  `--ref <git-ref>` (typically `--ref origin/main` after a fetch) to read
+  `TECH-DEBT.md` from the shared repository state instead of a possibly stale
+  or wrongly-branched local checkout. The `/td` skill now searches every repo
+  attached to the session — a multi-repo workspace resolves an ID segment
+  across all of its repos, treating matches as (repo, ID) pairs since sister
+  repos allocate from the same date-based ID sequence. Claiming an item now
+  uses a deterministic branch name, `td/<id>`, whose creation acts as a
+  race-safe lock between concurrent agents; `TECH-DEBT.md`'s "Claiming an
+  item" workflow is rewritten accordingly, and the new scripts and skill are
+  covered by `test/tech-debt-scripts.test.js`.
 
 ### Fixed
 
