@@ -18,6 +18,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   everywhere. The plain title is still used for search filtering, `<title>`,
   slugs, attributes, `%{title}` and Blogger. See `docs/POEM-SYNTAX.md`.
 
+### Fixed
+
+- **`scripts/get-tech-debt-record.pl` now matches an ID segment against the
+  end of a record ID only** (`TD26070803` is matched by `3`, `803` or the full
+  ID), as the `/td` skill intends. Previously the segment could match anywhere
+  inside the ID, so a short segment like `708` could ambiguously match many
+  records from the same day. The skill documentation's examples are updated to
+  match.
+
 ## [6.1.1] — 2026-07-19
 
 ### Changed
