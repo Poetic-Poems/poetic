@@ -308,7 +308,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071701 | blogger-auth cannot overwrite a read-only credentials file | resolved | 2026-07-17 | #57 |
 | TD26071901 | All-poems template interpolates the poem title unescaped | resolved | 2026-07-19 | #63 |
 | TD26071902 | Index grid and all-poems listing don't render title inline markup | resolved | 2026-07-20 | #72 |
-| TD26072101 | docs/BUILD.md describes a superseded build and contradicts itself on two filenames | open | | |
+| TD26072101 | docs/BUILD.md describes a superseded build and contradicts itself on two filenames | in-progress | | |
 | TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | open | | |
 | TD26072103 | Postscript "See more" toggle is not keyboard-operable | open | | |
 | TD26072104 | Governance docs don't state that review is currently self-review | open | | |
