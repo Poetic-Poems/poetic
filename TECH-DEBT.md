@@ -111,13 +111,6 @@ it is always obvious where a new item's body belongs.
 
 <!-- Add new items directly below, as `### <id> <title>` sections. -->
 
-### TD26072102 docs/QUICKSTART-VIM.md references a non-existent vim/ root path
-
-The quickstart's install command and example-poem path predate the
-`vim/` → `editors/vim/` move every sibling doc already reflects, so its first
-documented command fails. Fix: update all path references to `editors/vim/` and
-`src/poems/poem/_example.poem`.
-
 ### TD26072103 Postscript "See more" toggle is not keyboard-operable
 
 `src/templates/_poem-content.pug`'s postscript preview uses a `display: none`
@@ -255,6 +248,15 @@ overwrites a consumer's lockfile with no doc callout about custom
 `package.json` edits being clobbered. Fix: four small, independent edits — see
 review R-18 for specifics.
 
+### TD26072201 docs/VIM-SYNTAX.md still references a non-existent vim/ root path
+
+TD26072102 fixed the same defect class in docs/QUICKSTART-VIM.md, but
+docs/VIM-SYNTAX.md's manual-install and plugin-manager sections still `cp`
+from and refer to a bare `vim/` directory (e.g. `cp vim/syntax/poem.vim
+~/.vim/syntax/`, "copying the `vim/` directory to your plugin directory"),
+predating the `vim/` → `editors/vim/` move. Fix: update those references to
+`editors/vim/`.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -298,7 +300,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071901 | All-poems template interpolates the poem title unescaped | resolved | 2026-07-19 | #63 |
 | TD26071902 | Index grid and all-poems listing don't render title inline markup | resolved | 2026-07-20 | #72 |
 | TD26072101 | docs/BUILD.md describes a superseded build and contradicts itself on two filenames | resolved | 2026-07-22 | 0972e62 |
-| TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | open | | |
+| TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | resolved | 2026-07-22 | 5655c57 |
 | TD26072103 | Postscript "See more" toggle is not keyboard-operable | open | | |
 | TD26072104 | Governance docs don't state that review is currently self-review | open | | |
 | TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | open | | |
@@ -315,3 +317,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | open | | |
 | TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | open | | |
 | TD26072118 | Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout | open | | |
+| TD26072201 | docs/VIM-SYNTAX.md still references a non-existent vim/ root path | open | | |
