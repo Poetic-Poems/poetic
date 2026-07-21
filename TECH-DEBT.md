@@ -84,6 +84,24 @@ is still visible; claiming it here would silently retire work nobody has done.
 |--------|----------------|-----------|
 | [project-review-2026-07-11](reviews/project-review-2026-07-11/) | R-01 — Add a licence | TD26071101 |
 | [project-review-2026-07-11](reviews/project-review-2026-07-11/) | R-06 — Complete package.json metadata | TD26071106 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-01 — Fix docs/BUILD.md's three self-contradictions | TD26072101 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-02 — Fix docs/QUICKSTART-VIM.md's broken paths | TD26072102 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-03 — Make the postscript toggle keyboard-operable | TD26072103 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-04 — Document governance reality (solo self-review, bus factor) | TD26072104 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-05 — Retire duplicate RELEASE_NOTES_*.md files | TD26072105 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-06 — Add regression tests for the fixed XSS surfaces | TD26072106 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-07 — Bump the Node engines floor past EOL | TD26072107 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-08 — Fix WCAG AA contrast failures | TD26072108 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-09 — Bring yaml-to-poem.js back in sync with the current YAML shape | TD26072109 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-10 — Split poem-parser.js into focused modules | TD26072110 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-11 — Extract duplicated escape-placeholder/beautify-options code | TD26072111 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-12 — Add a code-coverage tool | TD26072112 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-13 — CI hardening (changelog-bump check, strict status checks) | TD26072113 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-14 — Harden Blogger sync's operational resilience | TD26072114 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-15 — Add missing documentation cross-references | TD26072115 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-16 — Small defensive-hardening batch (config, dev server) | TD26072116 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-17 — Quote-style lint rule and JSDoc completion | TD26072117 |
+| [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-18 — Miscellaneous small fixes | TD26072118 |
 
 ## Current Items
 
@@ -92,6 +110,161 @@ heading is permanent: when there are no current items it stays here (empty), so
 it is always obvious where a new item's body belongs.
 
 <!-- Add new items directly below, as `### <id> <title>` sections. -->
+
+### TD26072101 docs/BUILD.md describes a superseded build and contradicts itself on two filenames
+
+`docs/BUILD.md`'s "Main Build Script" section describes `build-all-poems.js` as
+scanning `public/` for HTML files — a superseded (v0.1) implementation the
+code's own header comment disclaims. The same file also names the Blogger
+template `fragments-and-unity.template.html` in three places while its own
+config table (and the code) call it `blogger-template.html`, and its
+file-structure diagram spells the shared-poem partial `_shared.poem` instead of
+the real `.shared.poem`. Fix: rewrite the affected passages against the actual
+current code (see review R-01 for exact line numbers).
+
+### TD26072102 docs/QUICKSTART-VIM.md references a non-existent vim/ root path
+
+The quickstart's install command and example-poem path predate the
+`vim/` → `editors/vim/` move every sibling doc already reflects, so its first
+documented command fails. Fix: update all path references to `editors/vim/` and
+`src/poems/poem/_example.poem`.
+
+### TD26072103 Postscript "See more" toggle is not keyboard-operable
+
+`src/templates/_poem-content.pug`'s postscript preview uses a `display: none`
+checkbox + label, which cannot receive keyboard focus — a live WCAG 2.1.1
+violation, the same defect class the 2026-07-11 review fixed for sort headers
+in a different component. Fix: replace with a real `<button aria-expanded>`
+toggle, mirroring the existing analysis/song-embed controls in the same
+template.
+
+### TD26072104 Governance docs don't state that review is currently self-review
+
+`main`'s code-owner review gate is satisfied by the maintainer's own second
+GitHub account (one person, two handles, one email throughout git history); the
+project also has a 100% single-person bus factor with no succession plan.
+CLAUDE.md's multi-agent tooling solves agent concurrency but doesn't provide
+independent review or bus-factor redundancy, and the docs don't say so. Fix:
+add a short, honest statement of this to CLAUDE.md/SECURITY.md.
+
+### TD26072105 Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md
+
+Three per-release files duplicate `CHANGELOG.md` content in different prose,
+contrary to CLAUDE.md's "CHANGELOG.md is the only place" policy and as-built
+principle; drift has already appeared after two releases. Fix: remove the three
+files (folding anything not already in CHANGELOG.md into it first), relying on
+the GitHub Releases tab's auto-generated notes instead.
+
+### TD26072106 serve-static.js and public/index.js's fixed XSS have no regression tests
+
+`src/tools/serve-static.js` has zero test coverage, including the
+`escapeHtml`/`encodeHref`/`generateDirectoryListing` helpers behind a fixed
+high-severity stored-XSS CodeQL alert (commit `3eb8bd9`), verified only
+manually in that PR. `public/index.js`'s DOM-XSS fix (`8e4d6ac`) is similarly
+untested. Fix: add `test/serve-static.test.js` and a DOM-based test for
+`renderPoems()`/`appendTitleHtml`, each asserting hostile input is safely
+escaped.
+
+### TD26072107 package.json's engines.node floor (>=18) is past EOL
+
+Node 18 and Node 20 are both past end-of-life while CI already runs Node 22;
+nothing warns a contributor who installs an EOL runtime. Fix: bump
+`engines.node` to `>=22` and update README's prerequisite line; consider
+`engine-strict=true` in `.npmrc`.
+
+### TD26072108 Several public/poetic.css text colours fail WCAG AA contrast
+
+`.poem-info` (gray, ≈3.95:1), `.poetic-footer`/`.no-content`/`.filter-empty`
+(#999, ≈2.85:1), and `#007AFF` text (≈4.0:1) all fall short of the 4.5:1
+normal-text threshold, affecting every generated page site-wide. Fix: darken to
+at least `#767676`-equivalent or restrict `#007AFF` to large-text/UI contexts.
+
+### TD26072109 yaml-to-poem.js silently drops data the current YAML shape can hold
+
+`writeAudio()`/`writeVersions()` don't handle object-form audio params or
+`segment.parts`, and `labels`/`directives` are never written at all — a poem's
+whole Metadata section is silently lost on a YAML→`.poem` round trip, untested
+at the level that would catch it. Fix: bring the writer functions in line with
+`poem-parser.js`'s current output shape, or explicitly error on unsupported
+shapes; add a round-trip test mirroring `test/browser-render.test.js`'s
+approach.
+
+### TD26072110 poem-parser.js is a 1854-line monolith covering the whole grammar
+
+One `PoemParser` class with ~50 methods implements the entire `.poem` grammar
+sharing mutable instance state — more than 3x the next-largest hand-written
+tool file, making it the highest-effort file to safely extend. Fix: split by
+grammar section (variable substitution, markup conversion, metadata parsing)
+following the pattern `render-core.js`/`aggregate-render-core.js` already
+establish; do as a sequence of small, independently-verified PRs.
+
+### TD26072111 Escape-placeholder and js-beautify-options code duplicated across files
+
+The `\x00ESCAPE<n>\x00` placeholder mechanism is implemented independently (but
+cross-referenced by comment) in `poem-parser.js` and `render-core.js`; the same
+`js-beautify` options object is copy-pasted three times across `build-poems.js`
+and `build-all-poems.js`. Fix: extract a shared helper/constant for each.
+
+### TD26072112 No code-coverage tool configured
+
+Coverage is only ever estimated by manual inspection, which is how test gaps
+like TD26072106 had to be found by hand. Fix: add `c8` (works directly with
+Node's built-in test runner) and an `npm run coverage` script; no CI
+coverage-floor gate needed yet.
+
+### TD26072113 No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict
+
+Nothing verifies a `package.json` version bump comes with a matching
+`CHANGELOG.md` entry (works so far by manual discipline only); `main`'s branch
+ruleset also has `strict_required_status_checks_policy: false`. Fix: add a
+version/changelog-diff check to the release workflow; consider enabling strict
+status checks (a live GitHub setting, not a file change).
+
+### TD26072114 Blogger sync has no request/job timeouts and no network-failure retry
+
+`sync-blogger.yml` sets no job `timeout-minutes`; `sync-blogger.js`'s `fetch()`
+calls have no request timeout and only retry on HTTP 429/5xx, not
+network-level rejection; the sync loop also posts poems strictly sequentially.
+Fix: add a job timeout, wrap fetch calls with `AbortSignal.timeout()` and
+retry-on-rejection; bounded concurrency for large collections is optional/
+lower priority.
+
+### TD26072115 README and docs/POEM-TO-YAML.md are missing two cross-references
+
+README never mentions the `poetic/browser` library export or
+`docs/RENDERER-BROWSER.md` despite it being a real, tested public API;
+`docs/POEM-TO-YAML.md` doesn't mention the incremental-rebuild/`--force`
+behaviour that applies to the script it documents. Fix: add a short pointer to
+each.
+
+### TD26072116 Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions)
+
+An invalid `blogger.removed`/`blogger.content` config value is silently
+coerced to its default with no warning (unlike the existing `blog_id`
+precedent); `serve-static.js` sets a wildcard CORS header even when
+loopback-bound; `sync-blogger.js` never re-checks the Blogger credentials
+file's permission bits after creation. (A fourth item, a config-sourced
+`RegExp` with no ReDoS guard in `song-handlers.js`, is explicitly optional —
+self-authored config is not an external trust boundary here.) Fix: add
+warnings/scoping for each; see review R-16 for the full list.
+
+### TD26072117 No quotes ESLint rule; JSDoc discipline weakest in the most complex file
+
+String-quote style drifts by file (each file is internally consistent, the
+codebase as a whole isn't); `poem-parser.js` has only 5 `@param`/`@returns`
+tags across ~50 methods versus 70 in the similarly-sized `sync-blogger.js`.
+Fix: add a `quotes` rule and reformat; bring `poem-parser.js`'s JSDoc up to the
+standard already used elsewhere (can be incremental).
+
+### TD26072118 Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout
+
+Standalone poem pages have no `<h1>` (only `h2.poem-title`);
+`editors/vim/ftdetect/poem.vim` still has an unfilled `(maintainer name)`
+placeholder and a stale date; the browser-renderer library surfaces plain
+unclassified `Error` objects (optional to fix); `scripts/sync-framework.sh`
+overwrites a consumer's lockfile with no doc callout about custom
+`package.json` edits being clobbered. Fix: four small, independent edits — see
+review R-18 for specifics.
 
 ## Ledger
 
@@ -135,3 +308,21 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071701 | blogger-auth cannot overwrite a read-only credentials file | resolved | 2026-07-17 | #57 |
 | TD26071901 | All-poems template interpolates the poem title unescaped | resolved | 2026-07-19 | #63 |
 | TD26071902 | Index grid and all-poems listing don't render title inline markup | resolved | 2026-07-20 | #72 |
+| TD26072101 | docs/BUILD.md describes a superseded build and contradicts itself on two filenames | open | | |
+| TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | open | | |
+| TD26072103 | Postscript "See more" toggle is not keyboard-operable | open | | |
+| TD26072104 | Governance docs don't state that review is currently self-review | open | | |
+| TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | open | | |
+| TD26072106 | serve-static.js and public/index.js's fixed XSS have no regression tests | open | | |
+| TD26072107 | package.json's engines.node floor (>=18) is past EOL | open | | |
+| TD26072108 | Several public/poetic.css text colours fail WCAG AA contrast | open | | |
+| TD26072109 | yaml-to-poem.js silently drops data the current YAML shape can hold | open | | |
+| TD26072110 | poem-parser.js is a 1854-line monolith covering the whole grammar | open | | |
+| TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | open | | |
+| TD26072112 | No code-coverage tool configured | open | | |
+| TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | open | | |
+| TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | open | | |
+| TD26072115 | README and docs/POEM-TO-YAML.md are missing two cross-references | open | | |
+| TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | open | | |
+| TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | open | | |
+| TD26072118 | Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout | open | | |
