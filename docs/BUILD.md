@@ -40,8 +40,8 @@ The main build script:
 2. Renders each poem fragment in-memory using the shared renderer
 3. Sorts poems chronologically by date using the date utility functions
 4. Generates a comprehensive `all-poems.html` file with:
+   - Table of contents with sorting functionality
    - All poems concatenated in chronological order
-   - Sorting functionality on the client side via `public/all-poems.js`
    - Custom CSS from the template
    - Interactive sorting by title, date, or audio availability
 
