@@ -36,8 +36,8 @@ Since GitHub Pages serves static files only, we use a build script to generate t
 
 The main build script:
 
-1. Scans the `public/` directory for all HTML files
-2. Extracts metadata (title, date, audio links) from each poem
+1. Reads all poem YAML files from `src/poems/yaml/`
+2. Renders each poem fragment in-memory using the shared renderer
 3. Sorts poems chronologically by date using the date utility functions
 4. Generates a comprehensive `all-poems.html` file with:
    - Table of contents with sorting functionality
@@ -59,7 +59,7 @@ These utilities ensure consistent date handling across the build process.
 The Blogger template script:
 
 1. Reads and concatenates CSS from `public/poetic.css` and `public/custom.css`
-2. Locates the Blogger template file `public/fragments-and-unity.template.html`
+2. Locates the Blogger template file `public/blogger-template.html`
 3. Finds CSS delimiters `/* ~~ CUSTOM CSS START ~~ */` and `/* ~~ CUSTOM CSS END ~~ */`
 4. Replaces the content between these delimiters with the combined styles
 5. Provides error handling for missing files or malformed delimiters
@@ -88,7 +88,7 @@ When you need to update the Blogger template with new CSS:
 
 1. Edit `public/poetic.css` (framework styles, synced) or `public/custom.css` (your styles, never synced)
 2. Run `npm run build:blogger` to inject the combined CSS into the template
-3. Copy the updated `public/fragments-and-unity.template.html` content
+3. Copy the updated `public/blogger-template.html` content
 4. Paste it into the Blogger template editor
 5. Save the template in Blogger
 
@@ -107,7 +107,7 @@ public/
 ├── date-utils.js                        # Copy of src/tools/date-utils.js (build artefact, gitignored)
 ├── poetic-footer.html                   # Default footer content (synced; see footer.source)
 ├── custom.css                           # User CSS (never overwritten by sync)
-├── fragments-and-unity.template.html    # Blogger template with injected CSS
+├── blogger-template.html                # Blogger template with injected CSS
 ├── poem1.html                           # Redirect stub → poem1/ (meta-refresh)
 ├── poem2.html
 ├── poem1/
@@ -119,7 +119,7 @@ public/
 src/poems/
 ├── poem/
 │   ├── _example.poem                    # Example poem source
-│   ├── _shared.poem                     # Shared poem content included by others
+│   ├── .shared.poem                     # Shared poem content included by others
 │   ├── poem1.poem                       # Individual poem source files
 │   ├── poem2.poem
 │   └── ...

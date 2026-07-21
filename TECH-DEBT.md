@@ -111,17 +111,6 @@ it is always obvious where a new item's body belongs.
 
 <!-- Add new items directly below, as `### <id> <title>` sections. -->
 
-### TD26072101 docs/BUILD.md describes a superseded build and contradicts itself on two filenames
-
-`docs/BUILD.md`'s "Main Build Script" section describes `build-all-poems.js` as
-scanning `public/` for HTML files — a superseded (v0.1) implementation the
-code's own header comment disclaims. The same file also names the Blogger
-template `fragments-and-unity.template.html` in three places while its own
-config table (and the code) call it `blogger-template.html`, and its
-file-structure diagram spells the shared-poem partial `_shared.poem` instead of
-the real `.shared.poem`. Fix: rewrite the affected passages against the actual
-current code (see review R-01 for exact line numbers).
-
 ### TD26072102 docs/QUICKSTART-VIM.md references a non-existent vim/ root path
 
 The quickstart's install command and example-poem path predate the
@@ -308,7 +297,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071701 | blogger-auth cannot overwrite a read-only credentials file | resolved | 2026-07-17 | #57 |
 | TD26071901 | All-poems template interpolates the poem title unescaped | resolved | 2026-07-19 | #63 |
 | TD26071902 | Index grid and all-poems listing don't render title inline markup | resolved | 2026-07-20 | #72 |
-| TD26072101 | docs/BUILD.md describes a superseded build and contradicts itself on two filenames | open | | |
+| TD26072101 | docs/BUILD.md describes a superseded build and contradicts itself on two filenames | resolved | 2026-07-22 | 0972e62 |
 | TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | open | | |
 | TD26072103 | Postscript "See more" toggle is not keyboard-operable | open | | |
 | TD26072104 | Governance docs don't state that review is currently self-review | open | | |
