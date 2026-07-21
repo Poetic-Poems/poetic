@@ -118,15 +118,6 @@ The quickstart's install command and example-poem path predate the
 documented command fails. Fix: update all path references to `editors/vim/` and
 `src/poems/poem/_example.poem`.
 
-### TD26072103 Postscript "See more" toggle is not keyboard-operable
-
-`src/templates/_poem-content.pug`'s postscript preview uses a `display: none`
-checkbox + label, which cannot receive keyboard focus — a live WCAG 2.1.1
-violation, the same defect class the 2026-07-11 review fixed for sort headers
-in a different component. Fix: replace with a real `<button aria-expanded>`
-toggle, mirroring the existing analysis/song-embed controls in the same
-template.
-
 ### TD26072104 Governance docs don't state that review is currently self-review
 
 `main`'s code-owner review gate is satisfied by the maintainer's own second
@@ -299,7 +290,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071902 | Index grid and all-poems listing don't render title inline markup | resolved | 2026-07-20 | #72 |
 | TD26072101 | docs/BUILD.md describes a superseded build and contradicts itself on two filenames | resolved | 2026-07-22 | 0972e62 |
 | TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | open | | |
-| TD26072103 | Postscript "See more" toggle is not keyboard-operable | in-progress | | |
+| TD26072103 | Postscript "See more" toggle is not keyboard-operable | resolved | 2026-07-22 | #79 |
 | TD26072104 | Governance docs don't state that review is currently self-review | open | | |
 | TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | open | | |
 | TD26072106 | serve-static.js and public/index.js's fixed XSS have no regression tests | open | | |

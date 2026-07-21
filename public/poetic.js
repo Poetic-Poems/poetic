@@ -33,9 +33,24 @@ document.addEventListener('click', function (e) {
   player.classList.remove('hidden'); player.appendChild(iframe);
 });
 
-// Postscript "See more" preview — the CSS checkbox hack handles expand/collapse
-// without JS; this just suppresses the toggle when truncation would hide <= 1 line,
-// which depends on rendered layout and so can only be decided at runtime.
+// Postscript "See more" preview — a real <button aria-expanded> (see
+// _poem-content.pug) toggles expand/collapse; CSS keys off aria-expanded via an
+// attribute selector, mirroring how the sort headers in all-poems.js keep
+// aria-sort in sync with their visual state.
+document.addEventListener('click', function (e) {
+  const toggle = e.target.closest('.postscript-toggle');
+  if (!toggle) return;
+  const content = document.getElementById(toggle.getAttribute('aria-controls'));
+  if (!content) return;
+  const expanded = toggle.getAttribute('aria-expanded') === 'true';
+  toggle.setAttribute('aria-expanded', String(!expanded));
+  content.classList.toggle('postscript-expanded', !expanded);
+  const label = toggle.querySelector('.sr-only');
+  if (label) label.textContent = expanded ? 'See more' : 'See less';
+});
+
+// Suppresses the toggle when truncation would hide <= 1 line, which depends on
+// rendered layout and so can only be decided at runtime.
 function evaluatePostscriptPreview(el) {
   const previewLines = parseFloat(el.dataset.previewLines) || 5;
   const style = getComputedStyle(el);

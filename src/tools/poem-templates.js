@@ -403,7 +403,8 @@ if (postscriptItem.content) {
 const processedContent = postscriptItem.content
 if (preview) {
 const toggleId = `${postscriptId}--more`
-pug_html = pug_html + "\u003Cinput" + (" class=\"postscript-toggle-cb hidden\""+pug_attr("id", toggleId, true, false)+" type=\"checkbox\"") + "\u002F\u003E\u003Cdiv" + (" class=\"postscript-content\""+pug_attr("style", pug_style(`--preview-lines: ${previewLines}`), true, false)+pug_attr("data-preview-lines", previewLines, true, false)) + "\u003E" + (null == (pug_interp = processedContent) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Clabel" + (" class=\"postscript-toggle\""+pug_attr("for", toggleId, true, false)) + "\u003E\u003Cspan class=\"sr-only\"\u003ESee more\u003C\u002Fspan\u003E\u003C\u002Flabel\u003E";
+const contentId = `${postscriptId}--content`
+pug_html = pug_html + "\u003Cdiv" + (" class=\"postscript-content\""+pug_attr("id", contentId, true, false)+pug_attr("style", pug_style(`--preview-lines: ${previewLines}`), true, false)+pug_attr("data-preview-lines", previewLines, true, false)) + "\u003E" + (null == (pug_interp = processedContent) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cbutton" + (" class=\"postscript-toggle\""+pug_attr("id", toggleId, true, false)+" type=\"button\" aria-expanded=\"false\""+pug_attr("aria-controls", contentId, true, false)) + "\u003E\u003Cspan class=\"sr-only\"\u003ESee more\u003C\u002Fspan\u003E\u003C\u002Fbutton\u003E";
 }
 else {
 pug_html = pug_html + (null == (pug_interp = processedContent) ? "" : pug_interp);
@@ -426,7 +427,8 @@ if (postscriptItem.content) {
 const processedContent = postscriptItem.content
 if (preview) {
 const toggleId = `${postscriptId}--more`
-pug_html = pug_html + "\u003Cinput" + (" class=\"postscript-toggle-cb hidden\""+pug_attr("id", toggleId, true, false)+" type=\"checkbox\"") + "\u002F\u003E\u003Cdiv" + (" class=\"postscript-content\""+pug_attr("style", pug_style(`--preview-lines: ${previewLines}`), true, false)+pug_attr("data-preview-lines", previewLines, true, false)) + "\u003E" + (null == (pug_interp = processedContent) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Clabel" + (" class=\"postscript-toggle\""+pug_attr("for", toggleId, true, false)) + "\u003E\u003Cspan class=\"sr-only\"\u003ESee more\u003C\u002Fspan\u003E\u003C\u002Flabel\u003E";
+const contentId = `${postscriptId}--content`
+pug_html = pug_html + "\u003Cdiv" + (" class=\"postscript-content\""+pug_attr("id", contentId, true, false)+pug_attr("style", pug_style(`--preview-lines: ${previewLines}`), true, false)+pug_attr("data-preview-lines", previewLines, true, false)) + "\u003E" + (null == (pug_interp = processedContent) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cbutton" + (" class=\"postscript-toggle\""+pug_attr("id", toggleId, true, false)+" type=\"button\" aria-expanded=\"false\""+pug_attr("aria-controls", contentId, true, false)) + "\u003E\u003Cspan class=\"sr-only\"\u003ESee more\u003C\u002Fspan\u003E\u003C\u002Fbutton\u003E";
 }
 else {
 pug_html = pug_html + (null == (pug_interp = processedContent) ? "" : pug_interp);
@@ -883,7 +885,8 @@ if (postscriptItem.content) {
 const processedContent = postscriptItem.content
 if (preview) {
 const toggleId = `${postscriptId}--more`
-pug_html = pug_html + "\u003Cinput" + (" class=\"postscript-toggle-cb hidden\""+pug_attr("id", toggleId, true, false)+" type=\"checkbox\"") + "\u002F\u003E\u003Cdiv" + (" class=\"postscript-content\""+pug_attr("style", pug_style(`--preview-lines: ${previewLines}`), true, false)+pug_attr("data-preview-lines", previewLines, true, false)) + "\u003E" + (null == (pug_interp = processedContent) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Clabel" + (" class=\"postscript-toggle\""+pug_attr("for", toggleId, true, false)) + "\u003E\u003Cspan class=\"sr-only\"\u003ESee more\u003C\u002Fspan\u003E\u003C\u002Flabel\u003E";
+const contentId = `${postscriptId}--content`
+pug_html = pug_html + "\u003Cdiv" + (" class=\"postscript-content\""+pug_attr("id", contentId, true, false)+pug_attr("style", pug_style(`--preview-lines: ${previewLines}`), true, false)+pug_attr("data-preview-lines", previewLines, true, false)) + "\u003E" + (null == (pug_interp = processedContent) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cbutton" + (" class=\"postscript-toggle\""+pug_attr("id", toggleId, true, false)+" type=\"button\" aria-expanded=\"false\""+pug_attr("aria-controls", contentId, true, false)) + "\u003E\u003Cspan class=\"sr-only\"\u003ESee more\u003C\u002Fspan\u003E\u003C\u002Fbutton\u003E";
 }
 else {
 pug_html = pug_html + (null == (pug_interp = processedContent) ? "" : pug_interp);
@@ -906,7 +909,8 @@ if (postscriptItem.content) {
 const processedContent = postscriptItem.content
 if (preview) {
 const toggleId = `${postscriptId}--more`
-pug_html = pug_html + "\u003Cinput" + (" class=\"postscript-toggle-cb hidden\""+pug_attr("id", toggleId, true, false)+" type=\"checkbox\"") + "\u002F\u003E\u003Cdiv" + (" class=\"postscript-content\""+pug_attr("style", pug_style(`--preview-lines: ${previewLines}`), true, false)+pug_attr("data-preview-lines", previewLines, true, false)) + "\u003E" + (null == (pug_interp = processedContent) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Clabel" + (" class=\"postscript-toggle\""+pug_attr("for", toggleId, true, false)) + "\u003E\u003Cspan class=\"sr-only\"\u003ESee more\u003C\u002Fspan\u003E\u003C\u002Flabel\u003E";
+const contentId = `${postscriptId}--content`
+pug_html = pug_html + "\u003Cdiv" + (" class=\"postscript-content\""+pug_attr("id", contentId, true, false)+pug_attr("style", pug_style(`--preview-lines: ${previewLines}`), true, false)+pug_attr("data-preview-lines", previewLines, true, false)) + "\u003E" + (null == (pug_interp = processedContent) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cbutton" + (" class=\"postscript-toggle\""+pug_attr("id", toggleId, true, false)+" type=\"button\" aria-expanded=\"false\""+pug_attr("aria-controls", contentId, true, false)) + "\u003E\u003Cspan class=\"sr-only\"\u003ESee more\u003C\u002Fspan\u003E\u003C\u002Fbutton\u003E";
 }
 else {
 pug_html = pug_html + (null == (pug_interp = processedContent) ? "" : pug_interp);
