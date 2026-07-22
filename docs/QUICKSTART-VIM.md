@@ -6,10 +6,10 @@ Run the installation script from the project root:
 
 ```bash
 # For standard Vim
-./vim/install.sh
+./editors/vim/install.sh
 
 # For Neovim
-./vim/install.sh neovim
+./editors/vim/install.sh neovim
 ```
 
 ## Verify Installation
@@ -17,7 +17,7 @@ Run the installation script from the project root:
 Open a poem file to see syntax highlighting in action:
 
 ```bash
-vim src/poems/_example.poem
+vim src/poems/poem/_example.poem
 ```
 
 ## What Gets Highlighted?
@@ -90,12 +90,12 @@ See `VIM-SYNTAX.md` for complete list of supported languages and aliases.
 
 For complete documentation, customisation options, and troubleshooting, see:
 - `VIM-SYNTAX.md` - Full documentation
-- `vim/README.md` - Quick reference
+- `editors/vim/README.md` - Quick reference
 
 ## File Structure
 
 ```
-vim/
+editors/vim/
 ├── syntax/
 │   └── poem.vim          # Syntax highlighting rules
 ├── ftdetect/

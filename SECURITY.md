@@ -18,6 +18,13 @@ Please include enough detail to reproduce the issue (affected file or tool,
 steps, and impact). We aim to acknowledge reports within a few days and will
 keep you informed as we work on a fix.
 
+## Maintainer structure
+
+This project presently has a single maintainer, who also performs the
+code-owner review required to merge changes (see `CLAUDE.md`'s "Branch
+workflow" section) — reports and fixes are not independently peer-reviewed
+by a second person. There is currently no succession plan.
+
 ## Automated scanning
 
 [CodeQL](https://codeql.github.com/) (`.github/workflows/codeql.yml`) analyzes
