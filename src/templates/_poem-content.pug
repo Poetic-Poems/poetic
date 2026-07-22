@@ -152,9 +152,14 @@ mixin poemContent
             - const processedContent = postscriptItem.content
             if preview
               - const toggleId = `${postscriptId}--more`
-              input.postscript-toggle-cb.hidden(id=toggleId type="checkbox")
-              div.postscript-content(style=`--preview-lines: ${previewLines}` data-preview-lines=previewLines)!= processedContent
-              label.postscript-toggle(for=toggleId)
+              - const contentId = `${postscriptId}--content`
+              div(id=contentId class="postscript-content" style=`--preview-lines: ${previewLines}` data-preview-lines=previewLines)!= processedContent
+              button.postscript-toggle(
+                id=toggleId
+                type="button"
+                aria-expanded="false"
+                aria-controls=contentId
+              )
                 span.sr-only See more
             else
               != processedContent

@@ -111,6 +111,21 @@ it is always obvious where a new item's body belongs.
 
 <!-- Add new items directly below, as `### <id> <title>` sections. -->
 
+### TD26072102 docs/QUICKSTART-VIM.md references a non-existent vim/ root path
+
+The quickstart's install command and example-poem path predate the
+`vim/` → `editors/vim/` move every sibling doc already reflects, so its first
+documented command fails. Fix: update all path references to `editors/vim/` and
+`src/poems/poem/_example.poem`.
+
+### TD26072104 Governance docs don't state that review is currently self-review
+
+`main`'s code-owner review gate is satisfied by the maintainer's own second
+GitHub account (one person, two handles, one email throughout git history); the
+project also has a 100% single-person bus factor with no succession plan.
+CLAUDE.md's multi-agent tooling solves agent concurrency but doesn't provide
+independent review or bus-factor redundancy, and the docs don't say so. Fix:
+add a short, honest statement of this to CLAUDE.md/SECURITY.md.
 ### TD26072103 Postscript "See more" toggle is not keyboard-operable
 
 `src/templates/_poem-content.pug`'s postscript preview uses a `display: none`
@@ -292,7 +307,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26071902 | Index grid and all-poems listing don't render title inline markup | resolved | 2026-07-20 | #72 |
 | TD26072101 | docs/BUILD.md describes a superseded build and contradicts itself on two filenames | resolved | 2026-07-22 | 0972e62 |
 | TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | resolved | 2026-07-22 | 5655c57 |
-| TD26072103 | Postscript "See more" toggle is not keyboard-operable | open | | |
+| TD26072103 | Postscript "See more" toggle is not keyboard-operable | resolved | 2026-07-22 | #79 |
 | TD26072104 | Governance docs don't state that review is currently self-review | resolved | 2026-07-22 | #80 |
 | TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | open | | |
 | TD26072106 | serve-static.js and public/index.js's fixed XSS have no regression tests | open | | |

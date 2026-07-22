@@ -397,19 +397,19 @@ function postscriptPoemData(postscript) {
   };
 }
 
-test('postscript with explicit preview params emits the checkbox toggle, --preview-lines budget, and label', () => {
+test('postscript with explicit preview params emits the button toggle, --preview-lines budget, and aria-controls', () => {
   const poemData = postscriptPoemData([
     { label: 'My Note', params: { preview: 'true', 'preview-lines': '3' }, content: '<p>Some content</p>' },
   ]);
   const html = renderFragment(poemData, {});
 
-  assert.ok(html.includes('class="postscript-toggle-cb hidden"'), 'must include the hidden toggle checkbox');
-  assert.ok(html.includes('type="checkbox"'), 'toggle input must be a checkbox');
+  assert.ok(html.includes('type="button"'), 'toggle must be a real <button>');
+  assert.ok(html.includes('aria-expanded="false"'), 'toggle must start collapsed via aria-expanded');
   assert.ok(html.includes('--preview-lines: 3'), 'postscript-content style must carry the preview-lines budget');
   assert.ok(html.includes('data-preview-lines="3"'), 'postscript-content must carry data-preview-lines for JS');
   assert.ok(html.includes('class="postscript-content"'), 'content must be wrapped in .postscript-content');
-  assert.ok(html.includes('class="postscript-toggle"'), 'must include the .postscript-toggle label');
-  assert.ok(/<label[^>]*class="postscript-toggle"[^>]*for="([^"]+)"/.test(html), 'label must reference the checkbox id via for=');
+  assert.ok(html.includes('class="postscript-toggle"'), 'must include the .postscript-toggle button');
+  assert.ok(/<button[^>]*class="postscript-toggle"[^>]*aria-controls="([^"]+)"/.test(html), 'toggle button must reference the content id via aria-controls');
 });
 
 test('postscript with no params defaults to preview ON with 5 lines', () => {
@@ -418,20 +418,19 @@ test('postscript with no params defaults to preview ON with 5 lines', () => {
   ]);
   const html = renderFragment(poemData, {});
 
-  assert.ok(html.includes('class="postscript-toggle-cb hidden"'), 'default (no params) must still emit the toggle checkbox');
+  assert.ok(html.includes('type="button"'), 'default (no params) must still emit the button toggle');
   assert.ok(html.includes('--preview-lines: 5'), 'default preview-lines must be 5');
   assert.ok(html.includes('data-preview-lines="5"'), 'default data-preview-lines must be 5');
 });
 
-test('postscript with preview=false renders plain content with no checkbox/toggle', () => {
+test('postscript with preview=false renders plain content with no toggle', () => {
   const poemData = postscriptPoemData([
     { label: 'My Note', params: { preview: 'false' }, content: '<p>Some content</p>' },
   ]);
   const html = renderFragment(poemData, {});
 
-  assert.ok(!html.includes('postscript-toggle-cb'), 'preview=false must not emit the toggle checkbox');
   assert.ok(!html.includes('postscript-content'), 'preview=false must not wrap content in .postscript-content');
-  assert.ok(!html.includes('postscript-toggle'), 'preview=false must not emit the .postscript-toggle label');
+  assert.ok(!html.includes('postscript-toggle'), 'preview=false must not emit the .postscript-toggle button');
   assert.ok(html.includes('<p>Some content</p>'), 'content must still render in full');
 });
 

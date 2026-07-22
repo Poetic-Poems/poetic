@@ -38,6 +38,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   inside the ID, so a short segment like `708` could ambiguously match many
   records from the same day. The skill documentation's examples are updated to
   match.
+- **The postscript "See more" toggle is now keyboard-operable.** It was a
+  `display: none` checkbox + `<label>`, which cannot receive keyboard focus
+  (WCAG 2.1.1). It's now a real `<button aria-expanded>` wired via
+  `addEventListener` in `public/poetic.js`, mirroring the sort-header fix in
+  `all-poems.html`. Mouse behaviour and visual styling are unchanged.
 
 ## [6.1.1] — 2026-07-19
 

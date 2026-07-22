@@ -555,8 +555,9 @@ h2.poem-title {
   font-weight: bold;
 }
 
-/* Postscript "See more" preview toggle (pure-CSS checkbox hack; poetic.js
-   layers on top to suppress the control when truncation would hide <= 1 line). */
+/* Postscript "See more" preview toggle (a real <button aria-expanded>, wired
+   via addEventListener in poetic.js; poetic.js also suppresses the control
+   when truncation would hide <= 1 line). */
 
 .postscript-content {
   max-height: calc(var(--preview-lines, 5) * 1lh);
@@ -565,7 +566,7 @@ h2.poem-title {
   mask-image: linear-gradient(to bottom, #000 60%, transparent);
 }
 
-.postscript-toggle-cb:checked ~ .postscript-content,
+.postscript-content.postscript-expanded,
 .postscript-content.postscript-no-preview {
   max-height: none;
   -webkit-mask-image: none;
@@ -573,11 +574,15 @@ h2.poem-title {
 }
 
 .postscript-toggle {
+  background: none;
+  border: none;
   color: inherit;
   cursor: pointer;
   display: inline-block;
+  font: inherit;
   font-weight: bold;
   margin-top: 0.5ex;
+  padding: 0;
   text-decoration: underline;
 }
 
@@ -585,7 +590,7 @@ h2.poem-title {
   content: "See more \2B9F";
 }
 
-.postscript-toggle-cb:checked ~ .postscript-toggle::after {
+.postscript-toggle[aria-expanded="true"]::after {
   content: "See less \2B9D";
 }
 
