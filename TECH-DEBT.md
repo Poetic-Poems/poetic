@@ -135,14 +135,6 @@ in a different component. Fix: replace with a real `<button aria-expanded>`
 toggle, mirroring the existing analysis/song-embed controls in the same
 template.
 
-### TD26072105 Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md
-
-Three per-release files duplicate `CHANGELOG.md` content in different prose,
-contrary to CLAUDE.md's "CHANGELOG.md is the only place" policy and as-built
-principle; drift has already appeared after two releases. Fix: remove the three
-files (folding anything not already in CHANGELOG.md into it first), relying on
-the GitHub Releases tab's auto-generated notes instead.
-
 ### TD26072106 serve-static.js and public/index.js's fixed XSS have no regression tests
 
 `src/tools/serve-static.js` has zero test coverage, including the
@@ -309,7 +301,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | resolved | 2026-07-22 | 5655c57 |
 | TD26072103 | Postscript "See more" toggle is not keyboard-operable | resolved | 2026-07-22 | #79 |
 | TD26072104 | Governance docs don't state that review is currently self-review | resolved | 2026-07-22 | #80 |
-| TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | open | | |
+| TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | resolved | 2026-07-22 | #81 |
 | TD26072106 | serve-static.js and public/index.js's fixed XSS have no regression tests | open | | |
 | TD26072107 | package.json's engines.node floor (>=18) is past EOL | open | | |
 | TD26072108 | Several public/poetic.css text colours fail WCAG AA contrast | open | | |
