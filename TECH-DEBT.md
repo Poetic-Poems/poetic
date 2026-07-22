@@ -120,15 +120,6 @@ in a different component. Fix: replace with a real `<button aria-expanded>`
 toggle, mirroring the existing analysis/song-embed controls in the same
 template.
 
-### TD26072104 Governance docs don't state that review is currently self-review
-
-`main`'s code-owner review gate is satisfied by the maintainer's own second
-GitHub account (one person, two handles, one email throughout git history); the
-project also has a 100% single-person bus factor with no succession plan.
-CLAUDE.md's multi-agent tooling solves agent concurrency but doesn't provide
-independent review or bus-factor redundancy, and the docs don't say so. Fix:
-add a short, honest statement of this to CLAUDE.md/SECURITY.md.
-
 ### TD26072105 Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md
 
 Three per-release files duplicate `CHANGELOG.md` content in different prose,
@@ -302,7 +293,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072101 | docs/BUILD.md describes a superseded build and contradicts itself on two filenames | resolved | 2026-07-22 | 0972e62 |
 | TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | resolved | 2026-07-22 | 5655c57 |
 | TD26072103 | Postscript "See more" toggle is not keyboard-operable | open | | |
-| TD26072104 | Governance docs don't state that review is currently self-review | open | | |
+| TD26072104 | Governance docs don't state that review is currently self-review | resolved | 2026-07-22 | #80 |
 | TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | open | | |
 | TD26072106 | serve-static.js and public/index.js's fixed XSS have no regression tests | open | | |
 | TD26072107 | package.json's engines.node floor (>=18) is past EOL | open | | |
