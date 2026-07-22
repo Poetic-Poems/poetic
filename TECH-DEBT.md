@@ -302,7 +302,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072101 | docs/BUILD.md describes a superseded build and contradicts itself on two filenames | resolved | 2026-07-22 | 0972e62 |
 | TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | resolved | 2026-07-22 | 5655c57 |
 | TD26072103 | Postscript "See more" toggle is not keyboard-operable | open | | |
-| TD26072104 | Governance docs don't state that review is currently self-review | open | | |
+| TD26072104 | Governance docs don't state that review is currently self-review | in-progress | | |
 | TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | open | | |
 | TD26072106 | serve-static.js and public/index.js's fixed XSS have no regression tests | open | | |
 | TD26072107 | package.json's engines.node floor (>=18) is past EOL | open | | |
