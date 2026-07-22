@@ -301,7 +301,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072102 | docs/QUICKSTART-VIM.md references a non-existent vim/ root path | resolved | 2026-07-22 | 5655c57 |
 | TD26072103 | Postscript "See more" toggle is not keyboard-operable | resolved | 2026-07-22 | #79 |
 | TD26072104 | Governance docs don't state that review is currently self-review | resolved | 2026-07-22 | #80 |
-| TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | in-progress | | |
+| TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | resolved | 2026-07-22 | #81 |
 | TD26072106 | serve-static.js and public/index.js's fixed XSS have no regression tests | open | | |
 | TD26072107 | package.json's engines.node floor (>=18) is past EOL | open | | |
 | TD26072108 | Several public/poetic.css text colours fail WCAG AA contrast | open | | |
