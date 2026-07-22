@@ -95,6 +95,15 @@ owner reviews there and requests changes if needed. This does not extend to acti
 itself (direct commits/pushes are rejected by the branch protection anyway) or to
 force-pushing/merging, which still require explicit instruction.
 
+This project presently has a single maintainer. The required code-owner approval on `main`
+is currently satisfied by that maintainer's own second GitHub account — one person, two
+handles, one email throughout the git history — so it is self-review by design, not
+independent peer review; a reader (human or agent) should not infer otherwise from the
+branch-protection description above. There is also no succession plan: if the maintainer
+becomes unavailable, no one else currently holds equivalent access or repo context. The
+multi-agent conventions in this file manage concurrent agents working on the repo at once;
+they do not substitute for independent review or bus-factor redundancy.
+
 All Poetic repositories, this one included, operate in a multi-agent environment: autonomous
 and interactive agents, and the maintainer, may push branches, merge pull requests, and move
 `main` at any time. Before commencing any changes, make your own dedicated fresh clone of
