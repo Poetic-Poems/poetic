@@ -38,6 +38,7 @@ and optionally publish to GitHub Pages.
 - **`.poem` format** — a readable plain-text syntax for structured poetry (see [`docs/POEM-SYNTAX.md`](docs/POEM-SYNTAX.md) and the formal grammar in [`poem-syntax.ebnf`](poem-syntax.ebnf))
 - **Build pipeline** — converts `.poem` → YAML → HTML with a Pug template
 - **Index & all-poems view** — generates `index.html` and `all-poems.html` for browsing your collection
+- **Browser-safe renderer** — the `poetic/browser` library export renders poems to HTML in plain JavaScript (no filesystem), enabling live-preview web apps and server-side rendering (see [`docs/RENDERER-BROWSER.md`](docs/RENDERER-BROWSER.md))
 - **Self-hosted MEGA player** — a builtin `Mega:` song handler turns a public [MEGA.nz](https://mega.nz) link into an inline **audio and video** player (full-screen and picture-in-picture), lazy-loaded on click and working on both GitHub Pages and Blogger
 - **Vim syntax highlighting** — filetype detection and highlighting for `.poem` files (see [`editors/vim/`](editors/vim/))
 - **GitHub Pages deployment** — included workflow deploys your published HTML on push to `main`
@@ -317,6 +318,7 @@ To switch channels, edit `.poetic-version` and change the `channel` line.
 - [`poem-syntax.ebnf`](poem-syntax.ebnf) — formal EBNF grammar
 - [`docs/YAML-SCHEMA.md`](docs/YAML-SCHEMA.md) — YAML schema for poems
 - [`docs/POEM-TO-YAML.md`](docs/POEM-TO-YAML.md) — converter documentation
+- [`docs/RENDERER-BROWSER.md`](docs/RENDERER-BROWSER.md) — browser-safe renderer API
 - [`docs/BUILD.md`](docs/BUILD.md) — GitHub Pages deployment details
 - [`docs/SCRIPTS.md`](docs/SCRIPTS.md) — shell scripts reference (`new-poem`, `edit-poem`, `sync-framework.sh`, etc.)
 - [`docs/VIM-SYNTAX.md`](docs/VIM-SYNTAX.md) — Vim syntax highlighting setup

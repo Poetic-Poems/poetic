@@ -192,14 +192,6 @@ Fix: add a job timeout, wrap fetch calls with `AbortSignal.timeout()` and
 retry-on-rejection; bounded concurrency for large collections is optional/
 lower priority.
 
-### TD26072115 README and docs/POEM-TO-YAML.md are missing two cross-references
-
-README never mentions the `poetic/browser` library export or
-`docs/RENDERER-BROWSER.md` despite it being a real, tested public API;
-`docs/POEM-TO-YAML.md` doesn't mention the incremental-rebuild/`--force`
-behaviour that applies to the script it documents. Fix: add a short pointer to
-each.
-
 ### TD26072116 Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions)
 
 An invalid `blogger.removed`/`blogger.content` config value is silently
@@ -294,7 +286,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072112 | No code-coverage tool configured | open | | |
 | TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | open | | |
 | TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | open | | |
-| TD26072115 | README and docs/POEM-TO-YAML.md are missing two cross-references | open | | |
+| TD26072115 | README and docs/POEM-TO-YAML.md are missing two cross-references | resolved | 2026-07-24 | #84 |
 | TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | open | | |
 | TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | open | | |
 | TD26072118 | Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout | open | | |
