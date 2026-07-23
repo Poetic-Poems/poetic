@@ -38,6 +38,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   DOM as inert text. Both fixes were previously verified manually only.
   Resolves TD26072106.
 
+### Changed
+
+- **Minimum supported Node.js version raised from 18 to 22**, matching the
+  version CI already builds and tests against. `package.json`'s
+  `engines.node` is now `>=22`, `.npmrc` sets `engine-strict=true` so
+  `npm install`/`npm ci` refuse an older runtime outright, and the README's
+  prerequisite line now reads "Node.js 22.x". Both Node 18 and Node 20 are
+  past end-of-life. Resolves TD26072107.
+
 ### Fixed
 
 - **`scripts/get-tech-debt-record.pl` now matches an ID segment against the
