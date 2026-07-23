@@ -101,7 +101,7 @@ You will need the following before getting started:
 
 - **A GitHub account** — free to create at [github.com](https://github.com/join)
 - **Git** — [download from git-scm.com](https://git-scm.com/downloads)
-- **Node.js 18 or later** — [download from nodejs.org](https://nodejs.org/) (choose the LTS version)
+- **Node.js 22.x** — [download from nodejs.org](https://nodejs.org/) (choose the LTS version)
 - **A terminal** — the command-line application on your computer:
   - macOS: Terminal (built in) or [iTerm2](https://iterm2.com/)
   - Windows: Git Bash (installed with Git for Windows) or [Windows Terminal](https://apps.microsoft.com/detail/9n0dx20hk701)
