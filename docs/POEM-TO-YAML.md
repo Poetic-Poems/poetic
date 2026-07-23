@@ -111,6 +111,30 @@ use a `%` sigil and are left untouched here; they are resolved later, at the
 render stage. See `docs/POEM-SYNTAX.md` and `src/poems/poem/_example.poem` for
 complete variable documentation.
 
+## Incremental rebuild
+
+When running `npm run build:yaml` or `node src/tools/poem-to-yaml.js --all`, the converter
+skips `.poem` files that have not changed (incremental rebuild). A poem is considered
+out of date if any of its dependencies (the `.poem` file or the shared `.shared.poem`
+file in the same directory) have been modified more recently than its `.yaml` output.
+
+To force a rebuild of all poems regardless of modification time, pass the `--force` flag:
+
+```bash
+npm run build:yaml -- --force
+# or
+node src/tools/poem-to-yaml.js --all --force
+```
+
+You can also set the `POETIC_FORCE_REBUILD` environment variable instead:
+
+```bash
+POETIC_FORCE_REBUILD=1 npm run build:yaml
+```
+
+Incremental rebuilds significantly speed up the build process for large poem collections,
+especially during development when only a few poems have changed between builds.
+
 ## Implementation Notes
 
 - The parser removes comment blocks before processing
