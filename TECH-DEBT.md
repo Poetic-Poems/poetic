@@ -135,13 +135,6 @@ in a different component. Fix: replace with a real `<button aria-expanded>`
 toggle, mirroring the existing analysis/song-embed controls in the same
 template.
 
-### TD26072108 Several public/poetic.css text colours fail WCAG AA contrast
-
-`.poem-info` (gray, ≈3.95:1), `.poetic-footer`/`.no-content`/`.filter-empty`
-(#999, ≈2.85:1), and `#007AFF` text (≈4.0:1) all fall short of the 4.5:1
-normal-text threshold, affecting every generated page site-wide. Fix: darken to
-at least `#767676`-equivalent or restrict `#007AFF` to large-text/UI contexts.
-
 ### TD26072109 yaml-to-poem.js silently drops data the current YAML shape can hold
 
 `writeAudio()`/`writeVersions()` don't handle object-form audio params or
@@ -279,7 +272,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072105 | Root-level RELEASE_NOTES_*.md files duplicate CHANGELOG.md | resolved | 2026-07-22 | #81 |
 | TD26072106 | serve-static.js and public/index.js's fixed XSS have no regression tests | resolved | 2026-07-24 | #82 |
 | TD26072107 | package.json's engines.node floor (>=18) is past EOL | resolved | 2026-07-24 | #83 |
-| TD26072108 | Several public/poetic.css text colours fail WCAG AA contrast | open | | |
+| TD26072108 | Several public/poetic.css text colours fail WCAG AA contrast | resolved | 2026-07-24 | #85 |
 | TD26072109 | yaml-to-poem.js silently drops data the current YAML shape can hold | open | | |
 | TD26072110 | poem-parser.js is a 1854-line monolith covering the whole grammar | open | | |
 | TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | open | | |
