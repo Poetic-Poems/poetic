@@ -27,14 +27,14 @@ const http = require('http');
 
 const SERVE_STATIC_PATH = path.join(__dirname, '..', 'src', 'tools', 'serve-static.js');
 
-function loadServeStaticInternals(dirForStartupCheck) {
+function loadServeStaticInternals(dirForStartupCheck, extraArgs = []) {
   const source = fs.readFileSync(SERVE_STATIC_PATH, 'utf8');
-  const patched = `${source}\nmodule.exports = { escapeHtml, encodeHref, generateDirectoryListing };\n`;
+  const patched = `${source}\nmodule.exports = { escapeHtml, encodeHref, generateDirectoryListing, CORS_HEADERS, HOST };\n`;
 
   const originalArgv = process.argv;
   const originalCreateServer = http.createServer;
   http.createServer = () => ({ listen() {} });
-  process.argv = [process.argv[0], SERVE_STATIC_PATH, '--dir', dirForStartupCheck, '--port', '0'];
+  process.argv = [process.argv[0], SERVE_STATIC_PATH, '--dir', dirForStartupCheck, '--port', '0', ...extraArgs];
 
   try {
     const mod = new Module(SERVE_STATIC_PATH, module);
@@ -134,5 +134,29 @@ test('generateDirectoryListing escapes quotes and ampersands in filenames', () =
 
     assert.ok(html.includes('it&#39;s &quot;quoted&quot; &amp; ampersand.txt'));
     assert.ok(!html.includes(`>${name}<`));
+  });
+});
+
+test('CORS_HEADERS: omits Access-Control-Allow-Origin on the default loopback bind (127.0.0.1)', () => {
+  withTempDir((dir) => {
+    const { CORS_HEADERS, HOST } = loadServeStaticInternals(dir);
+    assert.strictEqual(HOST, '127.0.0.1');
+    assert.deepStrictEqual(CORS_HEADERS, {});
+  });
+});
+
+test('CORS_HEADERS: omits Access-Control-Allow-Origin for the ::1 loopback host', () => {
+  withTempDir((dir) => {
+    const { CORS_HEADERS, HOST } = loadServeStaticInternals(dir, ['--host', '::1']);
+    assert.strictEqual(HOST, '::1');
+    assert.deepStrictEqual(CORS_HEADERS, {});
+  });
+});
+
+test('CORS_HEADERS: sets a wildcard Access-Control-Allow-Origin when explicitly bound to 0.0.0.0', () => {
+  withTempDir((dir) => {
+    const { CORS_HEADERS, HOST } = loadServeStaticInternals(dir, ['--host', '0.0.0.0']);
+    assert.strictEqual(HOST, '0.0.0.0');
+    assert.deepStrictEqual(CORS_HEADERS, { 'Access-Control-Allow-Origin': '*' });
   });
 });

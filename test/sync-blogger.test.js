@@ -72,6 +72,20 @@ test('parseArgs: unknown flags are silently ignored', () => {
 // a real `.blogger-credentials.json` that might exist in the process's CWD
 // (e.g. in a consumer repo that has run blogger-auth.js) — see TECH-DEBT.md.
 
+// Run `fn`, capturing every console.warn call instead of printing it; restores
+// console.warn afterwards even if `fn` throws.
+function withCapturedWarnings(fn) {
+  const originalWarn = console.warn;
+  const warnings = [];
+  console.warn = (...args) => warnings.push(args.join(' '));
+  try {
+    fn();
+  } finally {
+    console.warn = originalWarn;
+  }
+  return warnings;
+}
+
 test('resolveConfig: defaults when config is empty', () => {
   const opts = resolveConfig({}, {}, null);
   assert.strictEqual(opts.enabled, false);
@@ -125,6 +139,36 @@ test('resolveConfig: invalid content falls back to "full"', () => {
   assert.strictEqual(resolveConfig({ blogger: { content: '' } }, {}, null).content, 'full');
 });
 
+test('resolveConfig: warns on an invalid blogger.removed value, naming it and the valid options', () => {
+  const warnings = withCapturedWarnings(() => {
+    resolveConfig({ blogger: { removed: 'archive' } }, {}, null);
+  });
+  assert.strictEqual(warnings.length, 1);
+  assert.match(warnings[0], /blogger\.removed/);
+  assert.match(warnings[0], /archive/);
+  assert.match(warnings[0], /draft, delete, keep/);
+});
+
+test('resolveConfig: does not warn when blogger.removed is a valid value or unset', () => {
+  assert.deepStrictEqual(withCapturedWarnings(() => resolveConfig({ blogger: { removed: 'delete' } }, {}, null)), []);
+  assert.deepStrictEqual(withCapturedWarnings(() => resolveConfig({}, {}, null)), []);
+});
+
+test('resolveConfig: warns on an invalid blogger.content value, naming it and the valid options', () => {
+  const warnings = withCapturedWarnings(() => {
+    resolveConfig({ blogger: { content: 'text' } }, {}, null);
+  });
+  assert.strictEqual(warnings.length, 1);
+  assert.match(warnings[0], /blogger\.content/);
+  assert.match(warnings[0], /text/);
+  assert.match(warnings[0], /full, poem/);
+});
+
+test('resolveConfig: does not warn when blogger.content is a valid value or unset', () => {
+  assert.deepStrictEqual(withCapturedWarnings(() => resolveConfig({ blogger: { content: 'poem' } }, {}, null)), []);
+  assert.deepStrictEqual(withCapturedWarnings(() => resolveConfig({}, {}, null)), []);
+});
+
 test('resolveConfig: hasCredentials true when all three vars present', () => {
   const env = {
     BLOGGER_CLIENT_ID: 'cid',
@@ -142,7 +186,8 @@ test('resolveConfig: hasCredentials false when any var missing', () => {
 
 test('resolveConfig: hasCredentials true when missing env vars are filled in from the credentials file', () => {
   const fixturePath = path.join(__dirname, 'fixtures', 'blogger-credentials.json');
-  const opts = resolveConfig({}, { BLOGGER_CLIENT_ID: 'x' }, fixturePath);
+  let opts;
+  withCapturedWarnings(() => { opts = resolveConfig({}, { BLOGGER_CLIENT_ID: 'x' }, fixturePath); });
   assert.strictEqual(opts.hasCredentials, true);
 });
 
@@ -156,7 +201,8 @@ test('resolveConfig: reads credentials from top-level keys in credentials file',
       note: 'Test credentials'
     };
     fs.writeFileSync(tmpPath, JSON.stringify(credData));
-    const opts = resolveConfig({}, {}, tmpPath);
+    let opts;
+    withCapturedWarnings(() => { opts = resolveConfig({}, {}, tmpPath); });
     assert.strictEqual(opts.hasCredentials, true);
     assert.strictEqual(opts.clientId, 'toplevel-client-id');
     assert.strictEqual(opts.clientSecret, 'toplevel-client-secret');
@@ -168,7 +214,8 @@ test('resolveConfig: reads credentials from top-level keys in credentials file',
 
 test('resolveConfig: reads credentials from nested installed object in credentials file', () => {
   const fixturePath = path.join(__dirname, 'fixtures', 'blogger-credentials.json');
-  const opts = resolveConfig({}, {}, fixturePath);
+  let opts;
+  withCapturedWarnings(() => { opts = resolveConfig({}, {}, fixturePath); });
   assert.strictEqual(opts.clientId, 'fixture-client-id');
   assert.strictEqual(opts.clientSecret, 'fixture-client-secret');
   assert.strictEqual(opts.refreshToken, 'fixture-refresh-token');
@@ -189,7 +236,8 @@ test('resolveConfig: top-level keys take precedence over nested installed object
       }
     };
     fs.writeFileSync(tmpPath, JSON.stringify(credData));
-    const opts = resolveConfig({}, {}, tmpPath);
+    let opts;
+    withCapturedWarnings(() => { opts = resolveConfig({}, {}, tmpPath); });
     assert.strictEqual(opts.clientId, 'toplevel-id');
     assert.strictEqual(opts.clientSecret, 'toplevel-secret');
     assert.strictEqual(opts.refreshToken, 'toplevel-token');
@@ -200,11 +248,46 @@ test('resolveConfig: top-level keys take precedence over nested installed object
 
 test('resolveConfig: env vars override file credentials independently', () => {
   const fixturePath = path.join(__dirname, 'fixtures', 'blogger-credentials.json');
-  const opts = resolveConfig({}, { BLOGGER_CLIENT_ID: 'env-id' }, fixturePath);
+  let opts;
+  withCapturedWarnings(() => { opts = resolveConfig({}, { BLOGGER_CLIENT_ID: 'env-id' }, fixturePath); });
   assert.strictEqual(opts.clientId, 'env-id');
   assert.strictEqual(opts.clientSecret, 'fixture-client-secret');
   assert.strictEqual(opts.refreshToken, 'fixture-refresh-token');
 });
+
+test('resolveConfig: warns when the credentials file is readable/writable beyond its owner',
+  { skip: process.platform === 'win32' ? 'POSIX file permission bits only' : false },
+  () => {
+    const tmpPath = path.join(os.tmpdir(), `blogger-creds-loose-${process.pid}-${Date.now()}.json`);
+    try {
+      fs.writeFileSync(tmpPath, JSON.stringify({
+        client_id: 'x', client_secret: 'y', refresh_token: 'z',
+      }));
+      fs.chmodSync(tmpPath, 0o644);
+      const warnings = withCapturedWarnings(() => resolveConfig({}, {}, tmpPath));
+      assert.strictEqual(warnings.length, 1);
+      assert.match(warnings[0], new RegExp(tmpPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+      assert.match(warnings[0], /0?644/);
+    } finally {
+      fs.rmSync(tmpPath, { force: true });
+    }
+  });
+
+test('resolveConfig: does not warn when the credentials file is 0600',
+  { skip: process.platform === 'win32' ? 'POSIX file permission bits only' : false },
+  () => {
+    const tmpPath = path.join(os.tmpdir(), `blogger-creds-strict-${process.pid}-${Date.now()}.json`);
+    try {
+      fs.writeFileSync(tmpPath, JSON.stringify({
+        client_id: 'x', client_secret: 'y', refresh_token: 'z',
+      }));
+      fs.chmodSync(tmpPath, 0o600);
+      const warnings = withCapturedWarnings(() => resolveConfig({}, {}, tmpPath));
+      assert.deepStrictEqual(warnings, []);
+    } finally {
+      fs.rmSync(tmpPath, { force: true });
+    }
+  });
 
 // ── extractSlug ───────────────────────────────────────────────────────────────
 

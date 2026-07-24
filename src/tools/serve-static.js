@@ -47,6 +47,13 @@ const PORT = Number(
 // Bind to loopback by default so the dev server is not exposed to the LAN.
 // Pass --host 0.0.0.0 (or HOST=0.0.0.0) for the rare LAN-testing case.
 const HOST = cliHost || process.env.HOST || "127.0.0.1";
+// A wildcard CORS header is only safe once the server has been explicitly
+// opted into LAN exposure (--host 0.0.0.0); on the loopback default it's
+// scoped to this machine's own origin instead.
+const IS_LOOPBACK_HOST = HOST === "127.0.0.1" || HOST === "::1";
+const CORS_HEADERS = IS_LOOPBACK_HOST
+  ? {}
+  : { "Access-Control-Allow-Origin": "*" };
 const ROOT_DIR = path.resolve(
   process.cwd(),
   cliDir || process.env.DIR || "public"
@@ -228,7 +235,7 @@ const server = http.createServer((req, res) => {
       const concatenatedContent = upsertFooter(allPoemsHtml, footerBlock);
 
       res.writeHead(200, {
-        "Access-Control-Allow-Origin": "*",
+        ...CORS_HEADERS,
         "Cache-Control":
           "no-store, no-cache, must-revalidate, proxy-revalidate",
         Pragma: "no-cache",
@@ -256,7 +263,7 @@ const server = http.createServer((req, res) => {
         const indexFile = path.join(dirPath, "index.html");
         if (fileExists(indexFile)) {
           res.writeHead(200, {
-            "Access-Control-Allow-Origin": "*",
+            ...CORS_HEADERS,
             "Cache-Control":
               "no-store, no-cache, must-revalidate, proxy-revalidate",
             Pragma: "no-cache",
@@ -275,7 +282,7 @@ const server = http.createServer((req, res) => {
         );
 
         res.writeHead(200, {
-          "Access-Control-Allow-Origin": "*",
+          ...CORS_HEADERS,
           "Cache-Control":
             "no-store, no-cache, must-revalidate, proxy-revalidate",
           Pragma: "no-cache",
@@ -300,7 +307,7 @@ const server = http.createServer((req, res) => {
     }
 
     const headers = {
-      "Access-Control-Allow-Origin": "*",
+      ...CORS_HEADERS,
       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
       Pragma: "no-cache",
       Expires: "0",
