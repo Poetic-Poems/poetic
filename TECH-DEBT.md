@@ -168,15 +168,6 @@ Fix: add a job timeout, wrap fetch calls with `AbortSignal.timeout()` and
 retry-on-rejection; bounded concurrency for large collections is optional/
 lower priority.
 
-### TD26072201 docs/VIM-SYNTAX.md still references a non-existent vim/ root path
-
-TD26072102 fixed the same defect class in docs/QUICKSTART-VIM.md, but
-docs/VIM-SYNTAX.md's manual-install and plugin-manager sections still `cp`
-from and refer to a bare `vim/` directory (e.g. `cp vim/syntax/poem.vim
-~/.vim/syntax/`, "copying the `vim/` directory to your plugin directory"),
-predating the `vim/` → `editors/vim/` move. Fix: update those references to
-`editors/vim/`.
-
 ### TD26072401 yaml-to-poem.js's plain-line writers still mangle content TD26072109 didn't touch
 
 Fixing TD26072109 (object-form audio params, `segment.parts`, labels,
@@ -266,5 +257,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | resolved | 2026-07-25 | #93 |
 | TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | resolved | 2026-07-25 | #94 |
 | TD26072118 | Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout | resolved | 2026-07-24 | #89 |
-| TD26072201 | docs/VIM-SYNTAX.md still references a non-existent vim/ root path | in-progress | | |
+| TD26072201 | docs/VIM-SYNTAX.md still references a non-existent vim/ root path | resolved | 2026-07-24 | #90 |
 | TD26072401 | yaml-to-poem.js's plain-line writers still mangle content TD26072109 didn't touch | open | | |
