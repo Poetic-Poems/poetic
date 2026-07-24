@@ -2,6 +2,7 @@
 *.code-workspace
 *.sw[op]
 node_modules
+coverage
 
 src/poems/yaml/*.yaml
 public/*.html

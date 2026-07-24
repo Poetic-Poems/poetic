@@ -37,6 +37,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   poem title and label, asserting the hostile string only ever reaches the
   DOM as inert text. Both fixes were previously verified manually only.
   Resolves TD26072106.
+- **`npm run coverage` reports code coverage** for `npm test`, via `c8`
+  (works directly with Node's built-in test runner). No CI coverage-floor
+  gate yet. Resolves TD26072112.
 
 ### Changed
 
