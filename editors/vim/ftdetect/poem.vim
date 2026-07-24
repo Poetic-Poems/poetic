@@ -1,7 +1,6 @@
 " Vim filetype detection file
 " Language:     Poem
-" Maintainer:   (maintainer name)
-" Last Change:  2025-10-08
+" Last Change:  2026-07-24
 
 " Detect .poem files
 au BufRead,BufNewFile *.poem set filetype=poem

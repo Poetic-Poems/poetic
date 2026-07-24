@@ -191,6 +191,11 @@ With `--commit`, this happens automatically once the sync completes, and the
 commit body records which upstream commits were pulled in. Either way, the
 summary is printed to the terminal so you can see it before deciding.
 
+`package.json` and `package-lock.json` are framework-owned paths, so a sync
+overwrites them wholesale. If this repo has custom `package.json` edits (extra
+dependencies, scripts, etc.), review the staged diff carefully before
+committing — the sync does not merge your edits, it replaces the files.
+
 ### Skipping paths
 
 To keep a local override of a framework file, add it to `.poetic-config.yaml`:

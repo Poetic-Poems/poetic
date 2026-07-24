@@ -114,6 +114,8 @@ h1 {
 h1.poem-title,
 h2.poem-title {
   border-bottom: 2px solid #f0f0f0;
+  font-size: 1.5em;
+  font-weight: bold;
   margin: 1ex 0 2ex;
   padding-bottom: 0.5ex;
 }

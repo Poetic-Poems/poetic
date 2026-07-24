@@ -312,13 +312,13 @@ versions:
       - lines: "Hello world\\n"
 `;
 
-test('renderPage: h2.poem-title renders restricted markup, head <title> stays plain', () => {
+test('renderPage: h1.poem-title renders restricted markup, head <title> stays plain', () => {
   const { yamlPath } = writeTempYaml(MARKUP_TITLE_YAML);
   const poemData = loadPoemData(yamlPath);
   const html = renderPage(poemData, { favicon: 'poetic-logo.svg' });
 
   assert.ok(
-    html.includes('<h2 class="poem-title">A <strong>bold</strong> and <em>soft</em> &lt;tag&gt; &amp; co</h2>'),
+    html.includes('<h1 class="poem-title">A <strong>bold</strong> and <em>soft</em> &lt;tag&gt; &amp; co</h1>'),
     'visible heading must render markup and escape < & to inert text',
   );
   assert.ok(
