@@ -26,6 +26,7 @@ const {
   selectRemoved,
   extractContent,
   explainBloggerFailure,
+  fetchWithRetry,
 } = require('../src/tools/sync-blogger');
 
 // ── parseArgs ─────────────────────────────────────────────────────────────────
@@ -728,4 +729,82 @@ test('explainBloggerFailure: returns null when it has nothing useful to add', ()
     explainBloggerFailure({ operation: 'getAccessToken', status: 503, body: 'unavailable' }),
     null
   );
+});
+
+// ── fetchWithRetry ────────────────────────────────────────────────────────────
+
+async function withMockFetch(mockFetch, run) {
+  const original = global.fetch;
+  global.fetch = mockFetch;
+  try {
+    return await run();
+  } finally {
+    global.fetch = original;
+  }
+}
+
+test('fetchWithRetry: passes an AbortSignal with a timeout through to fetch', async () => {
+  let capturedInit;
+  await withMockFetch(
+    async (url, init) => { capturedInit = init; return { status: 200 }; },
+    () => fetchWithRetry('https://example.com', { headers: { X: '1' } })
+  );
+  assert.ok(capturedInit.signal instanceof AbortSignal);
+  assert.strictEqual(capturedInit.headers.X, '1');
+});
+
+test('fetchWithRetry: returns the response unchanged on a non-retryable status', async () => {
+  let calls = 0;
+  const response = await withMockFetch(
+    async () => { calls++; return { status: 404 }; },
+    () => fetchWithRetry('https://example.com')
+  );
+  assert.strictEqual(response.status, 404);
+  assert.strictEqual(calls, 1);
+});
+
+test('fetchWithRetry: retries once on a 429 response', async () => {
+  let calls = 0;
+  const response = await withMockFetch(
+    async () => { calls++; return { status: calls === 1 ? 429 : 200 }; },
+    () => fetchWithRetry('https://example.com')
+  );
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(calls, 2);
+});
+
+test('fetchWithRetry: retries once on a 5xx response', async () => {
+  let calls = 0;
+  const response = await withMockFetch(
+    async () => { calls++; return { status: calls === 1 ? 503 : 200 }; },
+    () => fetchWithRetry('https://example.com')
+  );
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(calls, 2);
+});
+
+test('fetchWithRetry: retries once on a network-level rejection', async () => {
+  let calls = 0;
+  const response = await withMockFetch(
+    async () => {
+      calls++;
+      if (calls === 1) throw new TypeError('fetch failed');
+      return { status: 200 };
+    },
+    () => fetchWithRetry('https://example.com')
+  );
+  assert.strictEqual(response.status, 200);
+  assert.strictEqual(calls, 2);
+});
+
+test('fetchWithRetry: propagates rejection when the retry also fails', async () => {
+  const calls = { count: 0 };
+  await assert.rejects(
+    () => withMockFetch(
+      async () => { calls.count++; throw new Error('network down'); },
+      () => fetchWithRetry('https://example.com')
+    ),
+    /network down/
+  );
+  assert.strictEqual(calls.count, 2);
 });

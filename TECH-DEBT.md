@@ -280,7 +280,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | open | | |
 | TD26072112 | No code-coverage tool configured | resolved | 2026-07-24 | #88 |
 | TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | open | | |
-| TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | open | | |
+| TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | in-progress | | |
 | TD26072115 | README and docs/POEM-TO-YAML.md are missing two cross-references | resolved | 2026-07-24 | #84 |
 | TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | open | | |
 | TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | open | | |
