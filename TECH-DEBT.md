@@ -273,7 +273,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072106 | serve-static.js and public/index.js's fixed XSS have no regression tests | resolved | 2026-07-24 | #82 |
 | TD26072107 | package.json's engines.node floor (>=18) is past EOL | resolved | 2026-07-24 | #83 |
 | TD26072108 | Several public/poetic.css text colours fail WCAG AA contrast | resolved | 2026-07-24 | #85 |
-| TD26072109 | yaml-to-poem.js silently drops data the current YAML shape can hold | open | | |
+| TD26072109 | yaml-to-poem.js silently drops data the current YAML shape can hold | in-progress | | |
 | TD26072110 | poem-parser.js is a 1854-line monolith covering the whole grammar | open | | |
 | TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | open | | |
 | TD26072112 | No code-coverage tool configured | open | | |
