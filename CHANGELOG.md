@@ -87,6 +87,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   containing a space) now raises a clear error instead of writing a line that
   would parse back differently. Covered by
   `test/yaml-to-poem-roundtrip.test.js`. Resolves TD26072109.
+- **Standalone poem pages now have a proper `<h1>`.** `poem-page.pug` used
+  `h2.poem-title` with no `<h1>` anywhere on the page; since each such page has
+  no separate site-title heading, the poem title is now the page's `<h1>`.
+  `all-poems.html`/`index.html` are unaffected — they already have their own
+  `<h1>` site title, so their per-poem headings stay `h2.poem-title`. Visual
+  appearance is unchanged (CSS now pins the title's size/weight explicitly
+  instead of relying on the browser's `h2` defaults). Resolves TD26072118.
 
 ## [6.1.1] — 2026-07-19
 

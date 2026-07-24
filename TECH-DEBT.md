@@ -187,16 +187,6 @@ tags across ~50 methods versus 70 in the similarly-sized `sync-blogger.js`.
 Fix: add a `quotes` rule and reformat; bring `poem-parser.js`'s JSDoc up to the
 standard already used elsewhere (can be incremental).
 
-### TD26072118 Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout
-
-Standalone poem pages have no `<h1>` (only `h2.poem-title`);
-`editors/vim/ftdetect/poem.vim` still has an unfilled `(maintainer name)`
-placeholder and a stale date; the browser-renderer library surfaces plain
-unclassified `Error` objects (optional to fix); `scripts/sync-framework.sh`
-overwrites a consumer's lockfile with no doc callout about custom
-`package.json` edits being clobbered. Fix: four small, independent edits — see
-review R-18 for specifics.
-
 ### TD26072201 docs/VIM-SYNTAX.md still references a non-existent vim/ root path
 
 TD26072102 fixed the same defect class in docs/QUICKSTART-VIM.md, but
@@ -294,6 +284,6 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072115 | README and docs/POEM-TO-YAML.md are missing two cross-references | resolved | 2026-07-24 | #84 |
 | TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | open | | |
 | TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | open | | |
-| TD26072118 | Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout | in-progress | | |
+| TD26072118 | Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout | resolved | 2026-07-24 | #89 |
 | TD26072201 | docs/VIM-SYNTAX.md still references a non-existent vim/ root path | open | | |
 | TD26072401 | yaml-to-poem.js's plain-line writers still mangle content TD26072109 didn't touch | open | | |
