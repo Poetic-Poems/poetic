@@ -154,13 +154,6 @@ grammar section (variable substitution, markup conversion, metadata parsing)
 following the pattern `render-core.js`/`aggregate-render-core.js` already
 establish; do as a sequence of small, independently-verified PRs.
 
-### TD26072111 Escape-placeholder and js-beautify-options code duplicated across files
-
-The `\x00ESCAPE<n>\x00` placeholder mechanism is implemented independently (but
-cross-referenced by comment) in `poem-parser.js` and `render-core.js`; the same
-`js-beautify` options object is copy-pasted three times across `build-poems.js`
-and `build-all-poems.js`. Fix: extract a shared helper/constant for each.
-
 ### TD26072112 No code-coverage tool configured
 
 Coverage is only ever estimated by manual inspection, which is how test gaps
@@ -275,7 +268,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072108 | Several public/poetic.css text colours fail WCAG AA contrast | resolved | 2026-07-24 | #85 |
 | TD26072109 | yaml-to-poem.js silently drops data the current YAML shape can hold | open | | |
 | TD26072110 | poem-parser.js is a 1854-line monolith covering the whole grammar | open | | |
-| TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | open | | |
+| TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | resolved | 2026-07-24 | #86 |
 | TD26072112 | No code-coverage tool configured | open | | |
 | TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | open | | |
 | TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | open | | |
