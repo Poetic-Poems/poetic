@@ -258,7 +258,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072108 | Several public/poetic.css text colours fail WCAG AA contrast | resolved | 2026-07-24 | #85 |
 | TD26072109 | yaml-to-poem.js silently drops data the current YAML shape can hold | resolved | 2026-07-24 | #87 |
 | TD26072110 | poem-parser.js is a 1854-line monolith covering the whole grammar | open | | |
-| TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | open | | |
+| TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | in-progress | | |
 | TD26072112 | No code-coverage tool configured | resolved | 2026-07-24 | #88 |
 | TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | open | | |
 | TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | open | | |
