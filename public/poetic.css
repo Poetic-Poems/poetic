@@ -25,7 +25,7 @@
 }
 
 .no-content {
-  color: #999;
+  color: #767676;
   font-style: italic;
 }
 
@@ -67,7 +67,7 @@ h1 {
 }
 
 .poem-info {
-  color: gray;
+  color: #767676;
   font-size: 90%;
   padding-bottom: 3ex;
 }
@@ -194,7 +194,7 @@ h2.poem-title {
 }
 
 .audio-indicator {
-  color: #007AFF;
+  color: #0062CC;
   font-size: 1.2em;
 }
 
@@ -206,7 +206,7 @@ h2.poem-title {
 .links a {
   border: 1px solid #007AFF;
   border-radius: 5px;
-  color: #007AFF;
+  color: #0062CC;
   display: inline-block;
   margin: 0 15px;
   padding: 10px 20px;
@@ -214,7 +214,7 @@ h2.poem-title {
 }
 
 .links a:hover {
-  background: #007AFF;
+  background: #0062CC;
   color: white;
 }
 
@@ -341,14 +341,14 @@ h2.poem-title {
   background: white;
   border: 1px solid #007AFF;
   border-radius: 999px;
-  color: #007AFF;
+  color: #0062CC;
   cursor: pointer;
   font: inherit;
   padding: 3px 14px 4px;
 }
 
 .filter-reset:hover {
-  background: #007AFF;
+  background: #0062CC;
   color: white;
 }
 
@@ -359,7 +359,7 @@ h2.poem-title {
 }
 
 .filter-empty {
-  color: #999;
+  color: #767676;
   font-style: italic;
   padding: 20px 0;
   text-align: center;
@@ -447,7 +447,7 @@ h2.poem-title {
 }
 
 .toc-table a {
-  color: #007AFF;
+  color: #0062CC;
   text-decoration: none;
 }
 
@@ -466,7 +466,7 @@ h2.poem-title {
 }
 
 .back-link {
-  color: #007AFF;
+  color: #0062CC;
   display: inline-block;
   margin-bottom: 20px;
   text-decoration: none;
@@ -511,7 +511,7 @@ h2.poem-title {
 }
 
 .song-segment {
-  color: gray;
+  color: #767676;
   display: block;
   height: 1ex;
   font-family: monospace;
@@ -530,7 +530,7 @@ h2.poem-title {
 }
 
 .song-link {
-  color: gray;
+  color: #767676;
   font-style: italic;
   padding-top: 4ex;
 }
@@ -542,7 +542,7 @@ h2.poem-title {
   border-right-style:   none;
   border-top-style:     solid;
   border-width:         1px;
-  color:                gray;
+  color:                #767676;
   font-size:            80%;
   margin:               4ex 0;
   padding:              2ex 0;
@@ -737,7 +737,7 @@ div.song-item-link::after  { content: ")"; }
 /* Footer (public/poetic-footer.html injected by the build; see docs/BUILD.md) */
 .poetic-footer {
   border-top: 1px solid #eee;
-  color: #999;
+  color: #767676;
   font-size: 0.85em;
   margin-top: 40px;
   padding-top: 20px;

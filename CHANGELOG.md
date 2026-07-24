@@ -60,6 +60,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (WCAG 2.1.1). It's now a real `<button aria-expanded>` wired via
   `addEventListener` in `public/poetic.js`, mirroring the sort-header fix in
   `all-poems.html`. Mouse behaviour and visual styling are unchanged.
+- **Text colours in `public/poetic.css` now meet WCAG AA contrast (4.5:1)
+  site-wide.** `.poem-info`, `.song-segment`, `.song-link`, `.postscript` and
+  `.no-content`/`.filter-empty`/`.poetic-footer` used `gray`/`#999` (≈3.95:1 /
+  ≈2.85:1 on white); they're now `#767676` (≈4.54:1). Text uses of `#007AFF`
+  (≈4.02:1) — `.audio-indicator`, `.links a`, `.filter-reset`, `.toc-table a`,
+  `.back-link`, and the white-on-blue hover states of `.links a` and
+  `.filter-reset` — are now `#0062CC` (≈5.8:1 against both white and each
+  other). Decorative border/outline/focus-ring uses of `#007AFF`, and the
+  already-compliant dark-mode palette, are unchanged. Resolves TD26072108.
 
 ## [6.1.1] — 2026-07-19
 
