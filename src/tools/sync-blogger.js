@@ -26,6 +26,8 @@
  *   updatePost(blogId, token, postId, post)
  *   revertPost(blogId, token, postId)
  *   deletePost(blogId, token, postId)
+ *   fetchWithRetry(url, init)                        - shared fetch wrapper: per-request timeout +
+ *                                                       single retry on 429/5xx or network rejection
  */
 
 'use strict';
@@ -39,6 +41,7 @@ const { REPO_ROOT } = require('./repo-root');
 const YAML_DIR = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
 const BLOGGER_API = 'https://www.googleapis.com/blogger/v3';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const FETCH_TIMEOUT_MS = 30_000;
 
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
@@ -355,17 +358,29 @@ async function assertOk(response, context) {
 }
 
 /**
- * fetch() with a single retry after a short delay if the response is 429 or 5xx.
+ * fetch() with a per-request timeout and a single retry after a short delay.
+ *
+ * Retries once when the response is 429/5xx, or when the request itself
+ * rejects — a network-level failure (DNS, connection reset) or the timeout
+ * above firing. Only the first attempt's failure is retried; a failure on
+ * the retry itself is returned/thrown as-is.
  *
  * @param {string} url
  * @param {object} [init] - fetch init options
  * @returns {Promise<Response>}
  */
 async function fetchWithRetry(url, init) {
-  const response = await fetch(url, init);
+  const attempt = () => fetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  let response;
+  try {
+    response = await attempt();
+  } catch {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return attempt();
+  }
   if (response.status !== 429 && response.status < 500) return response;
   await new Promise(resolve => setTimeout(resolve, 500));
-  return fetch(url, init);
+  return attempt();
 }
 
 /**
@@ -410,6 +425,7 @@ async function listAccessibleBlogs(token) {
   try {
     const response = await fetch(`${BLOGGER_API}/users/self/blogs`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
     if (response.status === 403) return { recognised: false, blogs: [] };
     if (!response.ok) return { recognised: true, blogs: [] };
@@ -910,6 +926,7 @@ module.exports = {
   BloggerApiError,
   diagnoseBloggerFailure,
   listAccessibleBlogs,
+  fetchWithRetry,
   getAccessToken,
   listAllPosts,
   createPost,
