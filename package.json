@@ -23,6 +23,7 @@
   },
   "scripts": {
     "test": "node --test",
+    "coverage": "c8 npm test",
     "lint": "eslint .",
     "check": "bash scripts/remove-trailing-spaces.sh --check",
     "check:build": "bash scripts/check-build-artifacts.sh",
@@ -41,6 +42,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "c8": "^9.1.0",
     "eslint": "^10.7.0"
   }
 }
