@@ -110,13 +110,8 @@ function renderTitleMarkup(text) {
 
   // 2. Protect the four backslash escapes via placeholders so their literal
   //    character survives the transforms below untouched.
-  const escapes = new Map();
-  let escapeIndex = 0;
-  out = out.replace(/\\([*_~\\])/g, (match, char) => {
-    const placeholder = `\x00ESCAPE${escapeIndex++}\x00`;
-    escapes.set(placeholder, char);
-    return placeholder;
-  });
+  const escapeProtector = createEscapeProtector();
+  out = escapeProtector.protect(out, /\\([*_~\\])/g);
 
   // 3. Apply the three inline transforms, in the same order and with the same
   //    tokenisation as convertMarkup (strong before emphasis), so nesting
@@ -128,8 +123,7 @@ function renderTitleMarkup(text) {
   out = out.replace(/_([^_]+)_/g, '<em>$1</em>'); // Emphasis (underscore)
 
   // 4. Restore the protected literals.
-  // eslint-disable-next-line no-control-regex -- \x00 matches the placeholder format built above
-  out = out.replace(/\x00ESCAPE\d+\x00/g, (placeholder) => escapes.get(placeholder));
+  out = escapeProtector.restore(out);
 
   return out;
 }
@@ -160,11 +154,52 @@ function songsFor(data, config) {
   });
 }
 
+/**
+ * Shared HTML beautification options used across build scripts.
+ */
+const BEAUTIFY_OPTIONS = {
+  indent_size: 2,
+  wrap_line_length: 80,
+  preserve_newlines: false,
+  max_preserve_newlines: 1,
+  wrap_attributes: 'auto'
+};
+
+/**
+ * Create an escape-placeholder protector/restorer for use in markup processing.
+ * The returned object has protect(text, regex) and restore(text) methods.
+ * protect() uses the given regex to find sequences to protect, replacing them
+ * with \x00ESCAPE<n>\x00 placeholders; restore() puts the originals back.
+ * This is a shared pattern for hiding markup-sensitive content from transform passes.
+ */
+function createEscapeProtector() {
+  const escapes = new Map();
+  let escapeIndex = 0;
+
+  return {
+    protect(text, regex) {
+      escapeIndex = 0;
+      escapes.clear();
+      return text.replace(regex, (match, char) => {
+        const placeholder = `\x00ESCAPE${escapeIndex++}\x00`;
+        escapes.set(placeholder, char);
+        return placeholder;
+      });
+    },
+    restore(text) {
+      // eslint-disable-next-line no-control-regex -- \x00 matches the placeholder format built above
+      return text.replace(/\x00ESCAPE\d+\x00/g, (placeholder) => escapes.get(placeholder));
+    }
+  };
+}
+
 module.exports = {
   CONTEXT_VAR_NAMES,
+  BEAUTIFY_OPTIONS,
   substituteContextVars,
   applyContextVars,
   resolveContextVars,
   renderTitleMarkup,
+  createEscapeProtector,
   songsFor,
 };

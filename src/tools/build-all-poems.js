@@ -17,7 +17,7 @@ const { parseDateForSorting, formatDateForDisplay, toISODate } = require("./date
 const { readPoeticConfig, CONFIG_FILENAME } = require("./poetic-config");
 const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, FRAGMENT_TEMPLATE } = require("./poem-render");
 const { hasResolvableSongs } = require("./song-handlers");
-const { renderTitleMarkup } = require("./render-core");
+const { renderTitleMarkup, BEAUTIFY_OPTIONS } = require("./render-core");
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
 const { REPO_ROOT } = require("./repo-root");
 const { needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested } = require("./needs-rebuild");
@@ -385,13 +385,7 @@ function main() {
     concatenateAllHtmlFiles(publicDir, favicon, config);
   const concatenatedContent = upsertFooter(allPoemsHtml, footerBlock);
 
-  const prettifiedContent = beautify.html(concatenatedContent, {
-    indent_size: 2,
-    wrap_line_length: 80,
-    preserve_newlines: false,
-    max_preserve_newlines: 1,
-    wrap_attributes: "auto"
-  });
+  const prettifiedContent = beautify.html(concatenatedContent, BEAUTIFY_OPTIONS);
   fs.writeFileSync(allPoemsOutputPath, prettifiedContent, "utf8");
 
   console.log(`✅ Successfully generated ${allPoemsOutputPath}`);
@@ -405,13 +399,7 @@ function main() {
   let indexErrorCount = 0;
   if (updatedIndexContent) {
     const finalIndexContent = upsertFooter(updatedIndexContent, footerBlock);
-    const prettifiedIndexContent = beautify.html(finalIndexContent, {
-      indent_size: 2,
-      wrap_line_length: 80,
-      preserve_newlines: false,
-      max_preserve_newlines: 1,
-      wrap_attributes: "auto"
-    });
+    const prettifiedIndexContent = beautify.html(finalIndexContent, BEAUTIFY_OPTIONS);
     fs.writeFileSync(indexPath, prettifiedIndexContent, "utf8");
     console.log(`✅ Successfully updated ${indexPath}`);
   } else {

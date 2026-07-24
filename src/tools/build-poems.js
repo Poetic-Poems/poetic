@@ -14,6 +14,7 @@ const { formatDateForDisplay } = require("./date-utils");
 const { readPoeticConfig, CONFIG_FILENAME } = require("./poetic-config");
 const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles, refFilesForPoem, PAGE_TEMPLATE } = require("./poem-render");
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
+const { BEAUTIFY_OPTIONS } = require("./render-core");
 const { REPO_ROOT } = require("./repo-root");
 const { needsRebuild, forceRebuildRequested } = require("./needs-rebuild");
 const POEMS_DIR = path.join(REPO_ROOT, "src", "poems", "yaml");
@@ -172,13 +173,7 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
     try {
       fs.mkdirSync(slugDir, { recursive: true });
       const beautify = require("js-beautify");
-      const prettifiedHtml = beautify.html(pageHtml, {
-        indent_size: 2,
-        wrap_line_length: 80,
-        preserve_newlines: false,
-        max_preserve_newlines: 1,
-        wrap_attributes: "auto"
-      });
+      const prettifiedHtml = beautify.html(pageHtml, BEAUTIFY_OPTIONS);
       fs.writeFileSync(pageFile, prettifiedHtml, "utf8");
       console.log(`✅ Generated ${slug}/index.html`);
     } catch (err) {

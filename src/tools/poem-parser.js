@@ -10,6 +10,7 @@
 
 const yaml = require('js-yaml');
 const { renderGfm } = require('./markdown');
+const { createEscapeProtector } = require('./render-core');
 
 /**
  * Parse a .poem file and convert to structured data
@@ -1783,13 +1784,8 @@ class PoemParser {
     // must survive this stage (it is decoded later by substituteContextVars()
     // in poem-render.js). The `%(?!\{)` alternative — a `%` not followed by `{`
     // — is what carves `\%{` out; every other class character is unconditional.
-    const escapes = new Map();
-    let escapeIndex = 0;
-    text = text.replace(/\\(%(?!\{)|[_*~[`"&'\-<>=$\\/{}])/g, (match, char) => {
-      const placeholder = `\x00ESCAPE${escapeIndex++}\x00`;
-      escapes.set(placeholder, char);
-      return placeholder;
-    });
+    const escapeProtector = createEscapeProtector();
+    text = escapeProtector.protect(text, /\\(%(?!\{)|[_*~[`"&'\-<>=$\\/{}])/g);
 
     // Convert markup (process longer patterns first)
     text = text.replace(/---/g, '&#8212;'); // Em dash
@@ -1839,8 +1835,7 @@ class PoemParser {
 
     // Restore escapes in a single pass over the text, rather than one
     // replace() (and full rescan) per escape.
-    // eslint-disable-next-line no-control-regex -- \x00 matches the placeholder format built above
-    text = text.replace(/\x00ESCAPE\d+\x00/g, (placeholder) => escapes.get(placeholder));
+    text = escapeProtector.restore(text);
 
     // Hard line break: trailing two-or-more spaces before a newline (or end-of-string)
     // are converted to a hard line break <br/>. This applies outside literal blocks
