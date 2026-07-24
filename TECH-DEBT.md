@@ -161,13 +161,6 @@ cross-referenced by comment) in `poem-parser.js` and `render-core.js`; the same
 `js-beautify` options object is copy-pasted three times across `build-poems.js`
 and `build-all-poems.js`. Fix: extract a shared helper/constant for each.
 
-### TD26072112 No code-coverage tool configured
-
-Coverage is only ever estimated by manual inspection, which is how test gaps
-like TD26072106 had to be found by hand. Fix: add `c8` (works directly with
-Node's built-in test runner) and an `npm run coverage` script; no CI
-coverage-floor gate needed yet.
-
 ### TD26072113 No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict
 
 Nothing verifies a `package.json` version bump comes with a matching
@@ -276,7 +269,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072109 | yaml-to-poem.js silently drops data the current YAML shape can hold | open | | |
 | TD26072110 | poem-parser.js is a 1854-line monolith covering the whole grammar | open | | |
 | TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | open | | |
-| TD26072112 | No code-coverage tool configured | in-progress | | |
+| TD26072112 | No code-coverage tool configured | resolved | 2026-07-24 | 2733b4a |
 | TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | open | | |
 | TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | open | | |
 | TD26072115 | README and docs/POEM-TO-YAML.md are missing two cross-references | resolved | 2026-07-24 | #84 |
