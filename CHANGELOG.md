@@ -65,6 +65,20 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`build-poems.yml`'s skip guard no longer lets source changes bypass CI.**
+  The guard listed the paths considered build-relevant and skipped everything
+  else, so any path nobody remembered to add — `src/browser/` (the browser
+  renderer, covered by four test files), `src/song-handlers.yaml` (input to
+  `build:generated`), and `scripts/` (which is what `npm run check` and
+  `check:build` actually execute) — silently skipped lint, test, and build
+  while still reporting the required `build` check as green. The list is now
+  inverted: it names only prose and repository metadata (`*.md`, `docs/`,
+  `*.ebnf`, `LICENCE`, `.gitignore`, `.gitattributes`), and anything it does
+  not name runs the build. A doc-only pull request still skips as before, but
+  a new source directory is now covered by default rather than by remembering
+  to declare it. The changed-file diff is also three-dot
+  (`"$base...$head"`) rather than two-dot, so a branch behind `main` no
+  longer counts main's own changes as its own.
 - **`eslint.config.js` no longer lints the generated `public/date-utils.js`.**
   It is a verbatim build-time copy of `src/tools/date-utils.js`
   (`copyDateUtilsAsset()` in `build-all-poems.js`), already linted at its

@@ -11,10 +11,17 @@ name: Build and Deploy Poems to GitHub Pages
 # Instead, the `build` job always triggers and always reports a real "build"
 # status, but its actual steps (install/test/lint/build/deploy) are skipped
 # via the "Check whether build-relevant paths changed" step below whenever
-# nothing under the relevant path list changed. That list exists exactly
-# once, here, purely to decide whether to skip — there is no second,
-# separately-triggered workflow with its own inverse path list to keep in
-# sync by hand.
+# every changed file is inert. That list exists exactly once, here, purely to
+# decide whether to skip — there is no second, separately-triggered workflow
+# with its own inverse path list to keep in sync by hand.
+#
+# The list names what is *inert*, not what is relevant, and anything it does
+# not name runs the build. This direction is deliberate: because a pass here
+# is what unblocks a merge, the failure mode of an allow-list — a path nobody
+# remembered to add, silently skipping lint/test/build forever — is a hole in
+# the gate rather than a wasted runner minute. With the list inverted, adding
+# a source directory is safe by default and only an explicit claim that a
+# path cannot affect the build can ever skip it.
 
 on:
   push:
@@ -66,17 +73,30 @@ jobs:
             head=""
           fi
 
+          # The diff below is three-dot (merge-base..head), not two-dot: `base`
+          # is the base branch's tip at event time, so on a branch that is
+          # behind main a two-dot diff also reports files main changed and this
+          # branch did not. That only ever over-reports — a wasted build, never
+          # a missed one — but three-dot asks the question actually meant here:
+          # what did *this branch* change? `fetch-depth: 0` above is what makes
+          # the merge base available to compute.
           relevant=true
           if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ] \
             && git cat-file -e "${base}^{commit}" 2>/dev/null; then
             relevant=false
             while IFS= read -r file; do
               case "$file" in
-                src/poems/*|src/templates/*|src/tools/*|editors/*|test/*|package.json|package-lock.json|eslint.config.js|.editorconfig|.github/workflows/*|.poetic-config.yaml)
+                # Prose and repository metadata: no build step, test, or lint
+                # rule reads any of these, so a change confined to them cannot
+                # alter the built site. Everything else falls through to the
+                # default below and runs the build.
+                *.md|docs/*|*.ebnf|LICENCE|LICENSE|.gitignore|.gitattributes)
+                  ;;
+                *)
                   relevant=true
                   ;;
               esac
-            done < <(git diff --name-only "$base" "$head")
+            done < <(git diff --name-only "$base...$head")
           fi
 
           echo "Build-relevant paths changed: $relevant"
