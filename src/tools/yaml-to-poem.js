@@ -677,15 +677,21 @@ class YamlToPoemConverter {
    * escapable characters -- convertMarkup() turns an unescaped "--"/"---" run
    * into an en/em-dash entity, so a literal run left bare here would be
    * mistaken for one on the next parse -- but single hyphens are left alone
-   * since convertMarkup() never touches them. This runs after the char-class
-   * pass, which never touches "-", so it only ever sees genuine hyphen runs.
+   * since convertMarkup() never touches them. Both are escaped in a single
+   * replace() pass over the original text (rather than one pass per
+   * character class, backslash first): with two sequential passes, the
+   * second pass's freshly inserted backslashes are indistinguishable from
+   * ones the first pass already escaped, so escaping backslash only in the
+   * first pass reads as incomplete in isolation. A single non-overlapping
+   * scan escapes every character exactly once, backslash included.
    *
    * @param {string} text
    * @returns {string}
    */
   escapeSegmentLiteral(text) {
-    text = text.replace(/[\\_*~`[/{}]/g, (c) => `\\${c}`);
-    return text.replace(/-{2,}/g, (run) => run.replace(/-/g, '\\-'));
+    return text.replace(/-{2,}|[\\_*~`[/{}]/g, (m) =>
+      m.length > 1 ? m.replace(/-/g, '\\-') : `\\${m}`
+    );
   }
 }
 
