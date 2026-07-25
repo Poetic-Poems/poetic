@@ -161,39 +161,6 @@ Fix: add a job timeout, wrap fetch calls with `AbortSignal.timeout()` and
 retry-on-rejection; bounded concurrency for large collections is optional/
 lower priority.
 
-### TD26072501 Lint rules reach generated public/*.js that consumers may track, but .gitignore isn't synced
-
-`eslint.config.js` is a synced, framework-owned file and applies `relaxedRules`
-to `public/*.js`. One of those files, `public/date-utils.js`, is not source: it
-is a verbatim build-time copy of `src/tools/date-utils.js` made by
-`copyDateUtilsAsset()` in `build-all-poems.js`. Here it is harmless, because
-this repo's `.gitignore` ignores it — nothing stale is ever committed. But
-`.gitignore` is *not* in the sync set, so that ignore rule never reaches a
-consumer. A consumer that tracks the artefact keeps a copy frozen at whatever
-the source looked like when it was last built and committed.
-
-That combination broke a consumer. TD26072117 (#94) added
-`quotes: ['error', 'single']` and converted `src/tools/date-utils.js` to single
-quotes. The sync carried both the new rule and the converted source to
-`fragments-and-unity`, but not a regenerated `public/date-utils.js` and not the
-`.gitignore` entry that would have stopped the stale copy existing at all. Its
-CI runs `npm run lint` *before* `npm run build` (`.github/workflows/build-poems.yml`),
-so ESLint saw the pre-conversion artefact and failed with five `quotes` errors,
-blocking the sync PR (`fragments-and-unity` #59). It was fixed there by
-untracking the file, but the framework-side gap remains and will fire again for
-any other consumer, and for any future rule that touches a generated
-`public/*.js`.
-
-Fix: add `public/date-utils.js` to `eslint.config.js`'s `ignores`. It is a
-byte-for-byte copy of a file the same run already lints, so linting it is
-redundant, and ignoring it makes the failure impossible regardless of what a
-consumer's `.gitignore` says. Consider also giving `sync-framework.sh` a
-managed `.gitignore` block for framework-generated artefacts, so consumers stop
-tracking build output the framework knows is generated; and note under
-`docs/SCRIPTS.md`'s `scripts/sync-framework.sh` section that a change to a file
-copied into `public/` leaves consumers' committed artefacts stale until they
-rebuild.
-
 ### TD26072502 convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content
 
 TD26072401 fixed `writeVersions()`'s segment-line double-encoding and
@@ -296,5 +263,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072118 | Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout | resolved | 2026-07-24 | #89 |
 | TD26072201 | docs/VIM-SYNTAX.md still references a non-existent vim/ root path | resolved | 2026-07-24 | #90 |
 | TD26072401 | yaml-to-poem.js's plain-line writers still mangle content TD26072109 didn't touch | resolved | 2026-07-25 | #98 |
-| TD26072501 | Lint rules reach generated `public/*.js` that consumers may track, but `.gitignore` isn't synced | in-progress | | |
+| TD26072501 | Lint rules reach generated `public/*.js` that consumers may track, but `.gitignore` isn't synced | resolved | 2026-07-25 | #99 |
 | TD26072502 | convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content | open | | |
