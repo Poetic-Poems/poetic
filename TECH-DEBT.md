@@ -168,14 +168,6 @@ Fix: add a job timeout, wrap fetch calls with `AbortSignal.timeout()` and
 retry-on-rejection; bounded concurrency for large collections is optional/
 lower priority.
 
-### TD26072117 No quotes ESLint rule; JSDoc discipline weakest in the most complex file
-
-String-quote style drifts by file (each file is internally consistent, the
-codebase as a whole isn't); `poem-parser.js` has only 5 `@param`/`@returns`
-tags across ~50 methods versus 70 in the similarly-sized `sync-blogger.js`.
-Fix: add a `quotes` rule and reformat; bring `poem-parser.js`'s JSDoc up to the
-standard already used elsewhere (can be incremental).
-
 ### TD26072201 docs/VIM-SYNTAX.md still references a non-existent vim/ root path
 
 TD26072102 fixed the same defect class in docs/QUICKSTART-VIM.md, but
@@ -272,7 +264,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | open | | |
 | TD26072115 | README and docs/POEM-TO-YAML.md are missing two cross-references | resolved | 2026-07-24 | #84 |
 | TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | resolved | 2026-07-25 | #93 |
-| TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | in-progress | | |
+| TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | resolved | 2026-07-25 | #94 |
 | TD26072118 | Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout | resolved | 2026-07-24 | #89 |
 | TD26072201 | docs/VIM-SYNTAX.md still references a non-existent vim/ root path | open | | |
 | TD26072401 | yaml-to-poem.js's plain-line writers still mangle content TD26072109 didn't touch | open | | |
