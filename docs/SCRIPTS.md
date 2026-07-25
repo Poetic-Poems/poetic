@@ -208,6 +208,15 @@ skip_paths:
 
 Each path is compared exactly against the framework path list.
 
+### Generated `public/*.js` artefacts
+
+Some framework-owned source files are also copied verbatim into `public/` at
+build time (e.g. `src/tools/date-utils.js` → `public/date-utils.js`, via
+`copyDateUtilsAsset()` in `build-all-poems.js`). Syncing the framework updates
+the source but not a consumer's already-committed copy of the generated
+artefact — that copy goes stale until the consumer runs `npm run build`
+again. Run a build after syncing if this repo tracks any such artefact.
+
 ### Notes on CI authentication
 
 GitHub Actions injects a repo-scoped `GITHUB_TOKEN` as an HTTP extra-header

@@ -58,6 +58,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`eslint.config.js` no longer lints the generated `public/date-utils.js`.**
+  It is a verbatim build-time copy of `src/tools/date-utils.js`
+  (`copyDateUtilsAsset()` in `build-all-poems.js`), already linted at its
+  source path in the same run. A consumer repo that tracks the generated copy
+  could see it fail lint independently — and go stale relative to a newly
+  added rule — after a framework sync; it's now ignored instead. Resolves
+  TD26072501.
 - **`scripts/get-tech-debt-record.pl` now matches an ID segment against the
   end of a record ID only** (`TD26070803` is matched by `3`, `803` or the full
   ID), as the `/td` skill intends. Previously the segment could match anywhere
