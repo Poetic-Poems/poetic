@@ -128,6 +128,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   isolated behind a genuine blank line, instead of losing its trailing
   newline to GFM's raw-HTML-block passthrough. Covered by new cases in
   `test/yaml-to-poem-roundtrip.test.js`. Resolves TD26072401.
+- **`yaml-to-poem.js` no longer drops a postscript/analysis field's trailing
+  newline when its HTML is a single, un-blank-line-split run ending in a list
+  or fenced code block.** `convertHtmlToPlainText()` now reconstructs genuine
+  Markdown source for a trailing unordered list, ordered list, or fenced code
+  block, so the next parse regenerates its own trailing `\n` — the same gap
+  TD26072401 fixed for an isolated (blank-line-separated) raw block, but left
+  open for this narrower single-block case. Everything before the
+  reconstructed tail, and any shape not yet reconstructed (nested/loose lists,
+  tables, blockquotes), is unchanged. Covered by new cases in
+  `test/yaml-to-poem-roundtrip.test.js`. Resolves TD26072502.
 - **Standalone poem pages now have a proper `<h1>`.** `poem-page.pug` used
   `h2.poem-title` with no `<h1>` anywhere on the page; since each such page has
   no separate site-title heading, the poem title is now the page's `<h1>`.
