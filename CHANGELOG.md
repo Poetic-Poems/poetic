@@ -170,6 +170,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   credentials file's permission bits are wider than `0600`. None of these
   change default behaviour for a correctly-configured setup. Resolves
   TD26072116.
+- **Blogger sync now has request/job timeouts and retries network failures.**
+  `sync-blogger.yml`'s `sync` job now has `timeout-minutes: 30`, so a hung
+  request can no longer block the workflow indefinitely. Every `fetch()` call
+  in `sync-blogger.js` now carries a 30s `AbortSignal.timeout()`, and the
+  shared `fetchWithRetry` wrapper's single retry now also covers
+  network-level rejections (DNS failure, connection reset, the new timeout
+  firing), not just HTTP 429/5xx. Resolves TD26072114.
 
 ### Security
 
