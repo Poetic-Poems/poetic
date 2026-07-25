@@ -85,11 +85,23 @@ function resolveConfig(config, env, credentialsPath = path.resolve('.blogger-cre
   const blogId = blogger.blog_id != null ? String(blogger.blog_id) : undefined;
 
   const VALID_REMOVED = ['draft', 'delete', 'keep'];
+  if (blogger.removed != null && !VALID_REMOVED.includes(blogger.removed)) {
+    console.warn(
+      `Warning: blogger.removed was "${blogger.removed}", which is not one of ` +
+      `${VALID_REMOVED.join(', ')}. Falling back to the default "draft".`
+    );
+  }
   const removed = VALID_REMOVED.includes(blogger.removed)
     ? blogger.removed
     : 'draft';
 
   const VALID_CONTENT = ['full', 'poem'];
+  if (blogger.content != null && !VALID_CONTENT.includes(blogger.content)) {
+    console.warn(
+      `Warning: blogger.content was "${blogger.content}", which is not one of ` +
+      `${VALID_CONTENT.join(', ')}. Falling back to the default "full".`
+    );
+  }
   const content = VALID_CONTENT.includes(blogger.content)
     ? blogger.content
     : 'full';
@@ -99,6 +111,14 @@ function resolveConfig(config, env, credentialsPath = path.resolve('.blogger-cre
   // Load fallback values from the credentials file if any env var is absent.
   let fileCredentials = {};
   if (credentialsPath && fs.existsSync(credentialsPath)) {
+    const mode = fs.statSync(credentialsPath).mode & 0o777;
+    if (mode & 0o077) {
+      console.warn(
+        `Warning: ${credentialsPath} is readable/writable by group or other ` +
+        `(mode ${mode.toString(8)}). It should be 0600 (owner read/write only) — ` +
+        `run: chmod 600 ${credentialsPath}`
+      );
+    }
     try {
       const raw = fs.readFileSync(credentialsPath, 'utf8');
       const parsed = JSON.parse(raw) || {};

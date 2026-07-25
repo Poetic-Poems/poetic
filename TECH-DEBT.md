@@ -168,17 +168,6 @@ Fix: add a job timeout, wrap fetch calls with `AbortSignal.timeout()` and
 retry-on-rejection; bounded concurrency for large collections is optional/
 lower priority.
 
-### TD26072116 Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions)
-
-An invalid `blogger.removed`/`blogger.content` config value is silently
-coerced to its default with no warning (unlike the existing `blog_id`
-precedent); `serve-static.js` sets a wildcard CORS header even when
-loopback-bound; `sync-blogger.js` never re-checks the Blogger credentials
-file's permission bits after creation. (A fourth item, a config-sourced
-`RegExp` with no ReDoS guard in `song-handlers.js`, is explicitly optional —
-self-authored config is not an external trust boundary here.) Fix: add
-warnings/scoping for each; see review R-16 for the full list.
-
 ### TD26072117 No quotes ESLint rule; JSDoc discipline weakest in the most complex file
 
 String-quote style drifts by file (each file is internally consistent, the
@@ -282,7 +271,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | open | | |
 | TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | open | | |
 | TD26072115 | README and docs/POEM-TO-YAML.md are missing two cross-references | resolved | 2026-07-24 | #84 |
-| TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | open | | |
+| TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | resolved | 2026-07-25 | #93 |
 | TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | open | | |
 | TD26072118 | Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout | resolved | 2026-07-24 | #89 |
 | TD26072201 | docs/VIM-SYNTAX.md still references a non-existent vim/ root path | open | | |

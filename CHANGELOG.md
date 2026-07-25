@@ -94,6 +94,17 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `<h1>` site title, so their per-poem headings stay `h2.poem-title`. Visual
   appearance is unchanged (CSS now pins the title's size/weight explicitly
   instead of relying on the browser's `h2` defaults). Resolves TD26072118.
+- **Three small hardening gaps in config/dev-server handling are fixed.**
+  `resolveConfig()` now warns when `blogger.removed` or `blogger.content` is
+  set to a value outside its allow-list, matching the existing
+  `blogger.blog_id` warning, instead of silently falling back to the default.
+  `serve-static.js` now omits the wildcard `Access-Control-Allow-Origin`
+  header when bound to its loopback default (`127.0.0.1`/`::1`); it appears
+  only when the server is explicitly bound elsewhere (e.g. `--host
+  0.0.0.0`). `resolveConfig()` also warns (without failing) if the Blogger
+  credentials file's permission bits are wider than `0600`. None of these
+  change default behaviour for a correctly-configured setup. Resolves
+  TD26072116.
 
 ## [6.1.1] — 2026-07-19
 
