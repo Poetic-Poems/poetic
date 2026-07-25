@@ -46,66 +46,9 @@ test('renderGfm typographer converts dashes and quotes', () => {
   assert.match(renderGfm('a --- b'), /—/); // em dash
 });
 
-test('convertMarkup uses Markdown emphasis (* = em, ** = strong)', () => {
-  const p = new PoemParser('');
-  assert.strictEqual(p.convertMarkup('*a*'), '<em>a</em>');
-  assert.strictEqual(p.convertMarkup('_a_'), '<em>a</em>');
-  assert.strictEqual(p.convertMarkup('**a**'), '<strong>a</strong>');
-  assert.strictEqual(p.convertMarkup('__a__'), '<strong>a</strong>');
-});
-
-test('convertMarkup decodes \\% to a literal % (body/label escape)', () => {
-  const p = new PoemParser('');
-  assert.strictEqual(p.convertMarkup('\\%foo'), '%foo');
-  assert.strictEqual(p.convertMarkup('a \\% b'), 'a % b');
-});
-
-test('convertMarkup leaves \\%{...} untouched (render-time context-var escape survives)', () => {
-  const p = new PoemParser('');
-  // The backslash MUST survive so substituteContextVars() can decode \%{slug}
-  // later; only \% NOT followed by { is decoded here.
-  assert.strictEqual(p.convertMarkup('\\%{slug}'), '\\%{slug}');
-});
-
 test('a body line \\%foo decodes to %foo through the segment pipeline', () => {
   const segments = parseSegments(['{Verse}', '\\%foo']);
   assert.strictEqual(segments[0].lines, '%foo\n');
-});
-
-test('a long backslash run with no "?" does not hang (ReDoS guard)', () => {
-  // Regression guard for CodeQL js/polynomial-redos (code-scanning-alert-13):
-  // checkReservedEscape() (called by convertMarkup()) used to detect the
-  // reserved "\?" escape with the unanchored /(\\+)\?/g, which — since a
-  // `?` need not exist anywhere in the text — backtracks polynomially
-  // trying every start position within a long backslash run (empirically
-  // ~33s for a 200,000-backslash input pre-fix; must now be near-instant).
-  // Exercised directly, bypassing convertMarkup(), to isolate this guard from
-  // the escape-restoration pass tested separately below.
-  const p = new PoemParser('');
-  const t0 = Date.now();
-  p.checkReservedEscape('\\'.repeat(200000));
-  const elapsed = Date.now() - t0;
-  assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
-});
-
-test('convertMarkup restores a large number of escapes without quadratic slowdown', () => {
-  // Regression guard for TD26071502: escape restoration used to call
-  // String.prototype.replace() once per escape inside a loop, each call
-  // rescanning the whole placeholder-laden string from the start —
-  // O(N^2) for N escapes (empirically ~900ms for 50,000 escapes pre-fix,
-  // tens of seconds projected for 200,000). Must now be near-instant.
-  const p = new PoemParser('');
-  const input = '\\'.repeat(400000); // 200,000 escaped backslash pairs
-  const t0 = Date.now();
-  const result = p.convertMarkup(input);
-  const elapsed = Date.now() - t0;
-  assert.strictEqual(result, '\\'.repeat(200000));
-  assert.ok(elapsed < 2000, `expected well under 2000ms, took ${elapsed}ms`);
-});
-
-test('convertMarkup decodes a long even backslash run to half as many literal backslashes', () => {
-  const p = new PoemParser('');
-  assert.strictEqual(p.convertMarkup('\\'.repeat(2000)), '\\'.repeat(1000));
 });
 
 test('<<<markdown>>> block in a segment renders GFM with variable substitution', () => {

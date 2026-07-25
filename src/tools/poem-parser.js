@@ -10,7 +10,7 @@
 
 const yaml = require('js-yaml');
 const { renderGfm } = require('./markdown');
-const { createEscapeProtector } = require('./render-core');
+const { convertMarkup, convertSpacesToNbsp, reservedEscapeError } = require('./poem-markup');
 
 /**
  * Parse a .poem file and convert to structured data
@@ -182,23 +182,6 @@ class PoemParser {
   }
 
   /**
-   * The `\?` escape prefix is reserved for a future extended-escape family and
-   * is not yet implemented (see docs/POEM-SYNTAX.md). Until then it is a hard
-   * error wherever Poetic interprets its own escapes — the WYSIWYG poem body and
-   * labels (convertMarkup) and parameter values (scanShellWord). `\\?` (an
-   * escaped backslash, then a literal `?`) is the way to write a literal `\?`.
-   *
-   * @returns {Error}
-   */
-  reservedEscapeError() {
-    return new Error(
-      "Reserved syntax: '\\?' is reserved but not yet implemented " +
-      "(the '\\?' escape prefix is reserved for a future extended-escape family; " +
-      "see docs/POEM-SYNTAX.md). Write '\\\\?' for a literal backslash then '?'."
-    );
-  }
-
-  /**
    * Strip the ignored trailing text after a line-anchored token (spec section
    * 10: "Any text after a line-anchored token on the same line is ignored").
    * Applies to dividers/end markers and version/segment/analysis labels; leaves
@@ -356,7 +339,7 @@ class PoemParser {
           if (i >= n) return null; // unterminated quote
           const dc = str[i];
           if (dc === '"') { i++; break; } // closing quote
-          if (dc === '\\' && str[i + 1] === '?') throw this.reservedEscapeError();
+          if (dc === '\\' && str[i + 1] === '?') throw reservedEscapeError();
           if (dc === '\\' && i + 1 < n && '"\\$`'.includes(str[i + 1])) {
             value += str[i + 1];
             i += 2;
@@ -379,7 +362,7 @@ class PoemParser {
       if (c === '\\') {
         // Unquoted backslash-escape: literal next character, whatever it is.
         if (i + 1 < n) {
-          if (str[i + 1] === '?') throw this.reservedEscapeError();
+          if (str[i + 1] === '?') throw reservedEscapeError();
           value += str[i + 1];
           i += 2;
           continue;
@@ -992,7 +975,7 @@ class PoemParser {
     if (firstLine.trim().startsWith('{{') && firstLine.trim().includes('}}')) {
       const { label, params } = this.parseLabelWithParams(firstLine, '{{');
       if (label) {
-        version.label = this.convertMarkup(this.substituteVariables(label));
+        version.label = convertMarkup(this.substituteVariables(label));
       }
       if (params) {
         version.params = params;
@@ -1023,31 +1006,6 @@ class PoemParser {
   }
 
   /**
-   * Convert spaces to non-breaking spaces in poem lines
-   * - Leading spaces (indentation) are converted to &nbsp;
-   * - Multiple consecutive spaces within lines are converted to alternating
-   *   space + &nbsp; pattern (e.g., "  " becomes " &nbsp;") to allow wrapping
-   *   on small displays while preserving visual spacing
-   *
-   * @param {string} line
-   * @returns {string}
-   */
-  convertSpacesToNbsp(line) {
-    // Convert leading spaces to &nbsp;
-    const leadingSpaces = line.match(/^( +)/);
-    if (leadingSpaces) {
-      const nbspLeading = '&nbsp;'.repeat(leadingSpaces[1].length);
-      line = nbspLeading + line.substring(leadingSpaces[1].length);
-    }
-
-    // Convert multiple consecutive spaces (2 or more) within the line
-    // Pattern: first space is normal (allows wrapping), rest are &nbsp;
-    line = line.replace(/( {2,})/g, (match) => ' ' + '&nbsp;'.repeat(match.length - 1));
-
-    return line;
-  }
-
-  /**
    * Parse a segment within a version
    *
    * @returns {object|null}
@@ -1066,7 +1024,7 @@ class PoemParser {
     if (line.trim().startsWith('{') && line.trim().includes('}') && !line.trim().startsWith('{{')) {
       const { label, params } = this.parseLabelWithParams(line, '{');
       if (label && label !== 'Synopsis' && label !== 'Full') {
-        segment.label = this.convertMarkup(this.substituteVariables(label));
+        segment.label = convertMarkup(this.substituteVariables(label));
         if (params) {
           segment.params = params;
         }
@@ -1180,7 +1138,7 @@ class PoemParser {
         // Convert each inner line, strip any trailing <br/> introduced by
         // trailing spaces, then join with a single <br/> between lines.
         const processedLines = quoteLines.map(l => {
-          let s = this.convertMarkup(l);
+          let s = convertMarkup(l);
           s = s.replace(/\r?\n/g, '');
           s = s.replace(/(?:<br\/>)+$/g, '');
           return s;
@@ -1197,13 +1155,13 @@ class PoemParser {
         i++;
       }
 
-      const withMarkup = this.convertMarkup(normalLines.join('\n'));
+      const withMarkup = convertMarkup(normalLines.join('\n'));
       for (const l of withMarkup.split('\n')) {
         processedParts.push(l);
       }
     }
 
-    return processedParts.map(line => this.convertSpacesToNbsp(line)).join('\n') + '\n';
+    return processedParts.map(line => convertSpacesToNbsp(line)).join('\n') + '\n';
   }
 
   /**
@@ -1455,7 +1413,7 @@ class PoemParser {
     if (line.trim().startsWith('{') && line.trim().includes('}')) {
       const { label, params } = this.parseLabelWithParams(line, '{');
       if (label && label !== 'Synopsis' && label !== 'Full') {
-        postscript.label = this.convertMarkup(this.substituteVariables(label));
+        postscript.label = convertMarkup(this.substituteVariables(label));
         if (params) {
           postscript.params = params;
         }
@@ -1843,104 +1801,6 @@ class PoemParser {
     this.skipBlankLines();
   }
 
-  /**
-   * `\?` is reserved for a future extended-escape family (see
-   * docs/POEM-SYNTAX.md) and is an error until it is implemented. Only an
-   * ODD backslash run before `?` triggers it; `\\?` (even) is a literal `\`
-   * then `?`, decoded by the escape table in convertMarkup().
-   *
-   * Scanned by hand rather than with /(\\+)\?/g: that pattern is unanchored,
-   * so CodeQL (js/polynomial-redos) flags it as vulnerable to polynomial
-   * backtracking on a long backslash run not followed by `?` anywhere (same
-   * root cause as joinContinuedLines(), above).
-   *
-   * @param {string} text
-   */
-  checkReservedEscape(text) {
-    for (let searchIndex = 0; ;) {
-      const qIndex = text.indexOf('?', searchIndex);
-      if (qIndex === -1) break;
-      let runStart = qIndex;
-      while (runStart > 0 && text[runStart - 1] === '\\') runStart--;
-      if ((qIndex - runStart) % 2 === 1) throw this.reservedEscapeError();
-      searchIndex = qIndex + 1;
-    }
-  }
-
-  /**
-   * Convert inline markup to HTML
-   *
-   * @param {string} text
-   * @returns {string}
-   */
-  convertMarkup(text) {
-    this.checkReservedEscape(text);
-
-    // Process escapes first. The escape class also decodes `\%` → `%`, but NOT
-    // `\%{`: `\%{name}` is the render-time context-variable literal escape and
-    // must survive this stage (it is decoded later by substituteContextVars()
-    // in poem-render.js). The `%(?!\{)` alternative — a `%` not followed by `{`
-    // — is what carves `\%{` out; every other class character is unconditional.
-    const escapeProtector = createEscapeProtector();
-    text = escapeProtector.protect(text, /\\(%(?!\{)|[_*~[`"&'\-<>=$\\/{}])/g);
-
-    // Convert markup (process longer patterns first)
-    text = text.replace(/---/g, '&#8212;'); // Em dash
-    text = text.replace(/--/g, '&#8211;'); // En dash
-
-    // Smart quotes (process BEFORE links and spans to avoid converting HTML attribute quotes)
-    text = text.replace(/`([^`]+)`/g, '&#8216;$1&#8217;'); // Single quotes
-    text = text.replace(/"([^"]+)"/g, '&#8220;$1&#8221;'); // Double quotes
-
-    // Links: [text|url]
-    text = text.replace(/\[([^\]|]+)\|([^\]]+)\]/g, '<a href="https://$2">$1</a>');
-
-    // Span elements: /.classname{content}
-    text = text.replace(/\/\.([^{]*)\{([^}]*)\}/g, (match, className, content) => {
-      if (className === '') {
-        console.warn('Warning: Span element with empty class name');
-        return `<span>${content}</span>`;
-      }
-
-      // Validate class name with regex: /^\w(?:[\w.-]*\w)?$/
-      const classNameRegex = /^\w(?:[\w.-]*\w)?$/;
-      if (!classNameRegex.test(className)) {
-        console.warn(`Warning: Invalid span class name: "${className}"`);
-        return match; // Leave unchanged
-      }
-
-      // Dots separate multiple classes: `/.a.b{x}` → class="a b" (hyphens are
-      // part of a single class name and are preserved).
-      const classAttr = className.split('.').filter(Boolean).join(' ');
-      return `<span class="${classAttr}">${content}</span>`;
-    });
-
-    // Basic formatting (Markdown-style emphasis: ** = strong, * = em)
-    // Strikethrough is a two-character delimiter pair, like ** for strong: a
-    // single ~ is deliberately left unassigned (plain literal text), reserved
-    // for a possible future subscript syntax.
-    text = text.replace(/~~([^~]+)~~/g, '<s>$1</s>'); // Strikethrough
-    // Strong (double markers) must run before emphasis (single markers)
-    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'); // Strong
-    text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>'); // Strong (underscore)
-    text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>'); // Emphasis
-    text = text.replace(/_([^_]+)_/g, '<em>$1</em>'); // Emphasis (underscore)
-
-    // Entities - convert & to &#38; but NOT if it's already part of an entity (&#...;)
-    text = text.replace(/&(?!#\d+;|[a-z]+;)/gi, '&#38;');
-    text = text.replace(/'/g, '&#39;');
-
-    // Restore escapes in a single pass over the text, rather than one
-    // replace() (and full rescan) per escape.
-    text = escapeProtector.restore(text);
-
-    // Hard line break: trailing two-or-more spaces before a newline (or end-of-string)
-    // are converted to a hard line break <br/>. This applies outside literal blocks
-    // and is intended to match the common Markdown behaviour for two-space line breaks.
-    text = text.replace(/ {2,}(\r?\n|$)/g, '<br/>$1');
-
-    return text;
-  }
 }
 
 module.exports = { PoemParser };
