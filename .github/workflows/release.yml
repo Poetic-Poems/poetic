@@ -1,22 +1,78 @@
 name: Release
 
-# Triggered by a push to main that changes package.json (normally a
-# "chore: release vX.Y.Z" commit bumping the version field). package.json's
-# version is the single source of truth: this workflow tags the commit that
-# introduced it and publishes the GitHub release, so the tag can never drift
-# out of sync with the version the commit itself is bumping to.
+# Two independent triggers:
+#
+# - `push` to main that changes package.json (normally a "chore: release
+#   vX.Y.Z" commit bumping the version field): tags the commit and publishes
+#   the GitHub release, so the tag can never drift out of sync with the
+#   version the commit itself is bumping to. package.json's version is the
+#   single source of truth for this.
+# - `pull_request`: guards against a version bump landing without a matching
+#   CHANGELOG.md entry (see "Release process" in CLAUDE.md) by comparing the
+#   version between the PR's base and head commits and requiring a matching
+#   `## [<version>]` heading when it changed.
+#
+# Each job is gated to its own event via `if:`, so a PR run never tags/
+# releases and a push run never re-does the changelog check.
+#
+# The `pull_request` trigger deliberately carries no `paths:` filter, for the
+# same reason build-poems.yml's does not: `changelog-check` is meant to be
+# usable as a required status check, and a trigger-level `paths:` filter would
+# make it silently never report — stuck as "Expected" forever, blocking merge
+# — on any PR that happens not to touch the filtered paths. See GitHub's
+# "Handling skipped but required checks":
+# https://docs.github.com/en/actions/using-workflows/using-conditions-to-control-job-execution#handling-skipped-but-required-checks
+# The job runs on every PR instead and costs a few seconds: the version
+# comparison below is a no-op unless package.json's version actually changed.
 on:
   push:
     branches:
       - main
     paths:
       - package.json
+  pull_request:
 
 permissions:
   contents: write
 
 jobs:
+  changelog-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Compare package.json version between base and head
+        id: version
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          base_version=$(git show "${BASE_SHA}:package.json" | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")
+          head_version=$(git show "${HEAD_SHA}:package.json" | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")
+          echo "base=${base_version}" >> "$GITHUB_OUTPUT"
+          echo "head=${head_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Require a matching CHANGELOG entry when the version changed
+        if: steps.version.outputs.base != steps.version.outputs.head
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_VERSION: ${{ steps.version.outputs.head }}
+        run: |
+          set -euo pipefail
+          heading="## [${HEAD_VERSION}]"
+          if ! git show "${HEAD_SHA}:CHANGELOG.md" | grep -qF "$heading"; then
+            echo "::error file=CHANGELOG.md::package.json bumped the version to ${HEAD_VERSION}, but CHANGELOG.md has no matching \"${heading}\" heading."
+            exit 1
+          fi
+
   release:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

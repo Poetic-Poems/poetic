@@ -88,6 +88,16 @@ the pull request's description (GitHub repo setting `squash_merge_commit_message
 PR_BODY`), so a filled-in PR description carries through to `main`'s history —
 write one whenever the change needs more context than the title alone gives.
 
+The ruleset's required-status-checks rule leaves `strict_required_status_checks_policy`
+off: a PR's checks do not have to be re-run against the latest `main` immediately before
+merging, only to have passed at some point on the branch. This is a deliberate choice, not
+an oversight — the mandatory post-PR mergeable check described below (`gh pr view --json
+mergeable,mergeStateStatus`, rebasing on conflict) already catches a base that has drifted
+too far to merge cleanly, and turning strict mode on would force every open PR's checks to
+re-run on every unrelated merge to `main`, which is wasteful churn in a multi-agent
+environment where several PRs are routinely in flight at once. Revisit this if a stale-base
+merge ever actually causes an integration bug that a textual merge would not have caught.
+
 Because every change is gated by a PR and CI regardless of who or what proposes it, agents
 work autonomously up to the PR stage: commit, push a branch, and open the pull request
 without pausing to ask permission first. Review happens on the PR, not before it — the repo
@@ -153,6 +163,12 @@ request that bumps it (titled `chore: release vX.Y.Z`) and squash-merge it into 
 `.github/workflows/release.yml` tags that commit and publishes the GitHub release
 automatically, so the tag can't drift out of sync with `package.json`. Consumer repos can
 pin to a tag via `.poetic-version`.
+
+The same workflow's `changelog-check` job runs on every pull request and fails one that
+changes `package.json`'s `version` without `CHANGELOG.md` carrying a matching
+`## [<version>]` heading, so a release cannot land with the previous release's entries
+still sitting under `[Unreleased]`. A release PR therefore rolls `[Unreleased]` into a
+`## [X.Y.Z]` heading in the same PR that bumps the version.
 
 ## Exemplar config
 

@@ -11,6 +11,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **A version bump without a matching `CHANGELOG.md` entry now fails CI.**
+  `.github/workflows/release.yml` gained a `pull_request`-triggered
+  `changelog-check` job: whenever a PR changes `package.json`'s `version`
+  field, it requires `CHANGELOG.md` to have gained a matching
+  `## [<version>]` heading in the same PR. The existing tag/release job is
+  unaffected — it still only runs on a `push` to `main`. Resolves
+  TD26072113.
 - **Restricted title inline markup now also renders on the index grid and
   all-poems listing**, matching the single-poem page. A title using
   `*emphasis*`, `**strong**` or `~~strikethrough~~` previously showed the
