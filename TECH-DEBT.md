@@ -256,4 +256,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072201 | docs/VIM-SYNTAX.md still references a non-existent vim/ root path | resolved | 2026-07-24 | #90 |
 | TD26072401 | yaml-to-poem.js's plain-line writers still mangle content TD26072109 didn't touch | resolved | 2026-07-25 | #98 |
 | TD26072501 | Lint rules reach generated `public/*.js` that consumers may track, but `.gitignore` isn't synced | resolved | 2026-07-25 | #99 |
-| TD26072502 | convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content | open | | |
+| TD26072502 | convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content | in-progress | | |
