@@ -15,9 +15,9 @@
  * (backward-compatible: existing templates with CSS markers still work normally).
  */
 
-const fs   = require("fs");
-const path = require("path");
-const { readPoeticConfig } = require("./poetic-config");
+const fs   = require('fs');
+const path = require('path');
+const { readPoeticConfig } = require('./poetic-config');
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)
@@ -43,7 +43,7 @@ function resolveTemplatePath(config, publicDir) {
   }
 
   // 2. Canonical name
-  const canonical = path.join(publicDir, "blogger-template.html");
+  const canonical = path.join(publicDir, 'blogger-template.html');
   if (fs.existsSync(canonical)) {
     return canonical;
   }
@@ -52,7 +52,7 @@ function resolveTemplatePath(config, publicDir) {
   try {
     const entries = fs.readdirSync(publicDir);
     const match = entries.find(
-      (f) => f.endsWith(".template.html") && f !== "blogger-template.html"
+      (f) => f.endsWith('.template.html') && f !== 'blogger-template.html'
     );
     if (match) {
       return path.join(publicDir, match);
@@ -87,7 +87,7 @@ function resolveTemplatePath(config, publicDir) {
  */
 function findSkinUnsafeTags(css) {
   const found = [];
-  css.split("\n").forEach((text, index) => {
+  css.split('\n').forEach((text, index) => {
     for (const match of text.matchAll(/<\/?[A-Za-z][A-Za-z0-9:._-]*\s*\/?>/g)) {
       found.push({ line: index + 1, tag: match[0] });
     }
@@ -125,33 +125,33 @@ function injectBetween(content, startMarker, endMarker, payload) {
 
 function injectCSSIntoTemplate() {
   try {
-    const publicDir    = path.join(process.cwd(), "public");
+    const publicDir    = path.join(process.cwd(), 'public');
     const config       = readPoeticConfig();
     const templatePath = resolveTemplatePath(config, publicDir);
 
     // Check if template exists
     if (!fs.existsSync(templatePath)) {
-      console.error("Error: Template file not found at", templatePath);
+      console.error('Error: Template file not found at', templatePath);
       process.exit(1);
     }
 
-    let templateContent = fs.readFileSync(templatePath, "utf8");
+    let templateContent = fs.readFileSync(templatePath, 'utf8');
 
     // -----------------------------------------------------------------------
     // CSS injection
     // -----------------------------------------------------------------------
-    let stylesContent = "";
+    let stylesContent = '';
     const unsafeTags = [];
-    for (const file of ["poetic.css", "custom.css"]) {
+    for (const file of ['poetic.css', 'custom.css']) {
       const filePath = path.join(publicDir, file);
       if (!fs.existsSync(filePath)) continue;
       // Scanned before trimming, so the reported line numbers match the file.
-      const raw = fs.readFileSync(filePath, "utf8");
+      const raw = fs.readFileSync(filePath, 'utf8');
       for (const { line, tag } of findSkinUnsafeTags(raw)) {
         unsafeTags.push(`  public/${file}:${line}: ${tag}`);
       }
       const content = raw.trim();
-      if (content) stylesContent += (stylesContent ? "\n\n" : "") + content;
+      if (content) stylesContent += (stylesContent ? '\n\n' : '') + content;
     }
 
     // Refuse to write a theme Blogger will reject on save (see
@@ -159,12 +159,12 @@ function injectCSSIntoTemplate() {
     // error names neither.
     if (unsafeTags.length) {
       console.error(
-        "Error: CSS contains tag-shaped text. Blogger reads anything shaped " +
+        'Error: CSS contains tag-shaped text. Blogger reads anything shaped ' +
           'like a tag inside its b:skin block as a skin variable declaration\n' +
           'and rejects the theme ("Invalid variable declaration in page skin"). ' +
-          "Name the element in prose (a \"button element\") or write a\n" +
-          "placeholder in braces (.song-embed--{service}):\n" +
-          unsafeTags.join("\n")
+          'Name the element in prose (a "button element") or write a\n' +
+          'placeholder in braces (.song-embed--{service}):\n' +
+          unsafeTags.join('\n')
       );
       process.exit(1);
     }
@@ -173,39 +173,39 @@ function injectCSSIntoTemplate() {
     // the in-content poem-labels list here to avoid showing them twice. This is
     // Blogger-only: GitHub Pages links poetic.css directly and is unaffected.
     if (stylesContent) {
-      stylesContent += "\n\n.poem-labels { display: none !important; }";
+      stylesContent += '\n\n.poem-labels { display: none !important; }';
     }
 
     if (stylesContent) {
-      const CSS_START = "/* ~~ CUSTOM CSS START ~~ */";
-      const CSS_END   = "/* ~~ CUSTOM CSS END ~~ */";
+      const CSS_START = '/* ~~ CUSTOM CSS START ~~ */';
+      const CSS_END   = '/* ~~ CUSTOM CSS END ~~ */';
       const updated   = injectBetween(templateContent, CSS_START, CSS_END, stylesContent.trim());
       if (updated === templateContent && !templateContent.includes(CSS_START)) {
-        console.warn("Warning: CSS markers not found in template — skipping CSS injection.");
+        console.warn('Warning: CSS markers not found in template — skipping CSS injection.');
       } else {
         templateContent = updated;
-        console.log("CSS injected from public/poetic.css + public/custom.css");
+        console.log('CSS injected from public/poetic.css + public/custom.css');
       }
     } else {
-      console.warn("Warning: No CSS found in public/poetic.css or public/custom.css — skipping CSS injection.");
+      console.warn('Warning: No CSS found in public/poetic.css or public/custom.css — skipping CSS injection.');
     }
 
     // -----------------------------------------------------------------------
     // JS injection
     // -----------------------------------------------------------------------
-    const jsPath = path.join(publicDir, "poetic.js");
+    const jsPath = path.join(publicDir, 'poetic.js');
     if (fs.existsSync(jsPath)) {
-      const poeticJs = fs.readFileSync(jsPath, "utf8").trim();
+      const poeticJs = fs.readFileSync(jsPath, 'utf8').trim();
       if (poeticJs) {
         const jsPayload = `<script type='text/javascript'>//<![CDATA[\n${poeticJs}\n//]]></script>`;
-        const JS_START  = "<!-- ~~ CUSTOM JS START ~~ -->";
-        const JS_END    = "<!-- ~~ CUSTOM JS END ~~ -->";
+        const JS_START  = '<!-- ~~ CUSTOM JS START ~~ -->';
+        const JS_END    = '<!-- ~~ CUSTOM JS END ~~ -->';
         const updated   = injectBetween(templateContent, JS_START, JS_END, jsPayload);
         if (updated === templateContent && !templateContent.includes(JS_START)) {
-          console.warn("Warning: JS markers not found in template — skipping JS injection. Add <!-- ~~ CUSTOM JS START ~~ --> and <!-- ~~ CUSTOM JS END ~~ --> before </body>.");
+          console.warn('Warning: JS markers not found in template — skipping JS injection. Add <!-- ~~ CUSTOM JS START ~~ --> and <!-- ~~ CUSTOM JS END ~~ --> before </body>.');
         } else {
           templateContent = updated;
-          console.log("JS injected from public/poetic.js");
+          console.log('JS injected from public/poetic.js');
         }
       }
     }
@@ -213,13 +213,13 @@ function injectCSSIntoTemplate() {
     // -----------------------------------------------------------------------
     // Write
     // -----------------------------------------------------------------------
-    fs.writeFileSync(templatePath, templateContent, "utf8");
+    fs.writeFileSync(templatePath, templateContent, 'utf8');
 
-    console.log("Successfully injected into template");
-    console.log("Template:", templatePath);
+    console.log('Successfully injected into template');
+    console.log('Template:', templatePath);
 
   } catch (err) {
-    console.error("Error injecting into template:", err.message);
+    console.error('Error injecting into template:', err.message);
     process.exit(1);
   }
 }

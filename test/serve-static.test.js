@@ -61,7 +61,7 @@ test('escapeHtml escapes &, <, >, ", and \'', () => {
   withTempDir((dir) => {
     const { escapeHtml } = loadServeStaticInternals(dir);
     assert.strictEqual(
-      escapeHtml(`<script>alert('x')</script> & "quoted"`),
+      escapeHtml('<script>alert(\'x\')</script> & "quoted"'),
       '&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt; &amp; &quot;quoted&quot;'
     );
   });
@@ -126,7 +126,7 @@ test('generateDirectoryListing escapes a relative path containing HTML', () => {
 
 test('generateDirectoryListing escapes quotes and ampersands in filenames', () => {
   withTempDir((dir) => {
-    const name = `it's "quoted" & ampersand.txt`;
+    const name = 'it\'s "quoted" & ampersand.txt';
     fs.writeFileSync(path.join(dir, name), 'content');
 
     const { generateDirectoryListing } = loadServeStaticInternals(dir);

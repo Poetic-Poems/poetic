@@ -16,8 +16,8 @@
  * @returns {string} - Date in "DayOfWeek, DD Month YYYY" format
  */
 function formatDateForDisplay(dateStr) {
-  if (!dateStr || dateStr === "Unknown Date") {
-    return "Unknown Date";
+  if (!dateStr || dateStr === 'Unknown Date') {
+    return 'Unknown Date';
   }
 
   let date;
@@ -27,7 +27,7 @@ function formatDateForDisplay(dateStr) {
     date = dateStr;
     if (isNaN(date.getTime())) {
       console.warn(`Warning: Invalid date object: ${dateStr}`);
-      return "Unknown Date";
+      return 'Unknown Date';
     }
   } else {
     // Ensure dateStr is a string
@@ -43,7 +43,7 @@ function formatDateForDisplay(dateStr) {
 
     if (isNaN(date.getTime())) {
       console.warn(`Warning: Invalid date format: ${dateStr}`);
-      return "Unknown Date";
+      return 'Unknown Date';
     }
   }
 
@@ -92,7 +92,7 @@ function toISODate(dateStr) {
  * @returns {Date} - Date object for sorting
  */
 function parseDateForSorting(dateStr) {
-  if (!dateStr || dateStr === "Unknown Date") {
+  if (!dateStr || dateStr === 'Unknown Date') {
     return new Date(0);
   }
 

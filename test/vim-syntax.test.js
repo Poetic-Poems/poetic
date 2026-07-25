@@ -132,7 +132,7 @@ test(
     const hasMarkdownGroup = analysisGroups.some((name) => /^markdown/i.test(name));
     assert.ok(
       hasMarkdownGroup,
-      `Expected at least one builtin markdown* highlight group somewhere in the analysis ` +
+      'Expected at least one builtin markdown* highlight group somewhere in the analysis ' +
         `section (${FIXTURE} lines ${start}-${end - 1}), but found none among: ` +
         `${JSON.stringify([...new Set(analysisGroups)])}. This is a version-tolerant smoke ` +
         'check (it does not pin exact group names or run boundaries -- see ' +
@@ -164,7 +164,7 @@ test(
       const rawGroupsByLine = dumpRawGroupsByLine(tmpFile);
       assert.ok(
         rawGroupsByLine[0].includes('poemLineContinuation'),
-        `Expected poemLineContinuation on the single-trailing-backslash line, got: ` +
+        'Expected poemLineContinuation on the single-trailing-backslash line, got: ' +
           `${JSON.stringify(rawGroupsByLine[0])}`
       );
       assert.ok(
@@ -173,8 +173,8 @@ test(
       );
       assert.ok(
         !rawGroupsByLine[5].includes('poemLineContinuation'),
-        `A doubled trailing backslash is an escaped literal backslash (poemEscaped), not a ` +
-          `continuation marker, so poemLineContinuation must not match it: ` +
+        'A doubled trailing backslash is an escaped literal backslash (poemEscaped), not a ' +
+          'continuation marker, so poemLineContinuation must not match it: ' +
           `${JSON.stringify(rawGroupsByLine[5])}`
       );
     } finally {
@@ -205,13 +205,13 @@ test(
       const rawGroupsByLine = dumpRawGroupsByLine(tmpFile);
       assert.ok(
         rawGroupsByLine[0].includes('poemDirective'),
-        `Expected poemDirective on the Preamble %directive line, got: ` +
+        'Expected poemDirective on the Preamble %directive line, got: ' +
           `${JSON.stringify(rawGroupsByLine[0])}`
       );
       assert.ok(
         rawGroupsByLine[1].includes('poemTitle'),
-        `Expected poemTitle on the line following the Preamble directive (verifying the ` +
-          `title/preamble boundary accounts for %directive lines), got: ` +
+        'Expected poemTitle on the line following the Preamble directive (verifying the ' +
+          'title/preamble boundary accounts for %directive lines), got: ' +
           `${JSON.stringify(rawGroupsByLine[1])}`
       );
       assert.ok(
@@ -220,8 +220,8 @@ test(
       );
       assert.ok(
         !rawGroupsByLine[6].includes('poemEscaped'),
-        `"\\%{...}" is the render-time context-variable literal escape and must keep its ` +
-          `backslash unhighlighted as poemEscaped, so the "%" not-followed-by-"{" lookahead ` +
+        '"\\%{...}" is the render-time context-variable literal escape and must keep its ' +
+          'backslash unhighlighted as poemEscaped, so the "%" not-followed-by-"{" lookahead ' +
           `must not match it: ${JSON.stringify(rawGroupsByLine[6])}`
       );
     } finally {

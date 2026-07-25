@@ -7,21 +7,21 @@
  *   public/<slug>.html        - redirect stub → ./<slug>/
  */
 
-const fs = require("fs");
-const path = require("path");
-const { slugFromFile } = require("./slugify");
-const { formatDateForDisplay } = require("./date-utils");
-const { readPoeticConfig, CONFIG_FILENAME } = require("./poetic-config");
-const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles, refFilesForPoem, PAGE_TEMPLATE } = require("./poem-render");
-const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
-const { REPO_ROOT } = require("./repo-root");
-const { needsRebuild, forceRebuildRequested } = require("./needs-rebuild");
-const POEMS_DIR = path.join(REPO_ROOT, "src", "poems", "yaml");
-const PUBLIC_DIR = path.join(REPO_ROOT, "public");
+const fs = require('fs');
+const path = require('path');
+const { slugFromFile } = require('./slugify');
+const { formatDateForDisplay } = require('./date-utils');
+const { readPoeticConfig, CONFIG_FILENAME } = require('./poetic-config');
+const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles, refFilesForPoem, PAGE_TEMPLATE } = require('./poem-render');
+const { renderFooter, upsertFooter, resolveFooterSourcePath } = require('./footer');
+const { REPO_ROOT } = require('./repo-root');
+const { needsRebuild, forceRebuildRequested } = require('./needs-rebuild');
+const POEMS_DIR = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
+const PUBLIC_DIR = path.join(REPO_ROOT, 'public');
 // The builtin song handlers are a global build input (their YAML source, still
 // the human-authored form even though song-handlers.js now loads the generated
 // data module) — editing them must rebuild every page.
-const BUILTIN_HANDLERS_PATH = path.join(REPO_ROOT, "src", "song-handlers.yaml");
+const BUILTIN_HANDLERS_PATH = path.join(REPO_ROOT, 'src', 'song-handlers.yaml');
 
 /**
  * Process all YAML files in the poems directory.
@@ -37,7 +37,7 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
 
   // Read config once
   const config = readPoeticConfig(REPO_ROOT);
-  const rawFavicon = config.favicon || "poetic-logo.svg";
+  const rawFavicon = config.favicon || 'poetic-logo.svg';
   // Strip a leading "public/" so href="../<favicon>" resolves correctly from slug/ subdirs
   const favicon = rawFavicon.replace(/^public\//, '');
   const subtitle = config.subtitle || 'My Poems';
@@ -171,15 +171,15 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
 
     try {
       fs.mkdirSync(slugDir, { recursive: true });
-      const beautify = require("js-beautify");
+      const beautify = require('js-beautify');
       const prettifiedHtml = beautify.html(pageHtml, {
         indent_size: 2,
         wrap_line_length: 80,
         preserve_newlines: false,
         max_preserve_newlines: 1,
-        wrap_attributes: "auto"
+        wrap_attributes: 'auto'
       });
-      fs.writeFileSync(pageFile, prettifiedHtml, "utf8");
+      fs.writeFileSync(pageFile, prettifiedHtml, 'utf8');
       console.log(`✅ Generated ${slug}/index.html`);
     } catch (err) {
       console.error(`Error writing ${pageFile}:`, err.message);
@@ -190,7 +190,7 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
     // ── 2. Redirect stub: public/<slug>.html → ./<slug>/ ──────────────────
     const redirectHtml = `<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8">\n<link rel="canonical" href="./${slug}/">\n<meta http-equiv="refresh" content="0; url=./${slug}/"></head>\n<body><p>This poem has moved to <a href="./${slug}/">${slug}/</a>.</p></body></html>`;
     try {
-      fs.writeFileSync(redirectFile, redirectHtml, "utf8");
+      fs.writeFileSync(redirectFile, redirectHtml, 'utf8');
       console.log(`↪  Generated ${slug}.html (redirect)`);
       successCount++;
       builtSlugs.add(slug);
@@ -227,7 +227,7 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
 
 // Main execution
 if (require.main === module) {
-  console.log("Building individual poem HTML files from YAML sources...\n");
+  console.log('Building individual poem HTML files from YAML sources...\n');
   buildAllPoems();
 }
 

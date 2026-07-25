@@ -24,6 +24,9 @@
  *   - no-unused-vars ignores identifiers named `_` (args, catch bindings,
  *     destructured vars), matching the codebase's existing convention for
  *     "deliberately discarded" — see e.g. serve-static.js, build-blogger.js.
+ *   - quotes enforces single-quoted strings (avoidEscape: true, so a string
+ *     containing a `'` may use double quotes instead of escaping), matching
+ *     the dominant style across the codebase.
  */
 
 const js = require('@eslint/js');
@@ -82,6 +85,7 @@ const relaxedRules = {
       caughtErrorsIgnorePattern: '^_',
     },
   ],
+  quotes: ['error', 'single', { avoidEscape: true }],
 };
 
 module.exports = [
@@ -123,6 +127,14 @@ module.exports = [
       globals: browserGlobals,
     },
     rules: relaxedRules,
+  },
+  {
+    // Emitted by build-song-handlers-data.js via JSON.stringify(), which always
+    // double-quotes; test/song-handlers-data.test.js compares this file
+    // byte-for-byte against that generator's output, so `quotes` can't be
+    // enforced here without the file going stale the moment it regenerates.
+    files: ['src/tools/song-handlers-data.js'],
+    rules: { quotes: 'off' },
   },
   {
     // all-poems.js calls parseDateForSorting() from date-utils.js, loaded as
