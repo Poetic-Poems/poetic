@@ -135,14 +135,20 @@ in a different component. Fix: replace with a real `<button aria-expanded>`
 toggle, mirroring the existing analysis/song-embed controls in the same
 template.
 
-### TD26072110 poem-parser.js is a 1854-line monolith covering the whole grammar
+### TD26072601 poem-parser.js still has ~46 methods covering variable substitution and metadata parsing
 
-One `PoemParser` class with ~50 methods implements the entire `.poem` grammar
-sharing mutable instance state — more than 3x the next-largest hand-written
-tool file, making it the highest-effort file to safely extend. Fix: split by
-grammar section (variable substitution, markup conversion, metadata parsing)
-following the pattern `render-core.js`/`aggregate-render-core.js` already
-establish; do as a sequence of small, independently-verified PRs.
+TD26072110 split the markup-conversion grammar section out of `PoemParser`
+into `src/tools/poem-markup.js`, establishing the pattern
+`render-core.js`/`aggregate-render-core.js` already used: pure, stateless
+functions extracted into a browser-safe module that the parser requires and
+delegates to. `PoemParser` still implements the rest of the `.poem` grammar —
+variable substitution (`processVariables`, `substituteVariables`,
+`expandVars`, `resolveVar`, `expandStandaloneRefs`, ...) and metadata parsing
+(`parseMetadata`, `parseDirectiveLine`, `matchLabelLine`, ...) — sharing
+mutable instance state (`this.variables`, `this.usedBeforeDefined`), still
+making it the highest-effort file to safely extend. Fix: continue splitting
+by grammar section, mirroring `poem-markup.js`'s shape; do as a sequence of
+small, independently-verified PRs, one section per PR.
 
 ### TD26072114 Blogger sync has no request/job timeouts and no network-failure retry
 
@@ -204,7 +210,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072107 | package.json's engines.node floor (>=18) is past EOL | resolved | 2026-07-24 | #83 |
 | TD26072108 | Several public/poetic.css text colours fail WCAG AA contrast | resolved | 2026-07-24 | #85 |
 | TD26072109 | yaml-to-poem.js silently drops data the current YAML shape can hold | resolved | 2026-07-24 | #87 |
-| TD26072110 | poem-parser.js is a 1854-line monolith covering the whole grammar | in-progress | | |
+| TD26072110 | poem-parser.js is a 1854-line monolith covering the whole grammar | resolved | 2026-07-26 | #104 |
 | TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | resolved | 2026-07-25 | #86 |
 | TD26072112 | No code-coverage tool configured | resolved | 2026-07-24 | #88 |
 | TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | resolved | 2026-07-26 | #91 |
@@ -217,3 +223,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072401 | yaml-to-poem.js's plain-line writers still mangle content TD26072109 didn't touch | resolved | 2026-07-25 | #98 |
 | TD26072501 | Lint rules reach generated `public/*.js` that consumers may track, but `.gitignore` isn't synced | resolved | 2026-07-25 | #99 |
 | TD26072502 | convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content | resolved | 2026-07-26 | #103 |
+| TD26072601 | poem-parser.js still has ~46 methods covering variable substitution and metadata parsing | open | | |
