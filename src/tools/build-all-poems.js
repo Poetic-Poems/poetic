@@ -9,27 +9,27 @@
  *   - Index links now point to <slug>/ (clean URL) instead of <slug>.html.
  */
 
-const fs = require("fs");
-const path = require("path");
-const yaml = require("js-yaml");
-const { slugFromFile } = require("./slugify");
-const { parseDateForSorting, formatDateForDisplay, toISODate } = require("./date-utils");
-const { readPoeticConfig, CONFIG_FILENAME } = require("./poetic-config");
-const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, FRAGMENT_TEMPLATE } = require("./poem-render");
-const { hasResolvableSongs } = require("./song-handlers");
-const { renderTitleMarkup } = require("./render-core");
-const { renderFooter, upsertFooter, resolveFooterSourcePath } = require("./footer");
-const { REPO_ROOT } = require("./repo-root");
-const { needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested } = require("./needs-rebuild");
+const fs = require('fs');
+const path = require('path');
+const yaml = require('js-yaml');
+const { slugFromFile } = require('./slugify');
+const { parseDateForSorting, formatDateForDisplay, toISODate } = require('./date-utils');
+const { readPoeticConfig, CONFIG_FILENAME } = require('./poetic-config');
+const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, FRAGMENT_TEMPLATE } = require('./poem-render');
+const { hasResolvableSongs } = require('./song-handlers');
+const { renderTitleMarkup } = require('./render-core');
+const { renderFooter, upsertFooter, resolveFooterSourcePath } = require('./footer');
+const { REPO_ROOT } = require('./repo-root');
+const { needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested } = require('./needs-rebuild');
 const {
   escapeAmpersand, buildPoemDataIsland, renderFreshIndexHtml, renderAllPoemsHtml,
-} = require("./aggregate-render-core");
-const beautify = require("js-beautify");
+} = require('./aggregate-render-core');
+const beautify = require('js-beautify');
 
 // The builtin song handlers are a global build input (their YAML source, still
 // the human-authored form even though song-handlers.js now loads the generated
 // data module) — editing them must rebuild the aggregate pages.
-const BUILTIN_HANDLERS_PATH = path.join(REPO_ROOT, "src", "song-handlers.yaml");
+const BUILTIN_HANDLERS_PATH = path.join(REPO_ROOT, 'src', 'song-handlers.yaml');
 
 // public/all-poems.js calls date-utils.js's parseDateForSorting() to sort the
 // table's date column, so date-utils.js must also be reachable as a plain
@@ -38,8 +38,8 @@ const BUILTIN_HANDLERS_PATH = path.join(REPO_ROOT, "src", "song-handlers.yaml");
 // build — src/tools/date-utils.js stays the single source of truth, and
 // public/date-utils.js is a build artefact (see .gitignore).
 function copyDateUtilsAsset(publicDir) {
-  const src = path.join(__dirname, "date-utils.js");
-  const dest = path.join(publicDir, "date-utils.js");
+  const src = path.join(__dirname, 'date-utils.js');
+  const dest = path.join(publicDir, 'date-utils.js');
   fs.copyFileSync(src, dest);
 }
 
@@ -57,12 +57,12 @@ function copyDateUtilsAsset(publicDir) {
  */
 function concatenateAllHtmlFiles(
   dirPath,
-  favicon = "poetic-logo.svg",
+  favicon = 'poetic-logo.svg',
   config = {},
-  { poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml") } = {}
+  { poemsDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml') } = {}
 ) {
   try {
-    const siteTitle = escapeAmpersand(config.title || "My Poems");
+    const siteTitle = escapeAmpersand(config.title || 'My Poems');
     // Read YAML files from the poems directory for metadata
     const yamlFiles = listPoemYamlFiles(poemsDir);
 
@@ -72,7 +72,7 @@ function concatenateAllHtmlFiles(
       const yamlPath = path.join(poemsDir, file);
 
       try {
-        const yamlContent = fs.readFileSync(yamlPath, "utf8");
+        const yamlContent = fs.readFileSync(yamlPath, 'utf8');
         const data = yaml.load(yamlContent);
 
         const title = data.title;
@@ -85,13 +85,13 @@ function concatenateAllHtmlFiles(
         const fileName = slug;
 
         // Skip index.html and all-poems.html
-        if (fileName === "index" || fileName === "all-poems") {
+        if (fileName === 'index' || fileName === 'all-poems') {
           return;
         }
 
         const titleHtml = renderTitleMarkup(title);
-        const date = data.date ? formatDateForDisplay(data.date) : "Unknown Date";
-        const isoDate = data.date ? toISODate(data.date) : "";
+        const date = data.date ? formatDateForDisplay(data.date) : 'Unknown Date';
+        const isoDate = data.date ? toISODate(data.date) : '';
         const hasAudio = hasResolvableSongs(data.audio, config);
 
         poemData.push({ slug, title, titleHtml, date, isoDate, yamlPath, hasAudio });
@@ -153,10 +153,10 @@ function concatenateAllHtmlFiles(
  */
 function generateIndexHtml(
   publicDir,
-  favicon = "poetic-logo.svg",
+  favicon = 'poetic-logo.svg',
   subtitle = undefined,
   config = {},
-  { poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml") } = {}
+  { poemsDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml') } = {}
 ) {
   try {
     // Read YAML files from the poems directory for metadata
@@ -168,7 +168,7 @@ function generateIndexHtml(
       const yamlPath = path.join(poemsDir, yamlFile);
 
       try {
-        const yamlContent = fs.readFileSync(yamlPath, "utf8");
+        const yamlContent = fs.readFileSync(yamlPath, 'utf8');
         const data = yaml.load(yamlContent);
 
         const title = data.title;
@@ -180,7 +180,7 @@ function generateIndexHtml(
         const slug = slugFromFile(yamlFile);
 
         // Skip index and all-poems
-        if (slug === "index" || slug === "all-poems") {
+        if (slug === 'index' || slug === 'all-poems') {
           return;
         }
 
@@ -212,13 +212,13 @@ function generateIndexHtml(
     const poemDataJson = JSON.stringify(poemData, null, 2).replace(/</g, '\\u003c');
     const poemDataIsland = buildPoemDataIsland(poemData);
 
-    const indexPath = path.join(publicDir, "index.html");
+    const indexPath = path.join(publicDir, 'index.html');
 
     // Check if index.html exists, if not create a default template
     let indexContent;
     if (fs.existsSync(indexPath)) {
       // Read the existing index.html file
-      indexContent = fs.readFileSync(indexPath, "utf8");
+      indexContent = fs.readFileSync(indexPath, 'utf8');
 
       // Keep the favicon in sync with config
       indexContent = indexContent.replace(
@@ -246,7 +246,7 @@ function generateIndexHtml(
       }
 
       // Strip the legacy inline <style> block now that its rules live in poetic.css
-      indexContent = indexContent.replace(/\n?\s*<style>[\s\S]*?<\/style>/, "");
+      indexContent = indexContent.replace(/\n?\s*<style>[\s\S]*?<\/style>/, '');
 
       // Ensure CSS/JS links are present (inject after favicon if missing)
       const needsCss = !indexContent.includes('href="poetic.css"');
@@ -293,24 +293,24 @@ function generateIndexHtml(
       }
     } else {
       // Create a default index.html template
-      const siteTitle = escapeAmpersand(config.title || "My Poems");
+      const siteTitle = escapeAmpersand(config.title || 'My Poems');
       indexContent = renderFreshIndexHtml(poemData, {
         siteTitle,
-        subtitle: subtitle || "My Poems",
+        subtitle: subtitle || 'My Poems',
         favicon,
       });
     }
 
     return indexContent;
   } catch (err) {
-    console.warn("Warning: Could not update index.html:", err.message);
+    console.warn('Warning: Could not update index.html:', err.message);
     return null;
   }
 }
 
 // Main execution
 function main() {
-  const publicDir = path.join(REPO_ROOT, "public");
+  const publicDir = path.join(REPO_ROOT, 'public');
 
   if (!fs.existsSync(publicDir)) {
     console.error(`Error: Public directory not found: ${publicDir}`);
@@ -319,8 +319,8 @@ function main() {
 
   const force = forceRebuildRequested();
 
-  const dateUtilsDest = path.join(publicDir, "date-utils.js");
-  const dateUtilsSrc = path.join(__dirname, "date-utils.js");
+  const dateUtilsDest = path.join(publicDir, 'date-utils.js');
+  const dateUtilsSrc = path.join(__dirname, 'date-utils.js');
   if (needsRebuild(dateUtilsDest, dateUtilsSrc, { force })) {
     copyDateUtilsAsset(publicDir);
   }
@@ -329,7 +329,7 @@ function main() {
   // Strip a leading "public/" so the href resolves correctly when public/ is
   // served as the web root (both locally and once GitHub Pages deploys its
   // contents to the site root) — see build-poems.js for the same rule.
-  const rawFavicon = config.favicon || "poetic-logo.svg";
+  const rawFavicon = config.favicon || 'poetic-logo.svg';
   const favicon = rawFavicon.replace(/^public\//, '');
   if (config.favicon) {
     console.log(`Using favicon from .poetic-config.yaml: ${favicon}`);
@@ -350,11 +350,11 @@ function main() {
     console.log(`Using footer.source from .poetic-config.yaml: ${config.footer.source}`);
   }
 
-  const poemsDir = path.join(REPO_ROOT, "src", "poems", "yaml");
+  const poemsDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
   const configPath = path.join(REPO_ROOT, CONFIG_FILENAME);
-  const allPoemsOutputPath = path.join(publicDir, "all-poems.html");
-  const indexPath = path.join(publicDir, "index.html");
-  const manifestPath = path.join(publicDir, ".all-poems.manifest.json");
+  const allPoemsOutputPath = path.join(publicDir, 'all-poems.html');
+  const indexPath = path.join(publicDir, 'index.html');
+  const manifestPath = path.join(publicDir, '.all-poems.manifest.json');
   // all-poems.html/index.html are aggregates over every poem, so — unlike
   // build-poems.js's per-poem check — the whole source set is relevant: any
   // poem (or shared partial) being added, removed, or edited legitimately
@@ -375,11 +375,11 @@ function main() {
     ...(fs.existsSync(footerSourcePath) ? [footerSourcePath] : []),
   ];
   if (!needsRebuildAggregate([allPoemsOutputPath, indexPath], sources, { manifestPath, baseDir: poemsDir, extraInputs, force })) {
-    console.log("⏭  all-poems.html and index.html are up to date, skipping.");
+    console.log('⏭  all-poems.html and index.html are up to date, skipping.');
     return;
   }
 
-  console.log("Step 1: Building all-poems.html...");
+  console.log('Step 1: Building all-poems.html...');
 
   const { html: allPoemsHtml, errorCount: poemErrorCount } =
     concatenateAllHtmlFiles(publicDir, favicon, config);
@@ -390,16 +390,16 @@ function main() {
     wrap_line_length: 80,
     preserve_newlines: false,
     max_preserve_newlines: 1,
-    wrap_attributes: "auto"
+    wrap_attributes: 'auto'
   });
-  fs.writeFileSync(allPoemsOutputPath, prettifiedContent, "utf8");
+  fs.writeFileSync(allPoemsOutputPath, prettifiedContent, 'utf8');
 
   console.log(`✅ Successfully generated ${allPoemsOutputPath}`);
   if (poemErrorCount > 0) {
     console.error(`❌ ${poemErrorCount} poem(s) failed to render into all-poems.html (see errors above)`);
   }
 
-  console.log("\nStep 2: Updating index.html...");
+  console.log('\nStep 2: Updating index.html...');
 
   const updatedIndexContent = generateIndexHtml(publicDir, favicon, subtitle, config);
   let indexErrorCount = 0;
@@ -410,12 +410,12 @@ function main() {
       wrap_line_length: 80,
       preserve_newlines: false,
       max_preserve_newlines: 1,
-      wrap_attributes: "auto"
+      wrap_attributes: 'auto'
     });
-    fs.writeFileSync(indexPath, prettifiedIndexContent, "utf8");
+    fs.writeFileSync(indexPath, prettifiedIndexContent, 'utf8');
     console.log(`✅ Successfully updated ${indexPath}`);
   } else {
-    console.error("❌ Skipped index.html update due to errors (see warning above)");
+    console.error('❌ Skipped index.html update due to errors (see warning above)');
     indexErrorCount = 1;
   }
 
@@ -425,7 +425,7 @@ function main() {
 
   console.log(
     `\n📊 Processed ${
-      fs.readdirSync(publicDir).filter((f) => f.endsWith(".html")).length
+      fs.readdirSync(publicDir).filter((f) => f.endsWith('.html')).length
     } HTML files`
   );
 

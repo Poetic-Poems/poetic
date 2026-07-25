@@ -444,7 +444,7 @@ After running:
   console.log('Step 1: Open the following URL in your browser and sign in:');
   console.log('─────────────────────────────────────────────────────────');
   console.log(`\n${consentUrl.toString()}\n`);
-  console.log(`─────────────────────────────────────────────────────────`);
+  console.log('─────────────────────────────────────────────────────────');
   console.log(`Waiting for Google to redirect to http://localhost:${port} ...`);
 
   let code;

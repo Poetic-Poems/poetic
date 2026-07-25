@@ -262,14 +262,14 @@ function resolveEmbedSize(value, handler, service) {
     if (norm) return { size: aspectSize(norm), media };
     console.warn(
       `Warning: song handler "${service}" ignoring malformed ratio "${perSong.ratio}" — ` +
-      `falling back to the media-type default.`
+      'falling back to the media-type default.'
     );
   } else if (perSong.height != null && String(perSong.height) !== '') {
     const norm = normaliseHeight(perSong.height);
     if (norm) return { size: heightSize(norm), media };
     console.warn(
       `Warning: song handler "${service}" ignoring malformed height "${perSong.height}" — ` +
-      `falling back to the media-type default.`
+      'falling back to the media-type default.'
     );
   }
 
@@ -348,7 +348,7 @@ function resolveSongs(audio, opts = {}) {
     if (!handler) {
       console.warn(
         `Warning: no song handler defined for "${rawName}" — skipping. ` +
-        `Add it under song_handlers: in .poetic-config.yaml.`
+        'Add it under song_handlers: in .poetic-config.yaml.'
       );
       continue;
     }

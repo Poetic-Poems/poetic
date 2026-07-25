@@ -215,7 +215,7 @@ class YamlToPoemConverter {
       } else if (part.type === 'html') {
         if (/^\s*(?:<<<|>>>)/m.test(part.html)) {
           throw new Error(
-            `Unsupported segment part: html content contains a "<<<" or ">>>" block marker, ` +
+            'Unsupported segment part: html content contains a "<<<" or ">>>" block marker, ' +
             `which cannot be represented as a raw literal block: ${JSON.stringify(part.html.slice(0, 80))}`
           );
         }
@@ -421,7 +421,7 @@ class YamlToPoemConverter {
     if (!pattern.test(str)) {
       throw new Error(
         `Unsupported Metadata ${description}: ${JSON.stringify(str)} does not match ${pattern} ` +
-        `and cannot be written as valid .poem syntax`
+        'and cannot be written as valid .poem syntax'
       );
     }
     return str;

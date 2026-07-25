@@ -50,8 +50,8 @@ function readPoeticConfig(cwd) {
     if (fs.existsSync(path.join(root, LEGACY_CONFIG_FILENAME))) {
       console.warn(
         `Warning: found legacy ${LEGACY_CONFIG_FILENAME} but not ${CONFIG_FILENAME}. ` +
-        `.poetic-config was replaced by .poetic-config.yaml — convert its key=value ` +
-        `lines to YAML (see docs/BUILD.md). Config is being ignored until then.`
+        '.poetic-config was replaced by .poetic-config.yaml — convert its key=value ' +
+        'lines to YAML (see docs/BUILD.md). Config is being ignored until then.'
       );
     }
     return {};
@@ -62,7 +62,7 @@ function readPoeticConfig(cwd) {
 
   if (config.blogger && typeof config.blogger.blog_id === 'number') {
     console.warn(
-      `Warning: blogger.blog_id was parsed as a YAML number and may have lost ` +
+      'Warning: blogger.blog_id was parsed as a YAML number and may have lost ' +
       `precision. Quote it as a string in ${CONFIG_FILENAME}, e.g. blogger: { blog_id: "${config.blogger.blog_id}" }.`
     );
   }

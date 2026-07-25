@@ -20,7 +20,7 @@ test('escapeAmpersand: escapes only "&"', () => {
 });
 
 test('escapeHtml: escapes "&", "<", ">" and \'"\' (matching Pug\'s default escaping)', () => {
-  assert.strictEqual(escapeHtml(`Fish & Chips <b>"tasty"</b>`), 'Fish &amp; Chips &lt;b&gt;&quot;tasty&quot;&lt;/b&gt;');
+  assert.strictEqual(escapeHtml('Fish & Chips <b>"tasty"</b>'), 'Fish &amp; Chips &lt;b&gt;&quot;tasty&quot;&lt;/b&gt;');
 });
 
 test('summarizePoem: derives display date, ISO date, hasAudio and labels from raw poem-data', () => {
@@ -120,7 +120,7 @@ test('renderAllPoemsHtml: renders a table-of-contents row and poem-section per e
 });
 
 test('renderAllPoemsHtml: HTML-escapes a title\'s titleHtml at both interpolation sites, so it cannot inject a live tag', () => {
-  const rawTitle = `<img src=x onerror=alert(1)> & "quoted"`;
+  const rawTitle = '<img src=x onerror=alert(1)> & "quoted"';
   const entries = [{
     slug: 'x', title: rawTitle, titleHtml: renderTitleMarkup(rawTitle), date: 'Wednesday, 1 January 2020',
     isoDate: '2020-01-01', hasAudio: false, content: '<p>content</p>',
