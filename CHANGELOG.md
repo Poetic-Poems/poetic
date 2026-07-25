@@ -105,7 +105,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `convertMarkup()` pass. A new segment-specific reverse conversion fixes
   this, and also reverses `<blockquote>` (back to `>` quote lines) and a
   trailing `<br/>` (back to the trailing two-space hard break) that the
-  writers previously wrote as raw HTML text too. Separately,
+  writers previously wrote as raw HTML text too; it re-escapes every
+  character `convertMarkup()` treats as markup syntax left bare by an
+  original `\`-escape, including `&`/`'`/`"`, without also swallowing a
+  still-encoded `&nbsp;`/entity in the same run. Separately,
   `convertHtmlToPlainText()` (postscript) now writes a raw `<<< >>>` block's
   content back as a literal block instead of bare prose text when it's
   isolated behind a genuine blank line, instead of losing its trailing

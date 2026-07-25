@@ -623,10 +623,13 @@ class YamlToPoemConverter {
    * analysis prose has no equivalent, so this is not folded into the shared
    * stripHtmlTags()) plus everything stripHtmlTags() already understands.
    *
-   * Every character convertMarkup() treats as markup syntax (`*_~`[/{}` and
-   * `\` itself) is always fully consumed into a tag or entity when it forms
-   * real markup -- none of them survive as bare text in the rendered HTML.
-   * So any of these characters still present in decoded text can only be
+   * Every character convertMarkup() treats as markup syntax (`*_~`[/{}"&'`
+   * and `\` itself) is always fully consumed into a tag or entity when it
+   * forms real markup -- none of them survive as bare text in the rendered
+   * HTML: an unescaped `&` or `'` is unconditionally turned into `&#38;`/
+   * `&#39;`, and an unescaped `"` either pairs into smart-quote entities or
+   * (if unpaired) is left alone either way, so escaping it back is always
+   * safe. So any of these characters still present in decoded text can only be
    * literal (originally `\`-escaped) content, and escaping them again --
    * unconditionally, before restoring any tags -- is always correct; it is
    * what makes an escaped `\*literal\*` round-trip back to itself instead of
@@ -686,11 +689,18 @@ class YamlToPoemConverter {
    * per-character callback keeps backslash handling uniform and explicit,
    * rather than reading as incomplete when a run is escaped as one unit.
    *
+   * `&` gets the same not-if-it's-already-an-entity treatment as convertMarkup()'s
+   * own forward encoding (`&(?!#\d+;|[a-z]+;)`): this runs BEFORE
+   * stripSegmentHtmlTags()'s final convertEntitiesToMarkup() pass decodes
+   * `&nbsp;`/`&#8220;`/etc. back to plain characters, so an `&` that starts one
+   * of those still-encoded entities must be left alone here, or the following
+   * decode pass would never see a whole entity to match.
+   *
    * @param {string} text
    * @returns {string}
    */
   escapeSegmentLiteral(text) {
-    return text.replace(/-(?=-)|(?<=-)-|[\\_*~`[/{}]/g, (c) => `\\${c}`);
+    return text.replace(/-(?=-)|(?<=-)-|&(?!#\d+;|[a-zA-Z]+;)|[\\_*~`["'/{}]/g, (c) => `\\${c}`);
   }
 }
 

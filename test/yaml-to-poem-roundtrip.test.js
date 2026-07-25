@@ -284,6 +284,37 @@ test('segment lines: leading/embedded &nbsp; (indentation and multi-space runs) 
   assert.deepStrictEqual(roundTrip(data).versions, data.versions);
 });
 
+test('segment lines: a bare `&`/`\'`/`"` left over from an original `\\`-escape re-escapes, ' +
+  'rather than being re-encoded as an entity on the next parse', () => {
+  // `Rock \& Roll`, `isn\'t`, and `she said \"hi\"` all decode to a bare `&`/`'`/`"`
+  // with no wrapping entity (unlike an unescaped `&`/`'`, which convertMarkup()
+  // always turns into `&#38;`/`&#39;`, or an unescaped `"..."` pair, which it
+  // turns into smart-quote entities). Writing these bare characters straight to
+  // `.poem` output would let the next parse re-encode them for real.
+  const data = baseData({
+    versions: [
+      {
+        segments: [
+          { lines: 'Rock & Roll, she said "hi" and it isn\'t fake markup.\n' },
+        ],
+      },
+    ],
+  });
+  assert.deepStrictEqual(roundTrip(data).versions, data.versions);
+});
+
+test('segment lines: a literal `&` and an `&nbsp;` entity in the same run both round-trip', () => {
+  // Guards against escaping the literal `&` so eagerly that it also consumes the
+  // `&nbsp;` produced by convertSpacesToNbsp() for this run's own indentation --
+  // convertEntitiesToMarkup() needs the whole "&nbsp;" text intact to decode it.
+  const data = baseData({
+    versions: [
+      { segments: [{ lines: '&nbsp;&nbsp;Rock & Roll, indented.\n' }] },
+    ],
+  });
+  assert.deepStrictEqual(roundTrip(data).versions, data.versions);
+});
+
 test('segment.parts\' "lines" entries get the same HTML-to-markup conversion as segment.lines', () => {
   const data = baseData({
     versions: [
