@@ -248,7 +248,7 @@ Files beginning with `_` (e.g. `_example.poem`, `_shared.yaml`) are excluded fro
 
 Poetic releases are numbered `vMAJOR.MINOR.PATCH` (for example, `v1.2.0`). Each release is tagged on the `main` branch and listed under [Releases](https://github.com/Poetic-Poems/poetic/releases) on GitHub.
 
-`package.json`'s `version` field is the single source of truth: releasing means opening a pull request that bumps that field (titled `chore: release vX.Y.Z`) and squash-merging it into `main`. The [release workflow](.github/workflows/release.yml) then tags that commit and publishes the GitHub release automatically, so the tag can never drift out of sync with `package.json`.
+`package.json`'s `version` field is the single source of truth: releasing means opening a pull request that bumps that field (titled `chore: release vX.Y.Z`) and squash-merging it into `main`. The [release workflow](.github/workflows/release.yml) then tags that commit and publishes the GitHub release automatically, so the tag can never drift out of sync with `package.json`. That same workflow also fails any pull request that bumps the version without `CHANGELOG.md` gaining a matching `## [X.Y.Z]` heading, so a release PR rolls the `[Unreleased]` entries into the new version heading alongside the bump.
 
 ### Manual sync
 

@@ -164,6 +164,12 @@ request that bumps it (titled `chore: release vX.Y.Z`) and squash-merge it into 
 automatically, so the tag can't drift out of sync with `package.json`. Consumer repos can
 pin to a tag via `.poetic-version`.
 
+The same workflow's `changelog-check` job runs on every pull request and fails one that
+changes `package.json`'s `version` without `CHANGELOG.md` carrying a matching
+`## [<version>]` heading, so a release cannot land with the previous release's entries
+still sitting under `[Unreleased]`. A release PR therefore rolls `[Unreleased]` into a
+`## [X.Y.Z]` heading in the same PR that bumps the version.
+
 ## Exemplar config
 
 `examples/poetic-config.example.yaml` documents every `.poetic-config.yaml`
