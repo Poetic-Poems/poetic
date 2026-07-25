@@ -26,6 +26,8 @@ class PoemParser {
 
   /**
    * Main parse method
+   *
+   * @returns {object} the structured poem-data result
    */
   parse() {
     // Remove comment blocks first
@@ -184,6 +186,8 @@ class PoemParser {
    * error wherever Poetic interprets its own escapes — the WYSIWYG poem body and
    * labels (convertMarkup) and parameter values (scanShellWord). `\\?` (an
    * escaped backslash, then a literal `?`) is the way to write a literal `\?`.
+   *
+   * @returns {Error}
    */
   reservedEscapeError() {
     return new Error(
@@ -206,6 +210,9 @@ class PoemParser {
    * found later by the quote-aware scanner in parseParamList(). If the token is
    * NOT followed by `(` (after optional whitespace), trailing text is stripped
    * as before.
+   *
+   * @param {string} line
+   * @returns {string}
    */
   stripTrailingAfterToken(line) {
     let m;
@@ -229,6 +236,11 @@ class PoemParser {
    * `params` is the object returned by parseParamList(), or null when no
    * parameter list is present or it is malformed (existing "trailing text
    * ignored" behaviour then applies to whatever follows the closing brace(s)).
+   *
+   * @param {string} line
+   * @param {string} type - '{{' for version labels (2 braces) or '{' for
+   *   segment/postscript/analysis labels (1 brace)
+   * @returns {{label: string, params: (object|null)}}
    */
   parseLabelWithParams(line, type) {
     const trimmed = line.trim();
@@ -259,6 +271,10 @@ class PoemParser {
    * in the string (in which case `$` is not treated as starting a `${...}`
    * token, and is instead ordinary literal text - matching substituteVariables(),
    * which likewise leaves an unterminated `${` untouched).
+   *
+   * @param {string} str
+   * @param {number} at - index of the `$` that starts the reference
+   * @returns {{text: string, nextIndex: number}|null}
    */
   expandVarAt(str, at) {
     const closeIdx = str.indexOf('}', at + 2);
@@ -298,6 +314,10 @@ class PoemParser {
    * not itself re-scanned for further `${...}` or list syntax (`,`/`)`), so
    * neither a fresh substitution opportunity nor a premature list terminator
    * can be manufactured by what an expansion's value happens to contain.
+   *
+   * @param {string} str
+   * @param {number} i - index to start scanning from
+   * @returns {{value: string, nextIndex: number}|null}
    */
   scanShellWord(str, i) {
     const n = str.length;
@@ -418,6 +438,9 @@ class PoemParser {
    * so a `,`/`)` that is quoted or backslash-escaped in an unquoted context
    * is correctly treated as literal rather than as list syntax in either
    * role.
+   *
+   * @param {string} str
+   * @returns {object|null}
    */
   parseParamList(str) {
     if (str[0] !== '(') return null;
@@ -564,6 +587,10 @@ class PoemParser {
    * a literal line with a warning rather than looping forever). Lines that are
    * not standalone references to a multi-line variable are passed through
    * unchanged.
+   *
+   * @param {string[]} lines
+   * @param {string[]} stack - names of variables currently being expanded
+   * @returns {string[]}
    */
   expandStandaloneRefs(lines, stack) {
     const out = [];
@@ -593,12 +620,14 @@ class PoemParser {
    * Throw if `name` uses the reserved eager/early-binding form (a leading `!`,
    * e.g. `={!name}=`). The behaviour is reserved for a future release; parsing
    * it now is an error rather than a silently-accepted ordinary name.
+   *
+   * @param {string} name
    */
   checkReservedName(name) {
     if (name[0] === '!') {
       throw new Error(
         `Reserved syntax: eager/early-binding variable '={!${name.slice(1)}}=' ` +
-        `is reserved but not yet implemented (a leading '!' in a variable name is reserved).`
+        'is reserved but not yet implemented (a leading \'!\' in a variable name is reserved).'
       );
     }
   }
@@ -615,6 +644,9 @@ class PoemParser {
    * A reference cycle resolves to the literal `${...}` and warns (no infinite
    * loop). Context references (`%{...}`) are NOT touched here - they are left
    * for the render stage. The reserved eager form `${!name}` throws.
+   *
+   * @param {string} text
+   * @returns {string}
    */
   substituteVariables(text) {
     return this.expandVars(text, []);
@@ -624,6 +656,10 @@ class PoemParser {
    * Core scanner for substituteVariables(). Walks `text` left to right so that
    * `\${...}` escaping is honoured exactly once; `stack` carries the chain of
    * variables currently being expanded, for cycle detection.
+   *
+   * @param {string} text
+   * @param {string[]} stack - names of variables currently being expanded
+   * @returns {string}
    */
   expandVars(text, stack) {
     let out = '';
@@ -656,12 +692,16 @@ class PoemParser {
    * Resolve the interior of one `${...}` reference (`inner` is the text between
    * the braces): apply the `:-default` fallback, cycle detection, and recursive
    * expansion of the resulting value.
+   *
+   * @param {string} inner - text between the `${` and `}`
+   * @param {string[]} stack - names of variables currently being expanded
+   * @returns {string}
    */
   resolveVar(inner, stack) {
     if (inner[0] === '!') {
       throw new Error(
         `Reserved syntax: eager/early-binding reference '\${${inner}}' is reserved ` +
-        `but not yet implemented (a leading '!' in a variable name is reserved).`
+        'but not yet implemented (a leading \'!\' in a variable name is reserved).'
       );
     }
     let name = inner;
@@ -689,6 +729,8 @@ class PoemParser {
 
   /**
    * Get current line without advancing
+   *
+   * @returns {string|null}
    */
   peek() {
     return this.index < this.lines.length ? this.lines[this.index] : null;
@@ -696,6 +738,8 @@ class PoemParser {
 
   /**
    * Get current line and advance
+   *
+   * @returns {string|null}
    */
   next() {
     return this.index < this.lines.length ? this.lines[this.index++] : null;
@@ -703,6 +747,8 @@ class PoemParser {
 
   /**
    * Check if we're at end of file
+   *
+   * @returns {boolean}
    */
   eof() {
     return this.index >= this.lines.length;
@@ -714,6 +760,9 @@ class PoemParser {
    *   <<<            -> ''        (raw passthrough)
    *   <<<markdown    -> 'markdown'(rendered as GFM)
    *   <<<yaml  # ... -> 'yaml'    (unknown tag -> raw passthrough)
+   *
+   * @param {string|null} line
+   * @returns {string|null}
    */
   blockStartTag(line) {
     if (line === null) return null;
@@ -723,6 +772,9 @@ class PoemParser {
 
   /**
    * True if `line` is a block end marker (`>>>`, ignoring trailing text).
+   *
+   * @param {string|null} line
+   * @returns {boolean}
    */
   isBlockEnd(line) {
     return line !== null && /^>>>(?:\s.*)?$/.test(line.trim());
@@ -731,6 +783,8 @@ class PoemParser {
   /**
    * Read a `<<< ... >>>` block starting at the current line. Consumes the start
    * and end markers and returns { tag, lines } with the raw inner lines.
+   *
+   * @returns {{tag: string, lines: string[]}}
    */
   readBlock() {
     const tag = this.blockStartTag(this.peek()) || '';
@@ -751,6 +805,10 @@ class PoemParser {
    * Markdown rendering, not variable substitution):
    *   markdown/md -> GFM
    *   anything else -> raw passthrough (no Markdown conversion)
+   *
+   * @param {string} tag
+   * @param {string[]} lines
+   * @returns {string}
    */
   renderBlock(tag, lines) {
     const substituted = lines.map(l => this.substituteVariables(l));
@@ -771,11 +829,14 @@ class PoemParser {
 
   /**
    * Expect a specific marker (e.g., ==== or ----)
+   *
+   * @param {string} marker
+   * @param {string} name - documents which marker each call site expects (e.g.
+   *   'end-of-poem'); kept for call-site readability, not yet threaded into a
+   *   failure message
+   * @returns {boolean}
    */
-  // `name` documents which marker each call site expects (e.g.
-  // 'end-of-poem'); kept for call-site readability, not yet threaded into a
-  // failure message.
-  // eslint-disable-next-line no-unused-vars -- see comment above
+  // eslint-disable-next-line no-unused-vars -- see @param name above
   expectMarker(marker, name) {
     this.skipBlankLines();
     const line = this.peek();
@@ -795,6 +856,9 @@ class PoemParser {
    * surviving this parse stage. The negative lookahead `(?!\{)` is what enforces
    * that carve-out. This lets a title (or body/label text) begin with a literal
    * `%` without being mistaken for a directive.
+   *
+   * @param {string} text
+   * @returns {string}
    */
   decodePercentEscape(text) {
     return text.replace(/\\%(?!\{)/g, '%');
@@ -909,6 +973,8 @@ class PoemParser {
 
   /**
    * Parse a single version
+   *
+   * @returns {{label?: string, params?: object, segments: object[]}|null}
    */
   parseVersion() {
     this.skipBlankLines();
@@ -961,6 +1027,9 @@ class PoemParser {
    * - Multiple consecutive spaces within lines are converted to alternating
    *   space + &nbsp; pattern (e.g., "  " becomes " &nbsp;") to allow wrapping
    *   on small displays while preserving visual spacing
+   *
+   * @param {string} line
+   * @returns {string}
    */
   convertSpacesToNbsp(line) {
     // Convert leading spaces to &nbsp;
@@ -979,6 +1048,8 @@ class PoemParser {
 
   /**
    * Parse a segment within a version
+   *
+   * @returns {object|null}
    */
   parseSegment() {
     this.skipBlankLines();
@@ -1071,6 +1142,9 @@ class PoemParser {
    * Process a run of WYSIWYG poem lines (blockquotes + inline markup + nbsp)
    * into a single newline-joined HTML string with a trailing newline, or '' if
    * the run is empty after trimming surrounding blank lines.
+   *
+   * @param {string[]} contentLines
+   * @returns {string}
    */
   processWysiwygLines(contentLines) {
     const lines = contentLines.slice();
@@ -1358,6 +1432,8 @@ class PoemParser {
 
   /**
    * Parse a single postscript note
+   *
+   * @returns {object|null}
    */
   parsePostscriptNote() {
     this.skipBlankLines();
@@ -1464,6 +1540,8 @@ class PoemParser {
    *  - `<<<markdown` / `<<<md` -> rendered as GFM (with variable substitution)
    *  - bare `<<<` (or unknown tag) -> raw passthrough; a `$ref:` payload is
    *    returned as a reference object.
+   *
+   * @returns {{content: string}|{$ref: string}}
    */
   parseLiteralBlock() {
     const { tag, lines } = this.readBlock();
@@ -1543,6 +1621,8 @@ class PoemParser {
    * Collects the raw lines of the block (with variable substitution), then hands
    * them to the shared GFM renderer. Headings, lists, tables, fenced code and
    * blockquotes are all handled by markdown-it (see src/tools/markdown.js).
+   *
+   * @returns {string}
    */
   parseAnalysisContent() {
     const contentLines = [];
@@ -1583,6 +1663,10 @@ class PoemParser {
    * exhausted this way, `false` if unconsumed non-whitespace content remains.
    * Shared by parseDirectiveLine() and matchLabelLine(), whose PCRE
    * equivalents both end in `(\s+#.*)?\s*$`.
+   *
+   * @param {string} line
+   * @param {number} start - index to begin scanning from
+   * @returns {boolean}
    */
   matchesTrailingComment(line, start) {
     const len = line.length;
@@ -1607,6 +1691,9 @@ class PoemParser {
    * /^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i: CodeQL
    * (js/polynomial-redos) flags that pattern's repeated `key:value` group as
    * vulnerable to polynomial backtracking on adversarial input.
+   *
+   * @param {string} line
+   * @returns {{name: string, attributes?: object}|null}
    */
   parseDirectiveLine(line) {
     const len = line.length;
@@ -1653,6 +1740,8 @@ class PoemParser {
   /**
    * Append a parsed directive to this.result.directives, lazily creating the
    * array so the key stays absent when a poem declares no directives.
+   *
+   * @param {{name: string, attributes?: object}} directive
    */
   pushDirective(directive) {
     if (!this.result.directives) this.result.directives = [];
@@ -1667,6 +1756,9 @@ class PoemParser {
    * /^\s*#([^&<>\\#\s]+?)(\s+#.*)?\s*$/i: CodeQL (js/polynomial-redos) flags
    * that pattern's lazy label capture as vulnerable to polynomial
    * backtracking on adversarial input.
+   *
+   * @param {string} line
+   * @returns {string|null}
    */
   matchLabelLine(line) {
     const len = line.length;
@@ -1760,6 +1852,8 @@ class PoemParser {
    * so CodeQL (js/polynomial-redos) flags it as vulnerable to polynomial
    * backtracking on a long backslash run not followed by `?` anywhere (same
    * root cause as joinContinuedLines(), above).
+   *
+   * @param {string} text
    */
   checkReservedEscape(text) {
     for (let searchIndex = 0; ;) {
@@ -1774,6 +1868,9 @@ class PoemParser {
 
   /**
    * Convert inline markup to HTML
+   *
+   * @param {string} text
+   * @returns {string}
    */
   convertMarkup(text) {
     this.checkReservedEscape(text);
