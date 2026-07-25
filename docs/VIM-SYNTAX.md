@@ -161,8 +161,8 @@ This will disable all embedded language syntax loading, and literal blocks will 
    # For Linux/macOS
    mkdir -p ~/.vim/syntax
    mkdir -p ~/.vim/ftdetect
-   cp vim/syntax/poem.vim ~/.vim/syntax/
-   cp vim/ftdetect/poem.vim ~/.vim/ftdetect/
+   cp editors/vim/syntax/poem.vim ~/.vim/syntax/
+   cp editors/vim/ftdetect/poem.vim ~/.vim/ftdetect/
    ```
 
    Or for Neovim:
@@ -171,8 +171,8 @@ This will disable all embedded language syntax loading, and literal blocks will 
    # For Neovim
    mkdir -p ~/.config/nvim/syntax
    mkdir -p ~/.config/nvim/ftdetect
-   cp vim/syntax/poem.vim ~/.config/nvim/syntax/
-   cp vim/ftdetect/poem.vim ~/.config/nvim/ftdetect/
+   cp editors/vim/syntax/poem.vim ~/.config/nvim/syntax/
+   cp editors/vim/ftdetect/poem.vim ~/.config/nvim/ftdetect/
    ```
 
 2. Restart Vim or reload your configuration:
@@ -183,7 +183,7 @@ This will disable all embedded language syntax loading, and literal blocks will 
 
 ### Method 2: Using a Plugin Manager
 
-If you use a plugin manager like [vim-plug](https://github.com/junegunn/vim-plug), [Vundle](https://github.com/VundleVim/Vundle.vim), or [Pathogen](https://github.com/tpope/vim-pathogen), you can add this syntax highlighting by creating a symbolic link or copying the `vim/` directory to your plugin directory.
+If you use a plugin manager like [vim-plug](https://github.com/junegunn/vim-plug), [Vundle](https://github.com/VundleVim/Vundle.vim), or [Pathogen](https://github.com/tpope/vim-pathogen), you can add this syntax highlighting by creating a symbolic link or copying the `editors/vim/` directory to your plugin directory.
 
 #### Example with vim-plug:
 
@@ -192,8 +192,8 @@ If you use a plugin manager like [vim-plug](https://github.com/junegunn/vim-plug
    ```bash
    mkdir -p ~/.vim/bundle/poem-syntax/syntax
    mkdir -p ~/.vim/bundle/poem-syntax/ftdetect
-   cp vim/syntax/poem.vim ~/.vim/bundle/poem-syntax/syntax/
-   cp vim/ftdetect/poem.vim ~/.vim/bundle/poem-syntax/ftdetect/
+   cp editors/vim/syntax/poem.vim ~/.vim/bundle/poem-syntax/syntax/
+   cp editors/vim/ftdetect/poem.vim ~/.vim/bundle/poem-syntax/ftdetect/
    ```
 
 2. Add to your `.vimrc`:
