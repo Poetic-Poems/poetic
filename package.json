@@ -17,7 +17,7 @@
   ],
   "dependencies": {
     "js-beautify": "^2.0.3",
-    "js-yaml": "^5.2.1",
+    "js-yaml": "^5.2.2",
     "markdown-it": "^14.2.0",
     "pug": "^3.0.2"
   },
