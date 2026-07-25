@@ -161,35 +161,6 @@ Fix: add a job timeout, wrap fetch calls with `AbortSignal.timeout()` and
 retry-on-rejection; bounded concurrency for large collections is optional/
 lower priority.
 
-### TD26072401 yaml-to-poem.js's plain-line writers still mangle content TD26072109 didn't touch
-
-Fixing TD26072109 (object-form audio params, `segment.parts`, labels,
-directives) surfaced two narrower, pre-existing round-trip gaps in the same
-file that are out of that item's scope:
-
-1. `writeVersions()` writes `segment.lines`/a `parts` `lines` entry straight
-   to the `.poem` output without calling `convertHtmlToPlainText()` (unlike
-   `writePostscript()`/`writeAnalysis()`, which do). Since that HTML already
-   went through `convertMarkup()`'s entity/tag encoding once, writing it
-   raw and re-parsing double-encodes: `*asterisks*` becomes `<em>` again,
-   `&#8220;`-style entities get produced from an already-decoded quote, etc.
-   (`node -e` against `src/poems/poem/_example.poem`'s Stanza 2 reproduces
-   this; see the PR for TD26072109 for the exact before/after diff).
-2. A `postscript.content`/`analysis.{synopsis,full}` value whose rendered
-   HTML has no blank-line-separated blocks (e.g. a paragraph immediately
-   followed by a list, `<p>...</p>\n<ul>...</ul>\n`) loses its trailing
-   newline on a content→`.poem`→content round trip: `convertHtmlToPlainText()`
-   falls through to its "plain text" branch for the whole un-blank-line-split
-   run, and GFM's raw-HTML-block merging drops the final `\n` that was there
-   originally. A single already-`<p>`-wrapped paragraph round-trips exactly;
-   multi-block raw HTML without blank lines between blocks does not.
-
-Fix: extend `convertHtmlToPlainText()` (or a segment-specific equivalent) to
-handle blockquotes/`<br/>`/`&nbsp;` so `writeVersions()` can safely convert
-segment HTML back to markup instead of writing it raw, and track down why the
-raw-HTML-block path loses its trailing newline. Add regression tests
-alongside `test/yaml-to-poem-roundtrip.test.js` once fixed.
-
 ### TD26072501 Lint rules reach generated public/*.js that consumers may track, but .gitignore isn't synced
 
 `eslint.config.js` is a synced, framework-owned file and applies `relaxedRules`
@@ -222,6 +193,46 @@ tracking build output the framework knows is generated; and note under
 `docs/SCRIPTS.md`'s `scripts/sync-framework.sh` section that a change to a file
 copied into `public/` leaves consumers' committed artefacts stale until they
 rebuild.
+
+### TD26072502 convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content
+
+TD26072401 fixed `writeVersions()`'s segment-line double-encoding and
+`writePostscript()`'s dropped trailing newline for a `postscript.content`
+value whose raw `<<< >>>` block is isolated behind a genuine blank line
+(`blocks.length > 1` in `convertHtmlToPlainText()`). It deliberately left one
+narrower case alone: `postscript.content`/`analysis.{synopsis,full}` HTML that
+is a *single*, un-blank-line-split run containing more than one block-level
+element — e.g. a Markdown paragraph immediately followed by a list
+(`<p>...</p>\n<ul>...</ul>\n`), or (for `analysis.full`) a fenced code block
+anywhere but at the very start. `src/poems/poem/_example.poem` exercises both:
+its postscript note's `<p>...</p>\n<ul>...</ul>` loses the list's trailing
+`\n`, and its analysis "Full" section loses the fenced code block's trailing
+`\n` after `</code></pre>`. Both already failed identically before TD26072401;
+neither is covered by an existing test.
+
+The root cause differs from TD26072401's: `convertHtmlToPlainText()`'s "plain
+text" fallback writes this HTML back as bare prose, which re-enters the parser
+as GFM/raw-HTML-passthrough — and unlike a *real* Markdown-authored `<p>` or
+heading (which markdown-it's own renderer re-terminates with `\n` on the next
+parse, which is why the existing single-`<p>` and heading cases already
+round-trip exactly), raw-HTML-passthrough content doesn't regenerate a
+trailing newline that our own `.poem` output didn't already have. Wrapping it
+in a `<<< >>>` literal block (TD26072401's fix for the isolated-block case)
+does not generalise here: `blocks.length === 1` for this shape (markdown-it
+never inserts a blank line between sibling block-level elements, however many
+blank lines separated them in the original Markdown source), so it cannot be
+distinguished from ordinary multi-element prose without deeper analysis, and
+wrapping ordinary prose in a literal block was shown (during TD26072401) to
+corrupt it on the next parse instead.
+
+Fix: extend `convertHtmlToPlainText()` to reconstruct genuine Markdown syntax
+for at least unordered/ordered lists and fenced code blocks (its existing
+`<p>`/heading branches show the pattern: convert back to the Markdown source
+that produces this HTML, and let renderGfm() regenerate its own trailing
+newline on the next parse, rather than trying to preserve one by hand). Scope
+carefully — nested lists, tables, and blockquotes-within-prose are likely
+harder to reconstruct correctly and might be left as a further follow-up
+rather than attempted in the same change.
 
 ## Ledger
 
@@ -284,5 +295,6 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | resolved | 2026-07-25 | #94 |
 | TD26072118 | Small independent fixes: poem-page heading level, vim ftdetect placeholder, browser-renderer errors, sync-framework doc callout | resolved | 2026-07-24 | #89 |
 | TD26072201 | docs/VIM-SYNTAX.md still references a non-existent vim/ root path | resolved | 2026-07-24 | #90 |
-| TD26072401 | yaml-to-poem.js's plain-line writers still mangle content TD26072109 didn't touch | open | | |
+| TD26072401 | yaml-to-poem.js's plain-line writers still mangle content TD26072109 didn't touch | resolved | 2026-07-25 | #98 |
 | TD26072501 | Lint rules reach generated `public/*.js` that consumers may track, but `.gitignore` isn't synced | open | | |
+| TD26072502 | convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content | open | | |

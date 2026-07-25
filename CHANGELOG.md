@@ -93,6 +93,27 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   containing a space) now raises a clear error instead of writing a line that
   would parse back differently. Covered by
   `test/yaml-to-poem-roundtrip.test.js`. Resolves TD26072109.
+- **`yaml-to-poem.js` no longer double-encodes segment lines or drops a raw
+  block's trailing newline on a YAML→`.poem` round trip.** `writeVersions()`/
+  `writeSegmentParts()` used to write a segment's `lines` HTML straight to
+  `.poem` output; since that HTML had already been through one round of
+  `convertMarkup()`'s entity/tag encoding, writing it raw and letting the next
+  parse re-encode it double-encoded content — an author's escaped, literal
+  `\*asterisks\*` became `<em>` on the next round trip, an escaped `\-\-\-`
+  became an em-dash entity, and any `<a href="...">`/`<span class="...">` tags
+  in the raw HTML had their own attribute quotes smart-quoted by the next
+  `convertMarkup()` pass. A new segment-specific reverse conversion fixes
+  this, and also reverses `<blockquote>` (back to `>` quote lines) and a
+  trailing `<br/>` (back to the trailing two-space hard break) that the
+  writers previously wrote as raw HTML text too; it re-escapes every
+  character `convertMarkup()` treats as markup syntax left bare by an
+  original `\`-escape, including `&`/`'`/`"`, without also swallowing a
+  still-encoded `&nbsp;`/entity in the same run. Separately,
+  `convertHtmlToPlainText()` (postscript) now writes a raw `<<< >>>` block's
+  content back as a literal block instead of bare prose text when it's
+  isolated behind a genuine blank line, instead of losing its trailing
+  newline to GFM's raw-HTML-block passthrough. Covered by new cases in
+  `test/yaml-to-poem-roundtrip.test.js`. Resolves TD26072401.
 - **Standalone poem pages now have a proper `<h1>`.** `poem-page.pug` used
   `h2.poem-title` with no `<h1>` anywhere on the page; since each such page has
   no separate site-title heading, the poem title is now the page's `<h1>`.

@@ -171,7 +171,7 @@ class YamlToPoemConverter {
           const lines = segment.lines.endsWith('\n')
             ? segment.lines.slice(0, -1)
             : segment.lines;
-          this.addLine(lines);
+          this.addLine(this.convertSegmentHtmlToPlainText(lines));
         }
 
         // Add blank line between segments (except after last segment)
@@ -211,7 +211,7 @@ class YamlToPoemConverter {
     for (const part of parts) {
       if (part.type === 'lines') {
         const lines = part.lines.endsWith('\n') ? part.lines.slice(0, -1) : part.lines;
-        this.addLine(lines);
+        this.addLine(this.convertSegmentHtmlToPlainText(lines));
       } else if (part.type === 'html') {
         if (/^\s*(?:<<<|>>>)/m.test(part.html)) {
           throw new Error(
@@ -310,9 +310,14 @@ class YamlToPoemConverter {
             this.addLine(this.formatLabelLine('{', '}', note.label, note.params));
           }
 
-          // Convert HTML content back to plain text
+          // Convert HTML content back to plain text. Postscript prose may be
+          // followed by one or more `<<< >>>` literal blocks (see
+          // parsePostscriptNote() in poem-parser.js), which parseLiteralBlock()
+          // concatenates onto `content` -- so, unlike analysis (no literal-block
+          // syntax in its grammar at all), a block-shaped chunk here can safely
+          // be written back as a literal block.
           if (note.content) {
-            const plainText = this.convertHtmlToPlainText(note.content);
+            const plainText = this.convertHtmlToPlainText(note.content, { allowLiteralBlocks: true });
             this.addLine(plainText);
           }
         }
@@ -456,9 +461,16 @@ class YamlToPoemConverter {
   }
 
   /**
-   * Convert HTML content back to plain text with markup
+   * Convert HTML content back to plain text with markup.
+   *
+   * @param {string} html
+   * @param {{allowLiteralBlocks?: boolean}} [options] - `allowLiteralBlocks`
+   *   lets an unrecognised (non-heading, non-`<p>`) block be written back as a
+   *   `<<< >>>` literal block instead of bare text -- safe only where the
+   *   caller's parse path actually understands that syntax (postscript;
+   *   analysis has no literal-block grammar at all, see writeAnalysis()).
    */
-  convertHtmlToPlainText(html) {
+  convertHtmlToPlainText(html, { allowLiteralBlocks = false } = {}) {
     // First normalize multi-line HTML tags to single lines
     html = html.replace(/<(h[2-5])[^>]*>\s*(.*?)\s*<\/\1>/gs, (match, tag, content) => {
       // Collapse whitespace in heading content
@@ -466,8 +478,12 @@ class YamlToPoemConverter {
       return `<${tag}>${cleanContent}</${tag}>`;
     });
 
-    // Split by double newlines to get blocks
-    const blocks = html.trim().split(/\n\n+/);
+    // Split on blank lines to get blocks. Unlike the old `html.trim()` up
+    // front, this leaves a lone trailing '\n' on the last block intact --
+    // needed below, since the raw-block fallback has to reproduce it exactly
+    // (TD26072401: markdown-it's block renderers don't reliably re-add a
+    // trailing newline the way a real Markdown paragraph re-render does).
+    const blocks = html.split(/\n\n+/);
     const result = [];
 
     for (const block of blocks) {
@@ -493,8 +509,41 @@ class YamlToPoemConverter {
       } else if (trimmed === '') {
         // Skip empty blocks
         continue;
+      } else if (allowLiteralBlocks && blocks.length > 1) {
+        // A whole block, on its own between two blank lines, that isn't a
+        // shape convertHtmlToPlainText knows how to write back as plain
+        // Markdown source -- most likely a raw `<<< >>>` block's own content
+        // (see parsePostscriptNote() concatenating a literal block's content
+        // onto prose with a leading '\n', which combines with renderGfm()'s
+        // own trailing '\n' on the preceding prose to form the blank line
+        // that isolated this block here). Writing it back as bare prose text
+        // would re-enter the parser as ordinary Markdown/raw-HTML-passthrough,
+        // which does not promise to reproduce the exact newlines it started
+        // with (TD26072401). Wrapping it in a literal block instead reuses the
+        // same read-back-verbatim mechanism writeSegmentParts() already relies
+        // on for a segment's `html` part, which *is* exact.
+        //
+        // `blocks.length > 1` is deliberate: a lone, unsplit block (the
+        // *entire* field content, not merely isolated by a blank line within
+        // it) is far more likely to be one multi-element Markdown render
+        // markdown-it joined with single '\n's throughout -- rewrapping *that*
+        // in `<<< >>>` would misrepresent genuine prose as a literal block and
+        // corrupt it on the next parse (it re-enters as a *second* literal
+        // block appended after empty prose, gaining a spurious leading '\n').
+        if (/^\s*(?:<<<|>>>)/m.test(block)) {
+          throw new Error(
+            'Unsupported content: contains a "<<<" or ">>>" block marker, which cannot be ' +
+            `represented as a raw literal block: ${JSON.stringify(block.slice(0, 80))}`
+          );
+        }
+        result.push(`<<<\n${block}\n>>>`);
       } else {
-        // Plain text
+        // Plain text. A block's own trailing '\n' can't be preserved by
+        // writing an extra trailing blank line here the way the literal-block
+        // case above does: both parsePostscriptNote() and
+        // parseAnalysisContent() unconditionally trim trailing blank lines
+        // before rendering, so that blank line would just be discarded again
+        // on the next parse.
         result.push(this.convertEntitiesToMarkup(trimmed));
       }
     }
@@ -528,6 +577,130 @@ class YamlToPoemConverter {
       }
       return ENTITY_REPLACEMENTS[match];
     });
+  }
+
+  /**
+   * Convert a segment's WYSIWYG HTML (`segment.lines`, or a `parts` entry's
+   * `lines`) back to `.poem` markup -- the reverse of poem-parser.js's
+   * processWysiwygLines(). Unlike postscript/analysis content, this HTML is
+   * never blank-line-block-structured: parseSegment() ends a segment (and so
+   * flushes its `run`) on the first blank line, so `html` here is always one
+   * `\n`-joined run of physical WYSIWYG lines, each either a
+   * `<blockquote>`-wrapped quote run (its `<br/>`-joined inner lines each
+   * become one `> ` quote line) or an inline-markup line (a trailing `<br/>`
+   * -- convertMarkup()'s hard-line-break marker for a source line ending in
+   * 2+ spaces -- becomes that trailing whitespace again).
+   *
+   * @param {string} html
+   * @returns {string}
+   */
+  convertSegmentHtmlToPlainText(html) {
+    if (html === '') {
+      return '';
+    }
+
+    const outputLines = [];
+    for (const line of html.split('\n')) {
+      const quoteMatch = line.match(/^<blockquote>([\s\S]*)<\/blockquote>$/);
+      if (quoteMatch) {
+        for (const quoteLine of quoteMatch[1].split('<br/>')) {
+          outputLines.push(`> ${this.stripSegmentHtmlTags(quoteLine)}`);
+        }
+        continue;
+      }
+
+      const hasBreak = line.endsWith('<br/>');
+      const text = hasBreak ? line.slice(0, -'<br/>'.length) : line;
+      outputLines.push(this.stripSegmentHtmlTags(text) + (hasBreak ? '  ' : ''));
+    }
+
+    return outputLines.join('\n');
+  }
+
+  /**
+   * Reverse convertMarkup()'s inline markup for one WYSIWYG line: `<span
+   * class="...">` (segment-only span syntax, `/.class{...}` -- postscript/
+   * analysis prose has no equivalent, so this is not folded into the shared
+   * stripHtmlTags()) plus everything stripHtmlTags() already understands.
+   *
+   * Every character convertMarkup() treats as markup syntax (`*_~`[/{}"&'`
+   * and `\` itself) is always fully consumed into a tag or entity when it
+   * forms real markup -- none of them survive as bare text in the rendered
+   * HTML: an unescaped `&` or `'` is unconditionally turned into `&#38;`/
+   * `&#39;`, and an unescaped `"` either pairs into smart-quote entities or
+   * (if unpaired) is left alone either way, so escaping it back is always
+   * safe. So any of these characters still present in decoded text can only be
+   * literal (originally `\`-escaped) content, and escaping them again --
+   * unconditionally, before restoring any tags -- is always correct; it is
+   * what makes an escaped `\*literal\*` round-trip back to itself instead of
+   * becoming `<em>literal</em>` on the next parse (TD26072401). This walks
+   * the text with a single tokenising pass, rather than escaping first and
+   * matching tags second, because escaping first would also mangle the "/"
+   * inside an `<a href="https://...">`'s own markup before it can be matched.
+   *
+   * @param {string} text
+   * @returns {string}
+   */
+  stripSegmentHtmlTags(text) {
+    const tagPattern =
+      /<span class="([^"]*)">([\s\S]*?)<\/span>|<em>([\s\S]*?)<\/em>|<strong>([\s\S]*?)<\/strong>|<s>([\s\S]*?)<\/s>|<a href="https?:\/\/(.*?)">([\s\S]*?)<\/a>/g;
+
+    let result = '';
+    let lastIndex = 0;
+    let match;
+    while ((match = tagPattern.exec(text)) !== null) {
+      result += this.escapeSegmentLiteral(text.slice(lastIndex, match.index));
+
+      const [, spanClass, spanInner, emInner, strongInner, sInner, aUrl, aInner] = match;
+      if (spanClass !== undefined) {
+        const classes = spanClass.split(' ').filter(Boolean).join('.');
+        result += `/.${classes}{${this.escapeSegmentLiteral(spanInner)}}`;
+      } else if (emInner !== undefined) {
+        result += `_${this.escapeSegmentLiteral(emInner)}_`;
+      } else if (strongInner !== undefined) {
+        result += `**${this.escapeSegmentLiteral(strongInner)}**`;
+      } else if (sInner !== undefined) {
+        result += `~~${this.escapeSegmentLiteral(sInner)}~~`;
+      } else {
+        result += `[${this.escapeSegmentLiteral(aInner)}|${aUrl}]`;
+      }
+
+      lastIndex = tagPattern.lastIndex;
+    }
+    result += this.escapeSegmentLiteral(text.slice(lastIndex));
+
+    return this.convertEntitiesToMarkup(result);
+  }
+
+  /**
+   * Backslash-escape the characters convertMarkup() treats as markup syntax,
+   * so literal occurrences left over after decoding (see stripSegmentHtmlTags()
+   * above) survive the next parse unchanged instead of being mistaken for new
+   * markup. Runs of 2+ literal hyphens get the same treatment as the other
+   * escapable characters -- convertMarkup() turns an unescaped "--"/"---" run
+   * into an en/em-dash entity, so a literal run left bare here would be
+   * mistaken for one on the next parse -- but single hyphens are left alone
+   * since convertMarkup() never touches them. A hyphen adjacent to another
+   * hyphen (the lookahead matches every hyphen but the last in a run, the
+   * lookbehind matches every hyphen but the first) is matched individually,
+   * one character at a time, by the same alternation and callback as every
+   * other escapable character -- including "\\" itself -- rather than by a
+   * nested replace() over a whole matched run. A single flat pass with one
+   * per-character callback keeps backslash handling uniform and explicit,
+   * rather than reading as incomplete when a run is escaped as one unit.
+   *
+   * `&` gets the same not-if-it's-already-an-entity treatment as convertMarkup()'s
+   * own forward encoding (`&(?!#\d+;|[a-z]+;)`): this runs BEFORE
+   * stripSegmentHtmlTags()'s final convertEntitiesToMarkup() pass decodes
+   * `&nbsp;`/`&#8220;`/etc. back to plain characters, so an `&` that starts one
+   * of those still-encoded entities must be left alone here, or the following
+   * decode pass would never see a whole entity to match.
+   *
+   * @param {string} text
+   * @returns {string}
+   */
+  escapeSegmentLiteral(text) {
+    return text.replace(/-(?=-)|(?<=-)-|&(?!#\d+;|[a-zA-Z]+;)|[\\_*~`["'/{}]/g, (c) => `\\${c}`);
   }
 }
 

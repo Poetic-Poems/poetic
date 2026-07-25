@@ -224,3 +224,134 @@ test('no Metadata section is written when labels and directives are both absent'
   assert.ok(!('labels' in reparsed));
   assert.ok(!('directives' in reparsed));
 });
+
+// ── Segment lines: writeVersions()/writeSegmentParts() no longer write HTML
+// raw (TD26072401) ──────────────────────────────────────────────────────────
+
+test('segment lines: characters left bare by an original `\\`-escape are re-escaped, not mistaken for new markup', () => {
+  // `*asterisks*`/`---` here are what a poem author's `\*asterisks\*`/`\-\-\-`
+  // decode to: convertMarkup()'s escape handling leaves them as plain
+  // characters with no wrapping tag or entity. Writing them back unescaped
+  // would double-encode them into `<em>`/an em-dash entity on the next parse.
+  const data = baseData({
+    versions: [
+      { segments: [{ lines: 'literal *asterisks*, a --- triple-hyphen, and a % percent sign.\n' }] },
+    ],
+  });
+  assert.deepStrictEqual(roundTrip(data).versions, data.versions);
+});
+
+test('segment lines: <em>/<strong>/<s>/<a>/<span> tags round-trip back to themselves', () => {
+  const data = baseData({
+    versions: [
+      {
+        segments: [
+          {
+            lines:
+              'A <a href="https://example.com">link</a> and a <span class="highlight">span</span>, ' +
+              'with <em>emphasis</em>, <strong>strong</strong>, and <s>struck</s> words.\n',
+          },
+        ],
+      },
+    ],
+  });
+  assert.deepStrictEqual(roundTrip(data).versions, data.versions);
+});
+
+test('segment lines: a hard line break (<br/>) and a blockquote in the same run round-trip', () => {
+  const data = baseData({
+    versions: [
+      {
+        segments: [
+          {
+            lines:
+              'First line, with a break here,<br/>\nand the line that follows it.\n' +
+              '<blockquote>A block-quoted couplet,<br/>two lines within one quote.</blockquote>\n',
+          },
+        ],
+      },
+    ],
+  });
+  assert.deepStrictEqual(roundTrip(data).versions, data.versions);
+});
+
+test('segment lines: leading/embedded &nbsp; (indentation and multi-space runs) round-trip', () => {
+  const data = baseData({
+    versions: [
+      { segments: [{ lines: '&nbsp;&nbsp;indented line\nA line with a &nbsp;double space.\n' }] },
+    ],
+  });
+  assert.deepStrictEqual(roundTrip(data).versions, data.versions);
+});
+
+test('segment lines: a bare `&`/`\'`/`"` left over from an original `\\`-escape re-escapes, ' +
+  'rather than being re-encoded as an entity on the next parse', () => {
+  // `Rock \& Roll`, `isn\'t`, and `she said \"hi\"` all decode to a bare `&`/`'`/`"`
+  // with no wrapping entity (unlike an unescaped `&`/`'`, which convertMarkup()
+  // always turns into `&#38;`/`&#39;`, or an unescaped `"..."` pair, which it
+  // turns into smart-quote entities). Writing these bare characters straight to
+  // `.poem` output would let the next parse re-encode them for real.
+  const data = baseData({
+    versions: [
+      {
+        segments: [
+          { lines: 'Rock & Roll, she said "hi" and it isn\'t fake markup.\n' },
+        ],
+      },
+    ],
+  });
+  assert.deepStrictEqual(roundTrip(data).versions, data.versions);
+});
+
+test('segment lines: a literal `&` and an `&nbsp;` entity in the same run both round-trip', () => {
+  // Guards against escaping the literal `&` so eagerly that it also consumes the
+  // `&nbsp;` produced by convertSpacesToNbsp() for this run's own indentation --
+  // convertEntitiesToMarkup() needs the whole "&nbsp;" text intact to decode it.
+  const data = baseData({
+    versions: [
+      { segments: [{ lines: '&nbsp;&nbsp;Rock & Roll, indented.\n' }] },
+    ],
+  });
+  assert.deepStrictEqual(roundTrip(data).versions, data.versions);
+});
+
+test('segment.parts\' "lines" entries get the same HTML-to-markup conversion as segment.lines', () => {
+  const data = baseData({
+    versions: [
+      {
+        segments: [
+          {
+            parts: [
+              { type: 'lines', lines: 'literal *asterisks*\n' },
+              { type: 'html', html: '<table></table>' },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+  assert.deepStrictEqual(roundTrip(data).versions, data.versions);
+});
+
+// ── Postscript/analysis: raw-HTML-block trailing newline (TD26072401) ───────
+
+test('postscript: prose followed by a blank-line-isolated raw block preserves exact newline structure', () => {
+  // Mirrors what parsePostscriptNote() produces for prose followed by a
+  // `<<< >>>` block: renderGfm()'s own trailing '\n' on the prose plus the
+  // block-append's leading '\n' isolate the block behind a blank line.
+  const data = baseData({
+    postscript: [{ content: '<p>Some text.</p>\n\n<ul>\n<li>Item</li>\n</ul>' }],
+  });
+  assert.deepStrictEqual(roundTrip(data).postscript, data.postscript);
+});
+
+test('postscript: content with no blank-line-isolated block is left as plain text, not wrapped as a literal block', () => {
+  // A single block-level chunk of HTML (a real Markdown paragraph + list
+  // rendered by one renderGfm() call, joined with a single '\n' throughout --
+  // markdown-it never inserts a blank line between sibling elements) must not
+  // be rewrapped in `<<< >>>`: doing so would misrepresent genuine prose as a
+  // literal block, corrupting it on the next parse.
+  const data = baseData({ postscript: [{ content: '<p>Text.</p>\n<ul>\n<li>a</li>\n</ul>' }] });
+  const text = new YamlToPoemConverter(data).convert();
+  assert.ok(!/<<</.test(text), 'expected no literal block markers for single-block content');
+});
