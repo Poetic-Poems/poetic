@@ -355,3 +355,43 @@ test('postscript: content with no blank-line-isolated block is left as plain tex
   const text = new YamlToPoemConverter(data).convert();
   assert.ok(!/<<</.test(text), 'expected no literal block markers for single-block content');
 });
+
+// ── Postscript/analysis: single-block trailing list/fenced-code newline
+// (TD26072502) ────────────────────────────────────────────────────────────
+
+test('postscript: a paragraph immediately followed by a list (single block, no blank line) round-trips exactly', () => {
+  // markdown-it never inserts a blank line between sibling block-level
+  // elements, so this is `blocks.length === 1` in convertHtmlToPlainText()
+  // even though it holds two elements -- the gap TD26072401 left open.
+  const data = baseData({
+    postscript: [{ content: '<p>Some text.</p>\n<ul>\n<li>Item</li>\n</ul>\n' }],
+  });
+  assert.deepStrictEqual(roundTrip(data).postscript, data.postscript);
+});
+
+test('analysis: a fenced code block preceded by other content in the same run round-trips exactly, including its trailing newline', () => {
+  const data = baseData({
+    analysis: {
+      full: '<p>Some prose.</p>\n<pre><code class="language-js">const x = 1;\n</code></pre>\n',
+    },
+  });
+  assert.deepStrictEqual(roundTrip(data).analysis, data.analysis);
+});
+
+test('analysis: an ordered list preceded by other content in the same run round-trips exactly', () => {
+  const data = baseData({
+    analysis: { synopsis: '<p>Steps:</p>\n<ol>\n<li>First</li>\n<li>Second</li>\n</ol>\n' },
+  });
+  assert.deepStrictEqual(roundTrip(data).analysis, data.analysis);
+});
+
+test('analysis: a nested list at the end of a run is left as plain text, not corrupted by a partial list match', () => {
+  // The strict single-line-per-<li> pattern must not match a nested list --
+  // falling through to the existing plain-text (verbatim raw HTML) fallback
+  // is correct here; only the reconstructed-Markdown path is new.
+  const html = '<p>Nested:</p>\n<ul>\n<li>alpha</li>\n<li>bravo\n<ul>\n<li>bravo-one</li>\n</ul>\n</li>\n</ul>';
+  const data = baseData({ analysis: { full: html } });
+  const text = new YamlToPoemConverter(data).convert();
+  assert.ok(!/<<</.test(text), 'expected no literal block markers');
+  assert.ok(text.includes('<ul>'), 'expected the nested list to be passed through as raw HTML');
+});

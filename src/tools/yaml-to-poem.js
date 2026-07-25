@@ -488,6 +488,7 @@ class YamlToPoemConverter {
 
     for (const block of blocks) {
       const trimmed = block.trim();
+      const peeled = blocks.length === 1 ? this.peelTrailingBlockElement(trimmed) : null;
 
       // Handle headings (now they're single-line after normalization)
       if (trimmed.match(/^<h5[^>]*>/) && trimmed.endsWith('</h5>')) {
@@ -509,6 +510,20 @@ class YamlToPoemConverter {
       } else if (trimmed === '') {
         // Skip empty blocks
         continue;
+      } else if (peeled) {
+        // A single, un-blank-line-split run (blocks.length === 1) whose tail
+        // is a recognised block-level element -- unordered/ordered list or
+        // fenced code -- that the branches above can't match because they
+        // only recognise a block that is *entirely* one heading/paragraph
+        // (TD26072502). Reconstructing just the tail as real Markdown source
+        // lets renderGfm() regenerate its own trailing '\n' on the next
+        // parse; everything before it is left exactly as the plain-text
+        // fallback below would have written it, since passthrough already
+        // reproduces that part verbatim (see peelTrailingBlockElement()).
+        if (peeled.prefix) {
+          result.push(this.convertEntitiesToMarkup(peeled.prefix));
+        }
+        result.push(peeled.markdown);
       } else if (allowLiteralBlocks && blocks.length > 1) {
         // A whole block, on its own between two blank lines, that isn't a
         // shape convertHtmlToPlainText knows how to write back as plain
@@ -549,6 +564,121 @@ class YamlToPoemConverter {
     }
 
     return result.join('\n\n');
+  }
+
+  /**
+   * Peel a single recognised trailing element -- an unordered list, ordered
+   * list, or fenced code block -- off the end of a single-block,
+   * multi-element HTML run (markdown-it always joins sibling block-level
+   * elements with one '\n', never a blank line, so such a run is always
+   * `blocks.length === 1` in convertHtmlToPlainText() however many elements
+   * it holds). Reconstructing just the tail as real Markdown source is
+   * enough: only the *last* element in a field's content ever loses its
+   * trailing '\n' on round-trip (raw-HTML passthrough reproduces everything
+   * else verbatim, including shapes this method doesn't understand, such as
+   * tables, blockquotes, or nested/loose lists -- TD26072502), because only a
+   * genuinely re-parsed trailing element leads markdown-it's own renderer to
+   * re-add that '\n'.
+   *
+   * Returns null if the run's tail isn't one of the recognised shapes --
+   * including a nested or "loose" (paragraph-wrapped `<li>`) list, which the
+   * strict single-line-per-`<li>` pattern below deliberately fails to match
+   * -- in which case the caller falls through to the existing plain-text
+   * fallback for the whole run, unchanged.
+   *
+   * @param {string} html
+   * @returns {{prefix: string, markdown: string}|null}
+   */
+  peelTrailingBlockElement(html) {
+    const candidates = [
+      { openTag: /<ul>\n/g, whole: /^<ul>\n((?:<li>[^\n]*<\/li>\n)+)<\/ul>$/, build: (m) => this.listItemsToMarkdown(m[1], false) },
+      { openTag: /<ol>\n/g, whole: /^<ol>\n((?:<li>[^\n]*<\/li>\n)+)<\/ol>$/, build: (m) => this.listItemsToMarkdown(m[1], true) },
+      {
+        openTag: /<pre><code(?: class="language-[\w-]+")?>/g,
+        whole: /^<pre><code(?: class="language-([\w-]+)")?>([\s\S]*?)<\/code><\/pre>$/,
+        build: (m) => this.fencedCodeMarkdown(m[1], m[2]),
+      },
+    ];
+
+    for (const { openTag, whole, build } of candidates) {
+      const idx = this.lastTagBoundary(html, openTag);
+      if (idx === -1) {
+        continue;
+      }
+      const match = html.slice(idx).match(whole);
+      if (!match) {
+        continue;
+      }
+      let prefix = html.slice(0, idx);
+      if (prefix.endsWith('\n')) {
+        prefix = prefix.slice(0, -1);
+      }
+      return { prefix, markdown: build(match) };
+    }
+    return null;
+  }
+
+  /**
+   * The last index in `html` at which `openTag` matches and the match is
+   * itself at a sibling-block boundary (the very start of `html`, or
+   * immediately after a '\n') -- i.e. the last plausible start of a
+   * top-level element of this tag, as opposed to a tag of the same name
+   * nested inside another element (e.g. a sub-list's own `<ul>\n`). Returns
+   * -1 if no such boundary exists.
+   */
+  lastTagBoundary(html, openTag) {
+    let lastIdx = -1;
+    let match;
+    openTag.lastIndex = 0;
+    while ((match = openTag.exec(html))) {
+      if (match.index === 0 || html[match.index - 1] === '\n') {
+        lastIdx = match.index;
+      }
+    }
+    return lastIdx;
+  }
+
+  /**
+   * Convert a run of `<li>...</li>\n` lines (captured from a flat, non-loose
+   * `<ul>`/`<ol>`) back to `- `/`1. ` Markdown list syntax.
+   */
+  listItemsToMarkdown(liLines, ordered) {
+    const items = [];
+    const liPattern = /<li>([^\n]*)<\/li>\n/g;
+    let match;
+    let n = 1;
+    while ((match = liPattern.exec(liLines))) {
+      const text = this.stripHtmlTags(match[1]);
+      items.push(ordered ? `${n}. ${text}` : `- ${text}`);
+      n++;
+    }
+    return items.join('\n');
+  }
+
+  /**
+   * Convert a `<pre><code>`/`<pre><code class="language-X">` fenced code
+   * block's inner HTML back to a ` ``` ` fenced Markdown block. `content`
+   * already carries markdown-it's own trailing '\n' before `</code>`, which
+   * is reused directly as the newline before the closing fence.
+   */
+  fencedCodeMarkdown(lang, content) {
+    return '```' + (lang || '') + '\n' + this.unescapeCodeEntities(content) + '```';
+  }
+
+  /**
+   * Reverse markdown-it's plain HTML-escaping of fenced code content (as
+   * opposed to convertEntitiesToMarkup()'s typographic entities, which code
+   * content never receives). `&amp;` is unescaped last so a doubly-escaped
+   * literal (e.g. an author-typed `&amp;`, rendered as `&amp;amp;`) decodes
+   * back to exactly one `&`, not zero -- mirroring ENTITY_PATTERN's own
+   * ordering rationale above.
+   */
+  unescapeCodeEntities(text) {
+    return text
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&');
   }
 
   /**
