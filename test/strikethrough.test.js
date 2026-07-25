@@ -3,7 +3,7 @@
 /**
  * Strikethrough is a two-character delimiter pair, `~~text~~` -> `<s>text</s>`,
  * exactly like strong's `**text**`/`__text__` -- in both the poem-body WYSIWYG
- * dialect (convertMarkup() in poem-parser.js) and the restricted title-markup
+ * dialect (convertMarkup() in poem-markup.js) and the restricted title-markup
  * subset (renderTitleMarkup() in render-core.js). A single `~` is never itself
  * markup: it is plain literal text, deliberately left unassigned and reserved
  * for a possible future subscript syntax. `\~` still decodes to a literal `~`.
