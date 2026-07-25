@@ -147,6 +147,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   change default behaviour for a correctly-configured setup. Resolves
   TD26072116.
 
+### Security
+
+- **`js-yaml` upgraded to 5.2.2**, fixing a high-severity denial-of-service
+  vulnerability ([GHSA-pm4m-ph32-ghv5](https://github.com/advisories/GHSA-pm4m-ph32-ghv5)):
+  a flow-collection entry shaped like a nested `key: value` pair caused
+  `load()`/`loadAll()` to re-parse each nesting level twice, making parse
+  time exponential in nesting depth — a payload under 200 bytes could hang
+  the process for minutes. `package.json` already specified `^5.2.1`, so this
+  is a lockfile-only patch bump within the existing range.
+
 ## [6.1.1] — 2026-07-19
 
 ### Changed
