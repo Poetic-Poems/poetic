@@ -144,14 +144,6 @@ grammar section (variable substitution, markup conversion, metadata parsing)
 following the pattern `render-core.js`/`aggregate-render-core.js` already
 establish; do as a sequence of small, independently-verified PRs.
 
-### TD26072113 No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict
-
-Nothing verifies a `package.json` version bump comes with a matching
-`CHANGELOG.md` entry (works so far by manual discipline only); `main`'s branch
-ruleset also has `strict_required_status_checks_policy: false`. Fix: add a
-version/changelog-diff check to the release workflow; consider enabling strict
-status checks (a live GitHub setting, not a file change).
-
 ### TD26072114 Blogger sync has no request/job timeouts and no network-failure retry
 
 `sync-blogger.yml` sets no job `timeout-minutes`; `sync-blogger.js`'s `fetch()`
@@ -255,7 +247,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072110 | poem-parser.js is a 1854-line monolith covering the whole grammar | open | | |
 | TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | resolved | 2026-07-25 | #86 |
 | TD26072112 | No code-coverage tool configured | resolved | 2026-07-24 | #88 |
-| TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | in-progress | | |
+| TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | resolved | 2026-07-26 | #91 |
 | TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | open | | |
 | TD26072115 | README and docs/POEM-TO-YAML.md are missing two cross-references | resolved | 2026-07-24 | #84 |
 | TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | resolved | 2026-07-25 | #93 |
