@@ -135,25 +135,6 @@ in a different component. Fix: replace with a real `<button aria-expanded>`
 toggle, mirroring the existing analysis/song-embed controls in the same
 template.
 
-### TD26072603 poem-parser.js still has metadata-parsing methods sharing mutable instance state
-
-TD26072601 split the variable-substitution grammar section out of
-`PoemParser` into `src/tools/poem-variables.js`, continuing the pattern
-`poem-markup.js` established: pure functions extracted into a browser-safe
-module that the parser requires and delegates to (here, the functions take
-`this.variables`/`this.usedBeforeDefined` as explicit arguments rather than
-closing over `this`, since — unlike markup conversion — variable
-substitution is not stateless). `PoemParser` still implements metadata
-parsing (`parseMetadata`, `parseDirectiveLine`, `matchLabelLine`,
-`matchesTrailingComment`, `pushDirective`, ...), which mixes some already-pure
-helpers (`parseDirectiveLine`, `matchLabelLine`, `matchesTrailingComment`)
-with parser-cursor-driven state (`parseMetadata` itself walks `this.lines` via
-`peek()`/`next()` and appends to `this.result.directives`/`this.result.labels`).
-Fix: extract the pure helpers into `src/tools/poem-metadata.js` following the
-same pattern; decide whether `parseMetadata`'s stateful loop can be
-reorganised around them or is better left on `PoemParser` as the last
-grammar-adjacent driver.
-
 ### TD26072602 Blogger sync posts poems strictly sequentially
 
 `sync-blogger.js`'s `main()` loop creates, updates and deletes posts one at a
@@ -231,4 +212,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072502 | convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content | resolved | 2026-07-26 | #103 |
 | TD26072601 | poem-parser.js still has ~46 methods covering variable substitution and metadata parsing | resolved | 2026-07-26 | #106 |
 | TD26072602 | Blogger sync posts poems strictly sequentially | open | | |
-| TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | open | | |
+| TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | resolved | 2026-07-26 | #108 |
