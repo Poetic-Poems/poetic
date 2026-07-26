@@ -150,14 +150,16 @@ making it the highest-effort file to safely extend. Fix: continue splitting
 by grammar section, mirroring `poem-markup.js`'s shape; do as a sequence of
 small, independently-verified PRs, one section per PR.
 
-### TD26072114 Blogger sync has no request/job timeouts and no network-failure retry
+### TD26072602 Blogger sync posts poems strictly sequentially
 
-`sync-blogger.yml` sets no job `timeout-minutes`; `sync-blogger.js`'s `fetch()`
-calls have no request timeout and only retry on HTTP 429/5xx, not
-network-level rejection; the sync loop also posts poems strictly sequentially.
-Fix: add a job timeout, wrap fetch calls with `AbortSignal.timeout()` and
-retry-on-rejection; bounded concurrency for large collections is optional/
-lower priority.
+`sync-blogger.js`'s `main()` loop creates, updates and deletes posts one at a
+time, so a large collection's first sync takes as long as the sum of every
+request's round trip. This is the remaining piece of project review
+2026-07-21's R-14 — TD26072114 covered the job/request timeouts and
+retry-on-rejection and deliberately left concurrency alone as R-14's
+lowest-priority part. Fix: give the `main()` loop a small bounded worker pool
+(process N poems concurrently), keeping the per-poem summary output stable;
+worth doing only if sync runtimes are actually observed to be a problem.
 
 ## Ledger
 
@@ -214,7 +216,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072111 | Escape-placeholder and js-beautify-options code duplicated across files | resolved | 2026-07-25 | #86 |
 | TD26072112 | No code-coverage tool configured | resolved | 2026-07-24 | #88 |
 | TD26072113 | No CI check ties a version bump to a CHANGELOG entry; status checks aren't strict | resolved | 2026-07-26 | #91 |
-| TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | open | | |
+| TD26072114 | Blogger sync has no request/job timeouts and no network-failure retry | resolved | 2026-07-26 | #92 |
 | TD26072115 | README and docs/POEM-TO-YAML.md are missing two cross-references | resolved | 2026-07-24 | #84 |
 | TD26072116 | Small config/dev-server hardening gaps (enum validation, CORS, credentials permissions) | resolved | 2026-07-25 | #93 |
 | TD26072117 | No quotes ESLint rule; JSDoc discipline weakest in the most complex file | resolved | 2026-07-25 | #94 |
@@ -224,3 +226,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072501 | Lint rules reach generated `public/*.js` that consumers may track, but `.gitignore` isn't synced | resolved | 2026-07-25 | #99 |
 | TD26072502 | convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content | resolved | 2026-07-26 | #103 |
 | TD26072601 | poem-parser.js still has ~46 methods covering variable substitution and metadata parsing | open | | |
+| TD26072602 | Blogger sync posts poems strictly sequentially | open | | |

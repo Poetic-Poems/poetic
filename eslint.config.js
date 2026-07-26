@@ -51,6 +51,7 @@ const nodeGlobals = {
   URL: 'readonly',
   URLSearchParams: 'readonly',
   fetch: 'readonly',
+  AbortSignal: 'readonly',
 };
 
 // Browser-hosted globals used by public/*.js.
