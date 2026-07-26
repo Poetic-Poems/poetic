@@ -17,6 +17,10 @@ const {
   expandVarAt,
   expandStandaloneRefs,
 } = require('./poem-variables');
+const {
+  parseDirectiveLine: parseDirectiveLinePure,
+  matchLabelLine: matchLabelLinePure,
+} = require('./poem-metadata');
 
 /**
  * Parse a .poem file and convert to structured data
@@ -1465,26 +1469,6 @@ class PoemParser {
   }
 
   /**
-   * Consume the optional trailing `#comment` (which requires at least one
-   * whitespace character before the `#`) and any trailing whitespace, from
-   * `start` to end of `line`. Returns `true` if the remainder of the line is
-   * exhausted this way, `false` if unconsumed non-whitespace content remains.
-   * Shared by parseDirectiveLine() and matchLabelLine(), whose PCRE
-   * equivalents both end in `(\s+#.*)?\s*$`.
-   *
-   * @param {string} line
-   * @param {number} start - index to begin scanning from
-   * @returns {boolean}
-   */
-  matchesTrailingComment(line, start) {
-    const len = line.length;
-    let i = start;
-    while (i < len && /\s/.test(line[i])) i++;
-    if (i > start && line[i] === '#') return true;
-    return i === len;
-  }
-
-  /**
    * Recognise a directive line (`%name key:value ...`, with an optional trailing
    * `# comment`) and build its structured form. Returns `{ name, attributes? }`
    * — where `attributes` maps each `key:value` token (split on its first `:`)
@@ -1493,56 +1477,14 @@ class PoemParser {
    *
    * Shared by the Metadata section (parseMetadata) and the Preamble pre-pass
    * (extractPreambleDirectives), so a directive parses identically wherever it
-   * is declared.
-   *
-   * Scanned by hand rather than with
-   * /^\s*%([\w.-]+)((?:\s+[\w.]+:[\w.-]+)*)(\s+#.*)?\s*$/i: CodeQL
-   * (js/polynomial-redos) flags that pattern's repeated `key:value` group as
-   * vulnerable to polynomial backtracking on adversarial input.
+   * is declared. Delegates to the pure scanner in poem-metadata.js — see its
+   * docstring for the CodeQL rationale behind the hand-written scan.
    *
    * @param {string} line
    * @returns {{name: string, attributes?: object}|null}
    */
   parseDirectiveLine(line) {
-    const len = line.length;
-    let i = 0;
-    while (i < len && /\s/.test(line[i])) i++;
-    if (line[i] !== '%') return null;
-    i++;
-
-    const nameStart = i;
-    while (i < len && /[\w.-]/.test(line[i])) i++;
-    if (i === nameStart) return null;
-    const name = line.slice(nameStart, i);
-
-    const attributes = {};
-    let hasAttributes = false;
-
-    while (true) {
-      let j = i;
-      while (j < len && /\s/.test(line[j])) j++;
-      if (j === i) break;
-
-      const keyStart = j;
-      while (j < len && /[\w.]/.test(line[j])) j++;
-      if (j === keyStart || line[j] !== ':') break;
-      const key = line.slice(keyStart, j);
-      j++;
-
-      const valueStart = j;
-      while (j < len && /[\w.-]/.test(line[j])) j++;
-      if (j === valueStart) break;
-
-      attributes[key] = line.slice(valueStart, j);
-      hasAttributes = true;
-      i = j;
-    }
-
-    if (!this.matchesTrailingComment(line, i)) return null;
-
-    const directive = { name };
-    if (hasAttributes) directive.attributes = attributes;
-    return directive;
+    return parseDirectiveLinePure(line);
   }
 
   /**
@@ -1560,29 +1502,14 @@ class PoemParser {
    * Recognise a label line (`#label`, with an optional trailing `# comment`)
    * and return the label text, or `null` when `line` is not a label.
    *
-   * Scanned by hand rather than with
-   * /^\s*#([^&<>\\#\s]+?)(\s+#.*)?\s*$/i: CodeQL (js/polynomial-redos) flags
-   * that pattern's lazy label capture as vulnerable to polynomial
-   * backtracking on adversarial input.
+   * Delegates to the pure scanner in poem-metadata.js — see its docstring
+   * for the CodeQL rationale behind the hand-written scan.
    *
    * @param {string} line
    * @returns {string|null}
    */
   matchLabelLine(line) {
-    const len = line.length;
-    let i = 0;
-    while (i < len && /\s/.test(line[i])) i++;
-    if (line[i] !== '#') return null;
-    i++;
-
-    const labelStart = i;
-    while (i < len && !/[\s&<>\\#]/.test(line[i])) i++;
-    if (i === labelStart) return null;
-    const label = line.slice(labelStart, i);
-
-    if (!this.matchesTrailingComment(line, i)) return null;
-
-    return label;
+    return matchLabelLinePure(line);
   }
 
   /**
