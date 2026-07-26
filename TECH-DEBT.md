@@ -150,45 +150,16 @@ making it the highest-effort file to safely extend. Fix: continue splitting
 by grammar section, mirroring `poem-markup.js`'s shape; do as a sequence of
 small, independently-verified PRs, one section per PR.
 
-### TD26072502 convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content
+### TD26072602 Blogger sync posts poems strictly sequentially
 
-TD26072401 fixed `writeVersions()`'s segment-line double-encoding and
-`writePostscript()`'s dropped trailing newline for a `postscript.content`
-value whose raw `<<< >>>` block is isolated behind a genuine blank line
-(`blocks.length > 1` in `convertHtmlToPlainText()`). It deliberately left one
-narrower case alone: `postscript.content`/`analysis.{synopsis,full}` HTML that
-is a *single*, un-blank-line-split run containing more than one block-level
-element — e.g. a Markdown paragraph immediately followed by a list
-(`<p>...</p>\n<ul>...</ul>\n`), or (for `analysis.full`) a fenced code block
-anywhere but at the very start. `src/poems/poem/_example.poem` exercises both:
-its postscript note's `<p>...</p>\n<ul>...</ul>` loses the list's trailing
-`\n`, and its analysis "Full" section loses the fenced code block's trailing
-`\n` after `</code></pre>`. Both already failed identically before TD26072401;
-neither is covered by an existing test.
-
-The root cause differs from TD26072401's: `convertHtmlToPlainText()`'s "plain
-text" fallback writes this HTML back as bare prose, which re-enters the parser
-as GFM/raw-HTML-passthrough — and unlike a *real* Markdown-authored `<p>` or
-heading (which markdown-it's own renderer re-terminates with `\n` on the next
-parse, which is why the existing single-`<p>` and heading cases already
-round-trip exactly), raw-HTML-passthrough content doesn't regenerate a
-trailing newline that our own `.poem` output didn't already have. Wrapping it
-in a `<<< >>>` literal block (TD26072401's fix for the isolated-block case)
-does not generalise here: `blocks.length === 1` for this shape (markdown-it
-never inserts a blank line between sibling block-level elements, however many
-blank lines separated them in the original Markdown source), so it cannot be
-distinguished from ordinary multi-element prose without deeper analysis, and
-wrapping ordinary prose in a literal block was shown (during TD26072401) to
-corrupt it on the next parse instead.
-
-Fix: extend `convertHtmlToPlainText()` to reconstruct genuine Markdown syntax
-for at least unordered/ordered lists and fenced code blocks (its existing
-`<p>`/heading branches show the pattern: convert back to the Markdown source
-that produces this HTML, and let renderGfm() regenerate its own trailing
-newline on the next parse, rather than trying to preserve one by hand). Scope
-carefully — nested lists, tables, and blockquotes-within-prose are likely
-harder to reconstruct correctly and might be left as a further follow-up
-rather than attempted in the same change.
+`sync-blogger.js`'s `main()` loop creates, updates and deletes posts one at a
+time, so a large collection's first sync takes as long as the sum of every
+request's round trip. This is the remaining piece of project review
+2026-07-21's R-14 — TD26072114 covered the job/request timeouts and
+retry-on-rejection and deliberately left concurrency alone as R-14's
+lowest-priority part. Fix: give the `main()` loop a small bounded worker pool
+(process N poems concurrently), keeping the per-poem summary output stable;
+worth doing only if sync runtimes are actually observed to be a problem.
 
 ## Ledger
 
@@ -255,3 +226,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072501 | Lint rules reach generated `public/*.js` that consumers may track, but `.gitignore` isn't synced | resolved | 2026-07-25 | #99 |
 | TD26072502 | convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content | resolved | 2026-07-26 | #103 |
 | TD26072601 | poem-parser.js still has ~46 methods covering variable substitution and metadata parsing | open | | |
+| TD26072602 | Blogger sync posts poems strictly sequentially | open | | |
