@@ -231,4 +231,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072502 | convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content | resolved | 2026-07-26 | #103 |
 | TD26072601 | poem-parser.js still has ~46 methods covering variable substitution and metadata parsing | resolved | 2026-07-26 | #106 |
 | TD26072602 | Blogger sync posts poems strictly sequentially | open | | |
-| TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | open | | |
+| TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | in-progress | | |
