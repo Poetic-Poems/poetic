@@ -104,6 +104,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`sync-blogger`'s `createPost` no longer risks duplicate-posting a poem on
+  retry.** `fetchWithRetry()` retried any rejected fetch once, applied
+  uniformly to every Blogger API call including the non-idempotent
+  `createPost` — if a create request reached Blogger and was processed, but
+  the response was lost to the client (timeout/connection reset), the retry
+  created a second live post for the same poem. `createPost` now opts out of
+  the rejection-retry; a failed create surfaces as a normal error for that
+  poem, and a subsequent sync run sees the poem as still missing and retries
+  the creation through the normal per-poem loop. Resolves TD26072609.
 - **`build-poems.yml`'s skip guard no longer lets source changes bypass CI.**
   The guard listed the paths considered build-relevant and skipped everything
   else, so any path nobody remembered to add — `src/browser/` (the browser
