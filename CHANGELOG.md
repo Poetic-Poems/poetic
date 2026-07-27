@@ -11,6 +11,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`npm run coverage` is now gated in CI with a threshold.**
+  `build-poems.yml`'s `build` job runs it immediately after `npm test`, and
+  `package.json` gained a `c8` config block (`check-coverage: true` plus
+  `lines`/`branches`/`functions` floors a few points below the measured
+  baseline) so a real coverage regression fails the build instead of going
+  unnoticed. Resolves TD26072610.
 - **Every CI workflow job now has a `timeout-minutes`.** Previously only
   `sync-blogger.yml`'s `sync` job set one; every other job — including
   `build-poems.yml`'s required `build` check — defaulted to GitHub Actions'
