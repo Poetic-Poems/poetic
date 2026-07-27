@@ -472,13 +472,13 @@ every key — copy the section you need and uncomment it — lives at
 | `auto_sync.enabled` | _(off)_ | Set to `true` to enable the scheduled sync workflow |
 | `auto_sync.schedule` | `weekly` | How often the scheduled sync runs: `hourly`, `daily`, or `weekly` |
 | `footer.enabled` | `true` | Set to `false` to omit the footer from every built page |
-| `footer.source` | `public/poetic-footer.html` | Path to the HTML file whose contents are injected as the page footer |
+| `footer.source` | `public/poetic-footer.html` | Path to the HTML file whose contents are injected as the page footer (relative to the repository root, and must resolve inside it — see [Footer](#footer)) |
 | `blogger.sync` | `false` | Set to `true` to enable automatic Blogger publishing via GitHub Actions |
 | `blogger.blog_id` | _(required when enabled)_ | Numeric Blogger blog ID (visible in the blog URL in Blogger settings) — quote it as a string; it exceeds `Number.MAX_SAFE_INTEGER` and loses precision as a YAML number |
 | `blogger.removed` | `draft` | What happens to a post when its source poem is removed: `draft`, `delete`, or `keep` |
 | `blogger.content` | `full` | Content posted to Blogger: `full` (complete styled HTML page) or `poem` (poem fragment only) |
 | `blogger.label` | `poem` | Blogger label applied to all managed posts |
-| `blogger.template` | `public/blogger-template.html` | Path to the Blogger XML theme template file injected by `npm run build:blogger` |
+| `blogger.template` | `public/blogger-template.html` | Path to the Blogger XML theme template file injected by `npm run build:blogger` (relative to the repository root, and must resolve inside it) |
 | `song_handlers` | _(none)_ | Map of custom song-handler definitions (service name → `link_url`/`embed_url`/labels/size/handler-specific config), deep-merged with the builtin `audiomack`/`suno`/`mega` handlers; see [Custom song handlers](#custom-song-handlers) |
 
 Example:
@@ -549,6 +549,8 @@ Or supply your own footer content by pointing `footer.source` at a file of your 
 footer:
   source: public/my-footer.html
 ```
+
+A relative `footer.source` is resolved against the repository root; an absolute one is used as given. Either way it must resolve to a path inside the repository — a value that points outside it (via `../` or an absolute path elsewhere on disk) is reported as a warning and the default footer source is used instead, since the file's contents are published verbatim.
 
 The footer source file is raw HTML, injected verbatim inside a `<footer class="poetic-footer">` wrapper. It may reference `%{base}` — the relative path prefix back to the site root (`''` on `index.html`/`all-poems.html`, `../` on one-directory-deep pages like individual poem pages and `raw/index.html`) — useful for linking an image or asset that lives in `public/`:
 

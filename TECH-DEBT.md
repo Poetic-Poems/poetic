@@ -175,19 +175,6 @@ push-triggered `release` job doesn't re-check either. Project review
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
 
-### TD26072606 footer.source/blogger.template config paths bypass path-guard
-
-`footer.js`'s `resolveFooterSourcePath()` and `build-blogger.js`'s
-`resolveTemplatePath()` both resolve a config-supplied path with no
-containment check, unlike `serve-static.js`, which correctly uses
-`path-guard.js`'s `safeJoin`/`isWithinRoot` for exactly this class of
-problem. A `.poetic-config.yaml` author (a lower bar in a multi-contributor
-poem collection than in this framework repo) can point either at an arbitrary
-file, which then gets published verbatim to GitHub Pages or uploaded as the
-live Blogger theme. Project review 2026-07-26's R-03/F-SEC-01. Fix: route
-both functions through `path-guard.js`'s existing helpers, rooted at the repo
-root/`public/`-equivalent scope.
-
 ### TD26072607 serve-static.js's real request handler is untested
 
 `test/serve-static.test.js` stubs `http.createServer` to a no-op and only
@@ -405,7 +392,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | resolved | 2026-07-26 | #108 |
 | TD26072604 | changelog-check required status check missing from branch ruleset | open | | |
 | TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | resolved | 2026-07-27 | #111 |
-| TD26072606 | footer.source/blogger.template config paths bypass path-guard | open | | |
+| TD26072606 | footer.source/blogger.template config paths bypass path-guard | resolved | 2026-07-27 | #113 |
 | TD26072607 | serve-static.js's real request handler is untested | open | | |
 | TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | open | | |
 | TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | open | | |

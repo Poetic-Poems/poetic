@@ -26,13 +26,44 @@ function touch(filePath, content = '') {
 // ---------------------------------------------------------------------------
 
 describe('resolveTemplatePath', () => {
-  it('uses config.blogger.template when set', () => {
-    const tmpDir = makeTempDir();
-    const customPath = path.join(tmpDir, 'my-custom-template.html');
+  it('uses config.blogger.template when set, resolved against the repo root', () => {
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    const customPath = path.join(publicDir, 'my-custom-template.html');
     touch(customPath);
-    const result = resolveTemplatePath({ blogger: { template: customPath } }, tmpDir);
+    const result = resolveTemplatePath({ blogger: { template: 'public/my-custom-template.html' } }, publicDir);
     assert.equal(result, customPath);
-    fs.rmSync(tmpDir, { recursive: true });
+    fs.rmSync(repoRoot, { recursive: true });
+  });
+
+  it('uses an absolute config.blogger.template that lies inside the repo root', () => {
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    const customPath = path.join(publicDir, 'my-custom-template.html');
+    touch(customPath);
+    const result = resolveTemplatePath({ blogger: { template: customPath } }, publicDir);
+    assert.equal(result, customPath);
+    fs.rmSync(repoRoot, { recursive: true });
+  });
+
+  it('rejects a blogger.template that escapes the repo root via ../ and falls back to the default', () => {
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    const canonicalPath = path.join(publicDir, 'blogger-template.html');
+    touch(canonicalPath);
+    const result = resolveTemplatePath({ blogger: { template: '../../../etc/passwd' } }, publicDir);
+    assert.equal(result, canonicalPath);
+    fs.rmSync(repoRoot, { recursive: true });
+  });
+
+  it('rejects an absolute blogger.template outside the repo root and falls back to the default', () => {
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    const canonicalPath = path.join(publicDir, 'blogger-template.html');
+    touch(canonicalPath);
+    const result = resolveTemplatePath({ blogger: { template: '/etc/passwd' } }, publicDir);
+    assert.equal(result, canonicalPath);
+    fs.rmSync(repoRoot, { recursive: true });
   });
 
   it('falls back to blogger-template.html when it exists', () => {
