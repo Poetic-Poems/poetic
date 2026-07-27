@@ -326,7 +326,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072607 | serve-static.js's real request handler is untested | resolved | 2026-07-27 | #114 |
 | TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | resolved | 2026-07-28 | #115 |
 | TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | resolved | 2026-07-28 | #117 |
-| TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
+| TD26072610 | npm run coverage exists but isn't gated in CI | in-progress | | |
 | TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | open | | |
 | TD26072612 | Most CI jobs have no timeout-minutes | resolved | 2026-07-28 | #119 |
 | TD26072613 | Blogger client secret echoed to terminal during interactive entry | open | | |
