@@ -63,6 +63,77 @@ function convertPoemToYaml(poemFilePath, options = {}) {
 }
 
 /**
+ * Convert every .poem file in `poemDir` to YAML in `yamlDir`, skipping any
+ * that are already up to date, and warn about YAML artefacts left behind by
+ * a since-removed/renamed source poem. Exits the process with status 1 if
+ * any poem fails to convert.
+ *
+ * @param {object} [options]
+ * @param {string} [options.poemDir] - Override the default `src/poems/poem`
+ *   directory (tests only; the npm run build / CLI entry point below always
+ *   uses the default).
+ * @param {string} [options.yamlDir] - Override the default `src/poems/yaml`
+ *   directory (tests only).
+ */
+function convertAllPoemsToYaml({
+  poemDir = path.join(REPO_ROOT, 'src', 'poems', 'poem'),
+  yamlDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml'),
+} = {}) {
+  const files = fs.readdirSync(poemDir);
+  const force = forceRebuildRequested();
+
+  let errorCount = 0;
+  let skippedCount = 0;
+  for (const file of files) {
+    // Skip partial/private files (starting with '_' or '.', e.g. .shared.poem)
+    if (file.endsWith('.poem') && !file.startsWith('_') && !file.startsWith('.')) {
+      const poemPath = path.join(poemDir, file);
+      const yamlPath = path.join(yamlDir, file.replace('.poem', '.yaml'));
+      const sharedPoemPath = path.join(poemDir, '.shared.poem');
+      const inputs = [poemPath, ...(fs.existsSync(sharedPoemPath) ? [sharedPoemPath] : [])];
+
+      if (!needsRebuild(yamlPath, inputs, { force })) {
+        console.log(`⏭  Skipping ${file} (up to date)`);
+        skippedCount++;
+        continue;
+      }
+
+      try {
+        console.log(`Converting ${file}...`);
+        const yamlContent = convertPoemToYaml(poemPath);
+        fs.writeFileSync(yamlPath, yamlContent, 'utf8');
+        console.log(`  → ${path.basename(yamlPath)}`);
+      } catch (error) {
+        console.error(`Error converting ${file}:`, error.message);
+        errorCount++;
+      }
+    }
+  }
+
+  if (skippedCount > 0) {
+    console.log(`⏭  ${skippedCount} poem(s) already up to date, skipped.`);
+  }
+
+  // Warn about stale YAML artefacts that have no active source poem.
+  const activePoemBases = new Set(
+    files
+      .filter(f => f.endsWith('.poem') && !f.startsWith('_') && !f.startsWith('.'))
+      .map(f => f.replace('.poem', '.yaml'))
+  );
+  const existingYamls = fs.readdirSync(yamlDir).filter(
+    f => f.endsWith('.yaml') && !f.startsWith('_') && !f.startsWith('.') && f !== 'YAML-SCHEMA.yaml'
+  );
+  for (const stale of existingYamls.filter(f => !activePoemBases.has(f))) {
+    console.warn(`Warning: stale YAML artefact (no source poem): src/poems/yaml/${stale}`);
+  }
+
+  if (errorCount > 0) {
+    console.error(`\n📊 ${errorCount} poem(s) failed to convert.`);
+    process.exit(1);
+  }
+}
+
+/**
  * Main function
  */
 function main() {
@@ -75,61 +146,7 @@ function main() {
   }
 
   if (args[0] === '--all') {
-    // Convert all .poem files in src/poems/poem/ directory
-    const poemDir = path.join(REPO_ROOT, 'src', 'poems', 'poem');
-    const yamlDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
-    const files = fs.readdirSync(poemDir);
-    const force = forceRebuildRequested();
-
-    let errorCount = 0;
-    let skippedCount = 0;
-    for (const file of files) {
-      // Skip partial/private files (starting with '_' or '.', e.g. .shared.poem)
-      if (file.endsWith('.poem') && !file.startsWith('_') && !file.startsWith('.')) {
-        const poemPath = path.join(poemDir, file);
-        const yamlPath = path.join(yamlDir, file.replace('.poem', '.yaml'));
-        const sharedPoemPath = path.join(poemDir, '.shared.poem');
-        const inputs = [poemPath, ...(fs.existsSync(sharedPoemPath) ? [sharedPoemPath] : [])];
-
-        if (!needsRebuild(yamlPath, inputs, { force })) {
-          console.log(`⏭  Skipping ${file} (up to date)`);
-          skippedCount++;
-          continue;
-        }
-
-        try {
-          console.log(`Converting ${file}...`);
-          const yamlContent = convertPoemToYaml(poemPath);
-          fs.writeFileSync(yamlPath, yamlContent, 'utf8');
-          console.log(`  → ${path.basename(yamlPath)}`);
-        } catch (error) {
-          console.error(`Error converting ${file}:`, error.message);
-          errorCount++;
-        }
-      }
-    }
-
-    if (skippedCount > 0) {
-      console.log(`⏭  ${skippedCount} poem(s) already up to date, skipped.`);
-    }
-
-    // Warn about stale YAML artefacts that have no active source poem.
-    const activePoemBases = new Set(
-      files
-        .filter(f => f.endsWith('.poem') && !f.startsWith('_') && !f.startsWith('.'))
-        .map(f => f.replace('.poem', '.yaml'))
-    );
-    const existingYamls = fs.readdirSync(yamlDir).filter(
-      f => f.endsWith('.yaml') && !f.startsWith('_') && !f.startsWith('.') && f !== 'YAML-SCHEMA.yaml'
-    );
-    for (const stale of existingYamls.filter(f => !activePoemBases.has(f))) {
-      console.warn(`Warning: stale YAML artefact (no source poem): src/poems/yaml/${stale}`);
-    }
-
-    if (errorCount > 0) {
-      console.error(`\n📊 ${errorCount} poem(s) failed to convert.`);
-      process.exit(1);
-    }
+    convertAllPoemsToYaml();
   } else {
     // Convert single file
     const inputFile = args[0];
@@ -150,4 +167,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { PoemParser, convertPoemToYaml, parsePoemFile };
+module.exports = { PoemParser, convertPoemToYaml, parsePoemFile, convertAllPoemsToYaml };
