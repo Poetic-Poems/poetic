@@ -175,19 +175,6 @@ push-triggered `release` job doesn't re-check either. Project review
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
 
-### TD26072605 sync-blogger.js's main() has zero test coverage and untested complexity
-
-`main()` (168 lines) inlines the per-poem create/update/skip decision and the
-removal-pass loop — real branching business logic, unlike every other
-function in the file, which is pure, exported, and unit-tested. It's the one
-piece of the framework that mutates a live public Blogger blog on every push
-to `main` touching `src/poems/**`, and the one part of this file with no test
-coverage at all (69.35% stmt / 56% func for the whole file, concentrated in
-this gap). Project review 2026-07-26's R-02/F-CODE-01/F-TEST-01. Fix: extract
-the per-poem decision and removal-pass loop into named, exported functions,
-then add an integration-style test mocking `global.fetch` that drives the
-extracted orchestration through create/update/skip/removal/failure branches.
-
 ### TD26072606 footer.source/blogger.template config paths bypass path-guard
 
 `footer.js`'s `resolveFooterSourcePath()` and `build-blogger.js`'s
@@ -417,7 +404,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072602 | Blogger sync posts poems strictly sequentially | open | | |
 | TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | resolved | 2026-07-26 | #108 |
 | TD26072604 | changelog-check required status check missing from branch ruleset | open | | |
-| TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | in-progress | | |
+| TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | resolved | 2026-07-27 | #111 |
 | TD26072606 | footer.source/blogger.template config paths bypass path-guard | open | | |
 | TD26072607 | serve-static.js's real request handler is untested | open | | |
 | TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | open | | |

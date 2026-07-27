@@ -28,6 +28,10 @@
  *   deletePost(blogId, token, postId)
  *   fetchWithRetry(url, init)                        - shared fetch wrapper: per-request timeout +
  *                                                       single retry on 429/5xx or network rejection
+ *   syncPoem({ existing, desired, isoDate, blogId, token, dryRun })
+ *                                                     - create/update/skip decision for one poem
+ *   processRemovals({ posts, currentSlugs, label, removedMode, blogId, token, dryRun })
+ *                                                     - the removal-pass loop (draft/delete/keep)
  */
 
 'use strict';
@@ -751,6 +755,107 @@ async function diagnoseBloggerFailure(err, { blogId, token } = {}) {
   });
 }
 
+/**
+ * Decide and perform the create/update/skip action for one poem.
+ *
+ * Blogger derives a new post's permalink from its title + publish date, and
+ * that permalink is sticky. Prepend the zero-padded day to the title just
+ * for creation (so the permalink bakes in the date), then rename the post
+ * back to its plain title immediately afterwards.
+ *
+ * @param {object} params
+ * @param {object|undefined} params.existing - existing Blogger post for this poem's slug, if any
+ * @param {object} params.desired            - desired post body from composePost()
+ * @param {string} params.isoDate            - poem's ISO date (YYYY-MM-DD), for the dated-title trick
+ * @param {string} params.blogId
+ * @param {string} params.token
+ * @param {boolean} params.dryRun
+ * @returns {Promise<'created'|'updated'|'unchanged'>}
+ */
+async function syncPoem({ existing, desired, isoDate, blogId, token, dryRun }) {
+  if (!existing) {
+    const day = isoDate.slice(8, 10);
+    const datedTitle = `${day} ${desired.title}`;
+    if (dryRun) {
+      console.log(`[create] "${datedTitle}" → rename to "${desired.title}"`);
+    } else {
+      const createdPost = await createPost(blogId, token, { ...desired, title: datedTitle });
+      await updatePost(blogId, token, createdPost.id, {
+        kind: desired.kind,
+        title: desired.title,
+        content: desired.content,
+        labels: desired.labels,
+        published: desired.published,
+      });
+      console.log(`Created: ${desired.title}`);
+    }
+    return 'created';
+  }
+
+  if (postNeedsUpdate(existing, desired)) {
+    const updateBody = {
+      kind: desired.kind,
+      title: desired.title,
+      content: desired.content,
+      labels: desired.labels,
+      published: desired.published,
+    };
+    if (dryRun) {
+      console.log(`[update] ${desired.title}`);
+    } else {
+      await updatePost(blogId, token, existing.id, updateBody);
+      console.log(`Updated: ${desired.title}`);
+    }
+    return 'updated';
+  }
+
+  if (dryRun) {
+    console.log(`[skip] ${desired.title}`);
+  }
+  return 'unchanged';
+}
+
+/**
+ * Run the removal pass: draft, delete, or (for 'keep') ignore each post
+ * selected as removed — LIVE, labelled, but no longer among the current
+ * poem slugs.
+ *
+ * @param {object} params
+ * @param {object[]} params.posts          - all posts fetched from Blogger
+ * @param {Set<string>} params.currentSlugs - slugs of current poems
+ * @param {string} params.label            - the label that marks managed posts
+ * @param {string} params.removedMode      - 'draft' | 'delete' | 'keep'
+ * @param {string} params.blogId
+ * @param {string} params.token
+ * @param {boolean} params.dryRun
+ * @returns {Promise<number>} count of posts drafted or deleted
+ */
+async function processRemovals({ posts, currentSlugs, label, removedMode, blogId, token, dryRun }) {
+  const removed = selectRemoved(posts, currentSlugs, label);
+  let handled = 0;
+  for (const post of removed) {
+    if (removedMode === 'draft') {
+      if (dryRun) {
+        console.log(`[draft] ${post.title}`);
+      } else {
+        await revertPost(blogId, token, post.id);
+        console.log(`Drafted: ${post.title}`);
+      }
+      handled++;
+    } else if (removedMode === 'delete') {
+      if (dryRun) {
+        console.log(`[delete] ${post.title}`);
+      } else {
+        await deletePost(blogId, token, post.id);
+        console.log(`Deleted: ${post.title}`);
+      }
+      handled++;
+    }
+    // 'keep' → do nothing
+  }
+  return handled;
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 /**
@@ -834,49 +939,17 @@ async function main() {
       currentSlugs.add(data.slug);
 
       const existing = bySlug.get(data.slug);
-
-      if (!existing) {
-        // Blogger derives a new post's permalink from its title + publish date,
-        // and that permalink is sticky. Prepend the zero-padded day to the title
-        // just for creation (so the permalink bakes in the date), then rename
-        // the post back to its plain title immediately afterwards.
-        const day = isoDate.slice(8, 10);
-        const datedTitle = `${day} ${desired.title}`;
-        if (args.dryRun) {
-          console.log(`[create] "${datedTitle}" → rename to "${desired.title}"`);
-        } else {
-          const createdPost = await createPost(opts.blogId, token, { ...desired, title: datedTitle });
-          await updatePost(opts.blogId, token, createdPost.id, {
-            kind: desired.kind,
-            title: desired.title,
-            content: desired.content,
-            labels: desired.labels,
-            published: desired.published,
-          });
-          console.log(`Created: ${desired.title}`);
-        }
-        created++;
-      } else if (postNeedsUpdate(existing, desired)) {
-        const updateBody = {
-          kind: desired.kind,
-          title: desired.title,
-          content: desired.content,
-          labels: desired.labels,
-          published: desired.published,
-        };
-        if (args.dryRun) {
-          console.log(`[update] ${data.title}`);
-        } else {
-          await updatePost(opts.blogId, token, existing.id, updateBody);
-          console.log(`Updated: ${data.title}`);
-        }
-        updated++;
-      } else {
-        if (args.dryRun) {
-          console.log(`[skip] ${data.title}`);
-        }
-        unchanged++;
-      }
+      const outcome = await syncPoem({
+        existing,
+        desired,
+        isoDate,
+        blogId: opts.blogId,
+        token,
+        dryRun: args.dryRun,
+      });
+      if (outcome === 'created') created++;
+      else if (outcome === 'updated') updated++;
+      else unchanged++;
     }
 
     // Handle removed poems — only on a full sync. With --only, the loop above
@@ -886,27 +959,15 @@ async function main() {
     if (args.only) {
       console.log(`Skipping removal pass (--only ${args.only}): removals are only computed on a full sync.`);
     } else {
-      const removed = selectRemoved(posts, currentSlugs, opts.label);
-      for (const post of removed) {
-        if (opts.removed === 'draft') {
-          if (args.dryRun) {
-            console.log(`[draft] ${post.title}`);
-          } else {
-            await revertPost(opts.blogId, token, post.id);
-            console.log(`Drafted: ${post.title}`);
-          }
-          handled++;
-        } else if (opts.removed === 'delete') {
-          if (args.dryRun) {
-            console.log(`[delete] ${post.title}`);
-          } else {
-            await deletePost(opts.blogId, token, post.id);
-            console.log(`Deleted: ${post.title}`);
-          }
-          handled++;
-        }
-        // 'keep' → do nothing
-      }
+      handled = await processRemovals({
+        posts,
+        currentSlugs,
+        label: opts.label,
+        removedMode: opts.removed,
+        blogId: opts.blogId,
+        token,
+        dryRun: args.dryRun,
+      });
     }
 
     const dryRunSuffix = args.dryRun ? ' (dry-run)' : '';
@@ -953,4 +1014,6 @@ module.exports = {
   updatePost,
   revertPost,
   deletePost,
+  syncPoem,
+  processRemovals,
 };
