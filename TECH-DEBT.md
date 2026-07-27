@@ -407,7 +407,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | resolved | 2026-07-27 | #111 |
 | TD26072606 | footer.source/blogger.template config paths bypass path-guard | open | | |
 | TD26072607 | serve-static.js's real request handler is untested | open | | |
-| TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | open | | |
+| TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | in-progress | | |
 | TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | open | | |
 | TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
 | TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | open | | |
