@@ -336,6 +336,25 @@ full suite is fast (~20s) today. Project review 2026-07-26's
 R-17/F-TOOL-02. Fix: add a `test:watch` script and a one-line note in
 CLAUDE.md's build-commands section.
 
+### TD26072801 path-guard.js's containment checks don't resolve symlinks
+
+`safeJoin()` and `isWithinRoot()` compare strings only — neither calls
+`fs.realpathSync`, so containment is purely lexical. A symlink committed
+inside the root (say `public/theme.html -> /etc/passwd`) resolves to an
+in-root path, passes `isWithinRoot()`, and is then read and published
+verbatim — to GitHub Pages via `footer.js`'s `footer.source`, as the live
+Blogger theme via `build-blogger.js`'s `blogger.template`, or over HTTP by
+`serve-static.js`'s two guard sites. Flagged deliberately as out of scope
+while fixing TD26072606 (#113), whose work order asked for `path-guard.js`'s
+existing helpers rather than a new containment check. Lower severity than
+TD26072606 was: it needs a committed file rather than just a config edit, and
+someone who can commit a symlink can usually commit its target's contents
+directly. Fix: resolve symlinks inside `path-guard.js` so all three call
+sites are covered at once. That needs a decision on the
+target-does-not-exist case, where `realpath` throws `ENOENT` —
+`serve-static.js` must still answer 404, and both config resolvers must still
+fall back to their defaults rather than crash.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -420,3 +439,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | open | | |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | open | | |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | open | | |
+| TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
