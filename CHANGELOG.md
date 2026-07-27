@@ -11,6 +11,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Every CI workflow job now has a `timeout-minutes`.** Previously only
+  `sync-blogger.yml`'s `sync` job set one; every other job — including
+  `build-poems.yml`'s required `build` check — defaulted to GitHub Actions'
+  360-minute ceiling, so a hang could occupy a runner for hours before being
+  killed. Resolves TD26072612.
 - **A version bump without a matching `CHANGELOG.md` entry now fails CI.**
   `.github/workflows/release.yml` gained a `pull_request`-triggered
   `changelog-check` job: whenever a PR changes `package.json`'s `version`
