@@ -175,19 +175,6 @@ push-triggered `release` job doesn't re-check either. Project review
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
 
-### TD26072605 sync-blogger.js's main() has zero test coverage and untested complexity
-
-`main()` (168 lines) inlines the per-poem create/update/skip decision and the
-removal-pass loop — real branching business logic, unlike every other
-function in the file, which is pure, exported, and unit-tested. It's the one
-piece of the framework that mutates a live public Blogger blog on every push
-to `main` touching `src/poems/**`, and the one part of this file with no test
-coverage at all (69.35% stmt / 56% func for the whole file, concentrated in
-this gap). Project review 2026-07-26's R-02/F-CODE-01/F-TEST-01. Fix: extract
-the per-poem decision and removal-pass loop into named, exported functions,
-then add an integration-style test mocking `global.fetch` that drives the
-extracted orchestration through create/update/skip/removal/failure branches.
-
 ### TD26072606 footer.source/blogger.template config paths bypass path-guard
 
 `footer.js`'s `resolveFooterSourcePath()` and `build-blogger.js`'s
@@ -200,7 +187,6 @@ file, which then gets published verbatim to GitHub Pages or uploaded as the
 live Blogger theme. Project review 2026-07-26's R-03/F-SEC-01. Fix: route
 both functions through `path-guard.js`'s existing helpers, rooted at the repo
 root/`public/`-equivalent scope.
-
 ### TD26072607 serve-static.js's real request handler is untested
 
 `test/serve-static.test.js` stubs `http.createServer` to a no-op and only
@@ -212,17 +198,6 @@ wires `path-guard.js` into request handling. Project review 2026-07-26's
 R-04/F-TEST-02. Fix: capture the request-handler function itself (or use a
 real `listen(0)`) and assert a traversal attempt returns 403, a normal file
 returns 200, and a missing path falls through correctly.
-
-### TD26072608 poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested
-
-Both files' `main()` — the `--all` loop, skip-if-up-to-date counting,
-stale-artefact detection, per-file error counting/`exit(1)` — is unexported
-and untested, unlike `build-poems.js`'s equivalent (`buildAllPoems()`, tested
-via `spawnSync` including its exit paths). Every consumer repo runs this code
-on every build, but only the project's own pristine corpus ever exercises it
-today. Project review 2026-07-26's R-05/F-TEST-03. Fix: export each file's
-per-file loop as a testable function and add `spawnSync`-driven tests
-mirroring `test/build-poems.test.js`'s pattern.
 
 ### TD26072609 sync-blogger's createPost retry can duplicate-post a poem
 
@@ -349,6 +324,25 @@ full suite is fast (~20s) today. Project review 2026-07-26's
 R-17/F-TOOL-02. Fix: add a `test:watch` script and a one-line note in
 CLAUDE.md's build-commands section.
 
+### TD26072801 path-guard.js's containment checks don't resolve symlinks
+
+`safeJoin()` and `isWithinRoot()` compare strings only — neither calls
+`fs.realpathSync`, so containment is purely lexical. A symlink committed
+inside the root (say `public/theme.html -> /etc/passwd`) resolves to an
+in-root path, passes `isWithinRoot()`, and is then read and published
+verbatim — to GitHub Pages via `footer.js`'s `footer.source`, as the live
+Blogger theme via `build-blogger.js`'s `blogger.template`, or over HTTP by
+`serve-static.js`'s two guard sites. Flagged deliberately as out of scope
+while fixing TD26072606 (#113), whose work order asked for `path-guard.js`'s
+existing helpers rather than a new containment check. Lower severity than
+TD26072606 was: it needs a committed file rather than just a config edit, and
+someone who can commit a symlink can usually commit its target's contents
+directly. Fix: resolve symlinks inside `path-guard.js` so all three call
+sites are covered at once. That needs a decision on the
+target-does-not-exist case, where `realpath` throws `ENOENT` —
+`serve-static.js` must still answer 404, and both config resolvers must still
+fall back to their defaults rather than crash.
+
 ## Ledger
 
 Every tech-debt ID ever allocated — open, in-progress, resolved, or not-debt —
@@ -417,10 +411,10 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072602 | Blogger sync posts poems strictly sequentially | open | | |
 | TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | resolved | 2026-07-26 | #108 |
 | TD26072604 | changelog-check required status check missing from branch ruleset | open | | |
-| TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | open | | |
-| TD26072606 | footer.source/blogger.template config paths bypass path-guard | open | | |
-| TD26072607 | serve-static.js's real request handler is untested | open | | |
-| TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | open | | |
+| TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | resolved | 2026-07-27 | #111 |
+| TD26072606 | footer.source/blogger.template config paths bypass path-guard | resolved | 2026-07-27 | #113 |
+| TD26072607 | serve-static.js's real request handler is untested | resolved | 2026-07-27 | #114 |
+| TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | resolved | 2026-07-28 | #115 |
 | TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | open | | |
 | TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
 | TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | open | | |
@@ -433,3 +427,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | open | | |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | open | | |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | open | | |
+| TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |

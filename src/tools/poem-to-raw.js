@@ -201,8 +201,18 @@ ${items}
 `;
 }
 
-function main() {
-  const repoTop = getRepoTop();
+/**
+ * Convert every non-partial .poem file under `repoTop`'s src/poems/poem/ to a
+ * plain-text rendering in raw/, skipping any already up to date, and
+ * (re)write public/raw/index.html when the poem set or a framework-wide
+ * input (config, footer) has changed.
+ *
+ * @param {object} [options]
+ * @param {string} [options.repoTop] - Override the git-derived repo root
+ *   (tests only; the npm run build / CLI entry point below always uses the
+ *   default).
+ */
+function convertAllPoemsToRaw({ repoTop = getRepoTop() } = {}) {
   const poemDir = path.join(repoTop, 'src', 'poems', 'poem');
   const rawDir = path.join(repoTop, 'raw');
   const publicRawDir = path.join(repoTop, 'public', 'raw');
@@ -278,9 +288,13 @@ function main() {
   recordManifest(manifestPath, sources, poemDir);
 }
 
+function main() {
+  convertAllPoemsToRaw();
+}
+
 if (require.main === module) main();
 
 module.exports = {
   htmlToPlainText, decodeEntities, collapseAlternatives,
-  segmentToText, renderPoemText, buildIndex,
+  segmentToText, renderPoemText, buildIndex, convertAllPoemsToRaw,
 };

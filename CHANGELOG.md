@@ -36,6 +36,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   race-safe lock between concurrent agents; `TECH-DEBT.md`'s "Claiming an
   item" workflow is rewritten accordingly, and the new scripts and skill are
   covered by `test/tech-debt-scripts.test.js`.
+- **Regression tests for `serve-static.js`'s real request handler**, not just
+  the pure helpers extracted from it. `test/serve-static.test.js` now
+  captures the handler passed to `http.createServer` and drives it through a
+  real `listen(0)`/`http.request`, covering the 200/404/SPA-fallback paths
+  and both `isWithinRoot()` call sites' 403 response. No behaviour change.
+  Resolves TD26072607.
 - **Regression tests for the two previously-fixed XSS alerts.**
   `test/serve-static.test.js` covers `escapeHtml`/`encodeHref`/
   `generateDirectoryListing` (stored-XSS fix, `3eb8bd9`) with hostile
@@ -53,6 +59,39 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   reformatted to comply via `eslint --fix`. `poem-parser.js`'s `@param`/
   `@returns` JSDoc coverage is also brought up to the standard used elsewhere
   (e.g. `sync-blogger.js`). No behaviour change. Resolves TD26072117.
+- **Regression tests for `sync-blogger.js`'s per-poem sync and removal-pass
+  logic.** The per-poem create/update/skip decision and the removal-pass loop
+  — previously inlined in `main()`, the one piece of the framework that
+  mutates a live public Blogger blog on every push to `main` touching
+  `src/poems/**`, and the one part of the file with no test coverage — are
+  now the named, exported `syncPoem()` and `processRemovals()`, covered by
+  integration-style tests in `test/sync-blogger.test.js` that mock
+  `global.fetch` across the create/update/skip/draft/delete/keep/failure
+  branches. No behaviour change. Resolves TD26072605.
+- **Regression tests for `poem-to-yaml.js`'s and `poem-to-raw.js`'s CLI
+  orchestration.** Each file's `--all`/default-run loop — the per-file
+  convert-or-skip decision, skip-if-up-to-date counting, stale-artefact
+  detection, and (for `poem-to-yaml.js`) per-file error counting with
+  `process.exit(1)` — was previously inlined in `main()` and untested; every
+  consumer repo runs this code on every build, but only against this
+  project's own pristine example poems. It is now the named, exported
+  `convertAllPoemsToYaml()` and `convertAllPoemsToRaw()`, covered by
+  `spawnSync`-driven tests in `test/poem-to-yaml.test.js` and
+  `test/poem-to-raw-cli.test.js`. No behaviour change. Resolves TD26072608.
+
+### Security
+
+- **`footer.source` and `blogger.template` config paths are now confined to
+  their intended root.** `footer.js`'s `resolveFooterSourcePath()` and
+  `build-blogger.js`'s `resolveTemplatePath()` now route config-supplied
+  paths through `path-guard.js`'s `safeJoin`/`isWithinRoot`, the same
+  containment `serve-static.js` already applies to request paths. A relative
+  value is resolved against that root and an absolute one is taken as given,
+  but either way a value that lands outside the root — via `../` or an
+  absolute path elsewhere on disk — now warns and falls back to the default
+  instead of resolving to an arbitrary file, which could be published
+  verbatim to GitHub Pages or uploaded as the live Blogger theme. Resolves
+  TD26072606.
 
 ### Changed
 
