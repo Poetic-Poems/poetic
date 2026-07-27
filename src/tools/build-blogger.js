@@ -18,6 +18,7 @@
 const fs   = require('fs');
 const path = require('path');
 const { readPoeticConfig } = require('./poetic-config');
+const { safeJoin, isWithinRoot } = require('./path-guard');
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)
@@ -32,6 +33,14 @@ const { readPoeticConfig } = require('./poetic-config');
  *   3. First <publicDir>/*.template.html found (backward-compat with old hardcoded name)
  *   4. Default: <publicDir>/blogger-template.html
  *
+ * A relative config.blogger.template is resolved against the repo root
+ * (publicDir's parent) — matching how it's documented, e.g.
+ * `public/blogger-template.html`; an absolute one is taken as given. Either
+ * way a value that resolves outside that root, via `../` or an absolute path
+ * elsewhere on disk, is rejected and falls through to priority 2-4, the same
+ * containment `serve-static.js` applies to request paths. A config author
+ * should not be able to point the uploaded Blogger theme at an arbitrary file.
+ *
  * @param {object} config    - Parsed .poetic-config.yaml object
  * @param {string} publicDir - Absolute path to the public/ directory
  * @returns {string}         - Resolved template path
@@ -39,7 +48,17 @@ const { readPoeticConfig } = require('./poetic-config');
 function resolveTemplatePath(config, publicDir) {
   // 1. Explicit config key
   if (config.blogger && config.blogger.template) {
-    return config.blogger.template;
+    const repoRoot = path.dirname(publicDir);
+    const template = config.blogger.template;
+    const resolved = path.isAbsolute(template)
+      ? path.resolve(template)
+      : safeJoin(repoRoot, template);
+    if (isWithinRoot(repoRoot, resolved)) {
+      return resolved;
+    }
+    console.warn(
+      `Warning: blogger.template resolves outside the repository root (${template}); falling back to the default template`
+    );
   }
 
   // 2. Canonical name
