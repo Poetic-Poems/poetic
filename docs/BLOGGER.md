@@ -43,7 +43,7 @@ blogger:
 | `blogger.removed` | `draft` | Action when a poem is removed: `draft` (revert to draft), `delete` (permanently delete post), or `keep` (leave post unchanged) |
 | `blogger.content` | `full` | Content to post: `full` (complete styled HTML page) or `poem` (poem fragment only) |
 | `blogger.label` | `poem` | Blogger label applied to all managed posts |
-| `blogger.template` | `public/blogger-template.html` | Path to the Blogger XML theme template file |
+| `blogger.template` | `public/blogger-template.html` | Path to the Blogger XML theme template file. A relative path is resolved against the repository root; either way it must resolve inside the repository, or the default template is used instead (the file is uploaded verbatim as the live theme) |
 
 ## One-time Google authorisation
 
