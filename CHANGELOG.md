@@ -62,8 +62,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   DOM as inert text. Both fixes were previously verified manually only.
   Resolves TD26072106.
 - **`npm run coverage` reports code coverage** for `npm test`, via `c8`
-  (works directly with Node's built-in test runner). No CI coverage-floor
-  gate yet. Resolves TD26072112.
+  (works directly with Node's built-in test runner). Resolves TD26072112.
 - **`eslint.config.js` enforces single-quoted strings** (`avoidEscape: true`,
   so a string containing a `'` may use double quotes instead of escaping),
   matching the style already dominant across the codebase; the whole tree was
