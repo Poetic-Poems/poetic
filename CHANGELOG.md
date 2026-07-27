@@ -53,6 +53,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   reformatted to comply via `eslint --fix`. `poem-parser.js`'s `@param`/
   `@returns` JSDoc coverage is also brought up to the standard used elsewhere
   (e.g. `sync-blogger.js`). No behaviour change. Resolves TD26072117.
+- **Regression tests for `sync-blogger.js`'s per-poem sync and removal-pass
+  logic.** The per-poem create/update/skip decision and the removal-pass loop
+  — previously inlined in `main()`, the one piece of the framework that
+  mutates a live public Blogger blog on every push to `main` touching
+  `src/poems/**`, and the one part of the file with no test coverage — are
+  now the named, exported `syncPoem()` and `processRemovals()`, covered by
+  integration-style tests in `test/sync-blogger.test.js` that mock
+  `global.fetch` across the create/update/skip/draft/delete/keep/failure
+  branches. No behaviour change. Resolves TD26072605.
 
 ### Changed
 
