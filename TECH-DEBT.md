@@ -355,7 +355,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | open | | |
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
-| TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | open | | |
+| TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | in-progress | | |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | open | | |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | open | | |
 | TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
