@@ -69,6 +69,20 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `global.fetch` across the create/update/skip/draft/delete/keep/failure
   branches. No behaviour change. Resolves TD26072605.
 
+### Security
+
+- **`footer.source` and `blogger.template` config paths are now confined to
+  their intended root.** `footer.js`'s `resolveFooterSourcePath()` and
+  `build-blogger.js`'s `resolveTemplatePath()` now route config-supplied
+  paths through `path-guard.js`'s `safeJoin`/`isWithinRoot`, the same
+  containment `serve-static.js` already applies to request paths. A relative
+  value is resolved against that root and an absolute one is taken as given,
+  but either way a value that lands outside the root — via `../` or an
+  absolute path elsewhere on disk — now warns and falls back to the default
+  instead of resolving to an arbitrary file, which could be published
+  verbatim to GitHub Pages or uploaded as the live Blogger theme. Resolves
+  TD26072606.
+
 ### Changed
 
 - **Minimum supported Node.js version raised from 18 to 22**, matching the
