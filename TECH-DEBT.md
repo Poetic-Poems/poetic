@@ -217,18 +217,6 @@ itself as the finding; this entry is that recommendation's entire intended
 end state, already actioned as part of this review. Fix: add `.code`/`.name`
 classification to thrown errors in both browser-render files.
 
-### TD26072618 Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description
-
-Three small, independent doc-accuracy gaps: `scripts/edit-poem`/
-`docs/SCRIPTS.md` document a `-1` no-match exit code that's actually `255`;
-`docs/BUILD.md` carries one "previously"-phrased historical sentence contrary
-to CLAUDE.md's as-built principle; and the same file's File Structure diagram
-mislabels `poetic.js` as Audiomack-specific while omitting its
-postscript-toggle responsibility. Project review 2026-07-26's
-R-15/F-DOC-01/F-DOC-02/F-DOC-03. Fix: reconcile the exit-code docs with
-reality, drop the historical parenthetical, and reword the `poetic.js`
-diagram entry to cover both responsibilities.
-
 ### TD26072619 serve-static.js dev server has no graceful shutdown
 
 No `SIGINT`/`SIGTERM` handler; `npm run stop` sends a bare `SIGTERM` that
@@ -346,7 +334,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | open | | |
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
-| TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | open | | |
+| TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | open | | |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | open | | |
 | TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
