@@ -199,17 +199,6 @@ R-04/F-TEST-02. Fix: capture the request-handler function itself (or use a
 real `listen(0)`) and assert a traversal attempt returns 403, a normal file
 returns 200, and a missing path falls through correctly.
 
-### TD26072608 poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested
-
-Both files' `main()` — the `--all` loop, skip-if-up-to-date counting,
-stale-artefact detection, per-file error counting/`exit(1)` — is unexported
-and untested, unlike `build-poems.js`'s equivalent (`buildAllPoems()`, tested
-via `spawnSync` including its exit paths). Every consumer repo runs this code
-on every build, but only the project's own pristine corpus ever exercises it
-today. Project review 2026-07-26's R-05/F-TEST-03. Fix: export each file's
-per-file loop as a testable function and add `spawnSync`-driven tests
-mirroring `test/build-poems.test.js`'s pattern.
-
 ### TD26072609 sync-blogger's createPost retry can duplicate-post a poem
 
 `fetchWithRetry()` retries any rejected fetch once, applied uniformly to
@@ -406,7 +395,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | resolved | 2026-07-27 | #111 |
 | TD26072606 | footer.source/blogger.template config paths bypass path-guard | resolved | 2026-07-27 | #113 |
 | TD26072607 | serve-static.js's real request handler is untested | resolved | 2026-07-27 | #114 |
-| TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | open | | |
+| TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | resolved | 2026-07-28 | #115 |
 | TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | open | | |
 | TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
 | TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | open | | |

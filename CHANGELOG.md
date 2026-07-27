@@ -68,6 +68,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   integration-style tests in `test/sync-blogger.test.js` that mock
   `global.fetch` across the create/update/skip/draft/delete/keep/failure
   branches. No behaviour change. Resolves TD26072605.
+- **Regression tests for `poem-to-yaml.js`'s and `poem-to-raw.js`'s CLI
+  orchestration.** Each file's `--all`/default-run loop — the per-file
+  convert-or-skip decision, skip-if-up-to-date counting, stale-artefact
+  detection, and (for `poem-to-yaml.js`) per-file error counting with
+  `process.exit(1)` — was previously inlined in `main()` and untested; every
+  consumer repo runs this code on every build, but only against this
+  project's own pristine example poems. It is now the named, exported
+  `convertAllPoemsToYaml()` and `convertAllPoemsToRaw()`, covered by
+  `spawnSync`-driven tests in `test/poem-to-yaml.test.js` and
+  `test/poem-to-raw-cli.test.js`. No behaviour change. Resolves TD26072608.
 
 ### Security
 
