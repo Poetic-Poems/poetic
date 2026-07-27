@@ -329,7 +329,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
 | TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | open | | |
 | TD26072612 | Most CI jobs have no timeout-minutes | resolved | 2026-07-28 | #119 |
-| TD26072613 | Blogger client secret echoed to terminal during interactive entry | open | | |
+| TD26072613 | Blogger client secret echoed to terminal during interactive entry | in-progress | | |
 | TD26072614 | No automated licence-compatibility check for dependencies | open | | |
 | TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | open | | |
