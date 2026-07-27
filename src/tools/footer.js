@@ -33,11 +33,13 @@ const FOOTER_END = '<!-- /poetic:footer -->';
  * Resolve .poetic-config.yaml's `footer.source` (default: public/poetic-footer.html)
  * to an absolute path, without checking whether it exists.
  *
- * A `footer.source` that escapes `repoRoot` (via `../` or an absolute path
- * elsewhere on disk) is rejected in favour of the default, the same
- * containment `serve-static.js` applies to request paths — a config author
- * should not be able to point the footer at an arbitrary file that then gets
- * published verbatim.
+ * A relative `footer.source` is joined onto `repoRoot`; an absolute one is
+ * taken as given. Either way the result must land inside `repoRoot` — a value
+ * that resolves outside it, via `../` or an absolute path elsewhere on disk,
+ * is rejected in favour of the default, the same containment
+ * `serve-static.js` applies to request paths. A config author should not be
+ * able to point the footer at an arbitrary file that then gets published
+ * verbatim.
  *
  * @param {object} config - parsed .poetic-config.yaml
  * @param {string} repoRoot - directory footer.source is resolved against
@@ -45,9 +47,13 @@ const FOOTER_END = '<!-- /poetic:footer -->';
  */
 function resolveFooterSourcePath(config, repoRoot) {
   const footerSource = (config.footer && config.footer.source) || DEFAULT_FOOTER_SOURCE;
-  const resolved = safeJoin(repoRoot, footerSource);
+  const resolved = path.isAbsolute(footerSource)
+    ? path.resolve(footerSource)
+    : safeJoin(repoRoot, footerSource);
   if (!isWithinRoot(repoRoot, resolved)) {
-    console.warn(`Warning: footer.source escapes repoRoot (${footerSource}); using the default footer instead`);
+    console.warn(
+      `Warning: footer.source resolves outside the repository root (${footerSource}); using the default footer instead`
+    );
     return path.join(repoRoot, DEFAULT_FOOTER_SOURCE);
   }
   return resolved;

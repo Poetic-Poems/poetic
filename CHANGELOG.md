@@ -69,11 +69,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   their intended root.** `footer.js`'s `resolveFooterSourcePath()` and
   `build-blogger.js`'s `resolveTemplatePath()` now route config-supplied
   paths through `path-guard.js`'s `safeJoin`/`isWithinRoot`, the same
-  containment `serve-static.js` already applies to request paths. A
-  `.poetic-config.yaml` value that escapes its root via `../` or an absolute
-  path now warns and falls back to the default instead of resolving to an
-  arbitrary file, which previously could be published verbatim to GitHub
-  Pages or uploaded as the live Blogger theme. Resolves TD26072606.
+  containment `serve-static.js` already applies to request paths. A relative
+  value is resolved against that root and an absolute one is taken as given,
+  but either way a value that lands outside the root — via `../` or an
+  absolute path elsewhere on disk — now warns and falls back to the default
+  instead of resolving to an arbitrary file, which could be published
+  verbatim to GitHub Pages or uploaded as the live Blogger theme. Resolves
+  TD26072606.
 
 ### Changed
 

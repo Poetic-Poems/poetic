@@ -33,10 +33,11 @@ const { safeJoin, isWithinRoot } = require('./path-guard');
  *   3. First <publicDir>/*.template.html found (backward-compat with old hardcoded name)
  *   4. Default: <publicDir>/blogger-template.html
  *
- * config.blogger.template is resolved against the repo root (publicDir's
- * parent) — matching how it's documented (e.g. `public/blogger-template.html`)
- * — and rejected in favour of falling through to priority 2-4 if it escapes
- * that root via `../` or an absolute path elsewhere on disk, the same
+ * A relative config.blogger.template is resolved against the repo root
+ * (publicDir's parent) — matching how it's documented, e.g.
+ * `public/blogger-template.html`; an absolute one is taken as given. Either
+ * way a value that resolves outside that root, via `../` or an absolute path
+ * elsewhere on disk, is rejected and falls through to priority 2-4, the same
  * containment `serve-static.js` applies to request paths. A config author
  * should not be able to point the uploaded Blogger theme at an arbitrary file.
  *
@@ -48,12 +49,15 @@ function resolveTemplatePath(config, publicDir) {
   // 1. Explicit config key
   if (config.blogger && config.blogger.template) {
     const repoRoot = path.dirname(publicDir);
-    const resolved = safeJoin(repoRoot, config.blogger.template);
+    const template = config.blogger.template;
+    const resolved = path.isAbsolute(template)
+      ? path.resolve(template)
+      : safeJoin(repoRoot, template);
     if (isWithinRoot(repoRoot, resolved)) {
       return resolved;
     }
     console.warn(
-      `Warning: blogger.template escapes the repo root (${config.blogger.template}); falling back to the default template`
+      `Warning: blogger.template resolves outside the repository root (${template}); falling back to the default template`
     );
   }
 

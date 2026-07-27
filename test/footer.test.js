@@ -89,10 +89,23 @@ test('resolveFooterSourcePath: a footer.source that escapes repoRoot via ../ fal
   assert.strictEqual(resolved, path.join(repoRoot, DEFAULT_FOOTER_SOURCE));
 });
 
-test('resolveFooterSourcePath: an absolute footer.source is confined under repoRoot rather than read literally', () => {
+test('resolveFooterSourcePath: an absolute footer.source outside repoRoot falls back to the default path', () => {
   const repoRoot = tmpRepo({ 'public/poetic-footer.html': '<p>default</p>' });
   const resolved = resolveFooterSourcePath({ footer: { source: '/etc/passwd' } }, repoRoot);
-  assert.strictEqual(resolved, path.join(repoRoot, 'etc', 'passwd'));
+  assert.strictEqual(resolved, path.join(repoRoot, DEFAULT_FOOTER_SOURCE));
+});
+
+test('resolveFooterSourcePath: an absolute footer.source inside repoRoot is used as given', () => {
+  const repoRoot = tmpRepo({ 'public/my-footer.html': '<p>mine</p>' });
+  const absolute = path.join(repoRoot, 'public', 'my-footer.html');
+  const resolved = resolveFooterSourcePath({ footer: { source: absolute } }, repoRoot);
+  assert.strictEqual(resolved, absolute);
+});
+
+test('resolveFooterSourcePath: a relative footer.source is joined onto repoRoot', () => {
+  const repoRoot = tmpRepo({ 'public/my-footer.html': '<p>mine</p>' });
+  const resolved = resolveFooterSourcePath({ footer: { source: 'public/my-footer.html' } }, repoRoot);
+  assert.strictEqual(resolved, path.join(repoRoot, 'public', 'my-footer.html'));
 });
 
 test('renderFooter: a footer.source that escapes repoRoot renders the default footer instead', () => {

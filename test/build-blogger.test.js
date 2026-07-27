@@ -36,12 +36,32 @@ describe('resolveTemplatePath', () => {
     fs.rmSync(repoRoot, { recursive: true });
   });
 
-  it('rejects a blogger.template that escapes the repo root and falls back to the default', () => {
+  it('uses an absolute config.blogger.template that lies inside the repo root', () => {
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    const customPath = path.join(publicDir, 'my-custom-template.html');
+    touch(customPath);
+    const result = resolveTemplatePath({ blogger: { template: customPath } }, publicDir);
+    assert.equal(result, customPath);
+    fs.rmSync(repoRoot, { recursive: true });
+  });
+
+  it('rejects a blogger.template that escapes the repo root via ../ and falls back to the default', () => {
     const repoRoot = makeTempDir();
     const publicDir = path.join(repoRoot, 'public');
     const canonicalPath = path.join(publicDir, 'blogger-template.html');
     touch(canonicalPath);
     const result = resolveTemplatePath({ blogger: { template: '../../../etc/passwd' } }, publicDir);
+    assert.equal(result, canonicalPath);
+    fs.rmSync(repoRoot, { recursive: true });
+  });
+
+  it('rejects an absolute blogger.template outside the repo root and falls back to the default', () => {
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    const canonicalPath = path.join(publicDir, 'blogger-template.html');
+    touch(canonicalPath);
+    const result = resolveTemplatePath({ blogger: { template: '/etc/passwd' } }, publicDir);
     assert.equal(result, canonicalPath);
     fs.rmSync(repoRoot, { recursive: true });
   });
