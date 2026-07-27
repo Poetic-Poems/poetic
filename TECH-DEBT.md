@@ -102,6 +102,23 @@ is still visible; claiming it here would silently retire work nobody has done.
 | [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-16 — Small defensive-hardening batch (config, dev server) | TD26072116 |
 | [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-17 — Quote-style lint rule and JSDoc completion | TD26072117 |
 | [project-review-2026-07-21](reviews/project-review-2026-07-21/) | R-18 — Miscellaneous small fixes | TD26072118 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-01 — Make changelog-check an actual merge gate | TD26072604 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-02 — Refactor and test sync-blogger.js's main() orchestration | TD26072605 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-03 — Route footer/blogger template config paths through path-guard | TD26072606 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-04 — Test serve-static.js's real request handler | TD26072607 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-05 — Export and test poem-to-yaml.js/poem-to-raw.js's CLI orchestration | TD26072608 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-06 — Exempt createPost from Blogger sync's rejection-retry | TD26072609 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-07 — Gate npm run coverage in CI with a threshold | TD26072610 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-08 — Replace inline onclick handlers in the analysis toggle | TD26072611 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-09 — Add timeout-minutes to CI jobs that lack one | TD26072612 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-10 — Mask the Blogger client-secret terminal prompt | TD26072613 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-11 — Add an automated licence-compatibility check | TD26072614 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-12 — Parse each poem's YAML once per aggregate build | TD26072615 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-13 — Add a `<main>` landmark and an automated accessibility checker | TD26072616 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-14 — Track browser-renderer error classification (already filed by this review) | TD26072617 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-15 — Fix three documentation-accuracy gaps | TD26072618 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-16 — Add graceful shutdown to the dev server | TD26072619 |
+| [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-17 — Document a fast-subset/watch-mode test workflow | TD26072620 |
 
 ## Current Items
 
@@ -145,6 +162,192 @@ retry-on-rejection and deliberately left concurrency alone as R-14's
 lowest-priority part. Fix: give the `main()` loop a small bounded worker pool
 (process N poems concurrently), keeping the per-poem summary output stable;
 worth doing only if sync runtimes are actually observed to be a problem.
+
+### TD26072604 changelog-check required status check missing from branch ruleset
+
+`release.yml`'s `changelog-check` job (added by #91) fails a PR that bumps
+`package.json`'s version without a matching `CHANGELOG.md` entry, but the
+active branch ruleset's `required_status_checks` list only names `build`,
+`commit-format`, and the two `Analyze` contexts — `changelog-check` isn't in
+it, so "Squash and merge" stays clickable even while it's red, and the
+push-triggered `release` job doesn't re-check either. Project review
+2026-07-26's R-01/F-CI-01. Fix: add `"changelog-check"` to the ruleset's
+`required_status_checks` list (a GitHub settings change, not a code change —
+needs admin/maintain permission on the repo).
+
+### TD26072605 sync-blogger.js's main() has zero test coverage and untested complexity
+
+`main()` (168 lines) inlines the per-poem create/update/skip decision and the
+removal-pass loop — real branching business logic, unlike every other
+function in the file, which is pure, exported, and unit-tested. It's the one
+piece of the framework that mutates a live public Blogger blog on every push
+to `main` touching `src/poems/**`, and the one part of this file with no test
+coverage at all (69.35% stmt / 56% func for the whole file, concentrated in
+this gap). Project review 2026-07-26's R-02/F-CODE-01/F-TEST-01. Fix: extract
+the per-poem decision and removal-pass loop into named, exported functions,
+then add an integration-style test mocking `global.fetch` that drives the
+extracted orchestration through create/update/skip/removal/failure branches.
+
+### TD26072606 footer.source/blogger.template config paths bypass path-guard
+
+`footer.js`'s `resolveFooterSourcePath()` and `build-blogger.js`'s
+`resolveTemplatePath()` both resolve a config-supplied path with no
+containment check, unlike `serve-static.js`, which correctly uses
+`path-guard.js`'s `safeJoin`/`isWithinRoot` for exactly this class of
+problem. A `.poetic-config.yaml` author (a lower bar in a multi-contributor
+poem collection than in this framework repo) can point either at an arbitrary
+file, which then gets published verbatim to GitHub Pages or uploaded as the
+live Blogger theme. Project review 2026-07-26's R-03/F-SEC-01. Fix: route
+both functions through `path-guard.js`'s existing helpers, rooted at the repo
+root/`public/`-equivalent scope.
+
+### TD26072607 serve-static.js's real request handler is untested
+
+`test/serve-static.test.js` stubs `http.createServer` to a no-op and only
+exercises four pure helpers extracted from the module — the actual request
+handler (the `/all-poems` endpoint, directory listing, both path-traversal
+guard call sites, the 200/403/404 responses, SPA fallback) has never run
+under test, even though `serve-static.js` is the only place in `src/` that
+wires `path-guard.js` into request handling. Project review 2026-07-26's
+R-04/F-TEST-02. Fix: capture the request-handler function itself (or use a
+real `listen(0)`) and assert a traversal attempt returns 403, a normal file
+returns 200, and a missing path falls through correctly.
+
+### TD26072608 poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested
+
+Both files' `main()` — the `--all` loop, skip-if-up-to-date counting,
+stale-artefact detection, per-file error counting/`exit(1)` — is unexported
+and untested, unlike `build-poems.js`'s equivalent (`buildAllPoems()`, tested
+via `spawnSync` including its exit paths). Every consumer repo runs this code
+on every build, but only the project's own pristine corpus ever exercises it
+today. Project review 2026-07-26's R-05/F-TEST-03. Fix: export each file's
+per-file loop as a testable function and add `spawnSync`-driven tests
+mirroring `test/build-poems.test.js`'s pattern.
+
+### TD26072609 sync-blogger's createPost retry can duplicate-post a poem
+
+`fetchWithRetry()` retries any rejected fetch once, applied uniformly to
+every Blogger call including the non-idempotent `createPost`. If a create
+request reaches Blogger and is processed, but the response is lost to the
+client (timeout/connection reset), the retry creates a second live post for
+the same poem — no idempotency key, no re-check against existing posts.
+Project review 2026-07-26's R-06/F-OPS-01. Fix: exempt `createPost` from the
+rejection-retry path, or re-check for a same-slug post before retrying it.
+
+### TD26072610 npm run coverage exists but isn't gated in CI
+
+`c8` is configured and runnable locally, but no workflow runs it, uploads a
+report, or checks a threshold — the 2026-07-21 review's R-12 is satisfied at
+the "tool exists" level, not the "CI enforces it" level, and several of this
+framework's riskiest paths (see TD26072605, TD26072607) already sit at the
+lower end of the coverage range with no tripwire against further slippage.
+Project review 2026-07-26's R-07/F-CI-02/F-TOOL-01 (the identical gap found
+independently by two dimension passes). Fix: add a `coverage` step to
+`build-poems.yml`'s `build` job using `c8 --check-coverage` with a floor a
+little below the current 79%/82%/88%.
+
+### TD26072611 Analysis toggle uses inline onclick handlers instead of delegated listener
+
+`_poem-content.pug`'s four analysis show/hide/selector controls use
+hand-written, string-interpolated `onclick` JS (including a helper redefined
+identically in two adjacent buttons), contradicting the template's own "do
+not add a script block here" comment and diverging from the postscript
+toggle's already-fixed delegated-listener pattern in `public/poetic.js`.
+Project review 2026-07-26's R-08/F-ARCH-01/F-CODE-02. Fix: replace the
+`onclick` attributes with `data-*` attributes and one delegated `click`
+listener in `public/poetic.js`, mirroring the postscript-toggle fix.
+
+### TD26072612 Most CI jobs have no timeout-minutes
+
+Only `sync-blogger.yml` sets a job `timeout-minutes`; every other workflow's
+jobs — including `build-poems.yml`'s required `build` check — default to
+GitHub Actions' 360-minute ceiling, so a hang could occupy a runner for up to
+6 hours before being killed. No evidence this has happened. Project review
+2026-07-26's R-09/F-CI-03. Fix: add a modest `timeout-minutes` (e.g. 10-15 for
+`build`, 5 for lighter jobs) to each workflow lacking one.
+
+### TD26072613 Blogger client secret echoed to terminal during interactive entry
+
+`blogger-auth.js`'s interactive `BLOGGER_CLIENT_SECRET` prompt uses a plain
+`rl.question()` with no output-muting, so the typed secret appears in
+cleartext on screen and in scrollback; the env-var path already avoids this.
+Project review 2026-07-26's R-10/F-SEC-02. Fix: mask the prompt (disable TTY
+echo for that one question), or document the env-var path as the way to
+avoid on-screen echo.
+
+### TD26072614 No automated licence-compatibility check for dependencies
+
+No CI step or script verifies dependency licences; ~45 transitive packages
+have no recorded licence field in `package-lock.json` (well-known
+permissively-licensed tooling, no evidence of an actual conflict today).
+Nothing would catch a future dependency introducing a copyleft or otherwise
+MIT-incompatible licence before it lands. Project review 2026-07-26's
+R-11/F-DEPS-01. Fix: add a CI step running `license-checker --onlyAllow` (or
+equivalent) against the production dependency tree.
+
+### TD26072615 build-all-poems.js parses each poem's YAML up to four times
+
+`concatenateAllHtmlFiles()`, `loadPoemData()`, `generateIndexHtml()`, and the
+staleness-check's `sources`-set computation each independently read+parse
+every poem's YAML — including before the "nothing changed, skip" fast path
+even runs, so it isn't actually O(1). Linear, not quadratic, and likely
+negligible at real-world scale, but avoidable redundant I/O that undercuts
+the incremental-build fast path's own purpose. Project review 2026-07-26's
+R-12/F-PERF-02. Fix: parse each poem's YAML once per build and share the
+parsed object across metadata extraction and `$ref` resolution.
+
+### TD26072616 No `<main>` landmark on generated pages; no automated accessibility checker
+
+None of `index.html`, `all-poems.html`, or individual poem pages contain a
+`<main>` landmark (screen-reader/switch-access users have no "jump to main
+content" region, distinct from heading navigation), and no automated
+accessibility tool (axe/pa11y) runs anywhere — both prior real a11y
+regressions (the keyboard-trap toggle, WCAG contrast failures) were caught by
+manual review only. Project review 2026-07-26's R-13/F-UX-01/F-UX-02. Fix:
+wrap each template's primary content in `<main>`, and add a non-blocking
+`pa11y-ci`/`axe-core` CI check against the index and one poem page.
+
+### TD26072617 Browser-renderer errors are unclassified plain Error objects
+
+`src/browser/render.js`/`render-aggregate.js` throw bare `Error`s with no
+`.code`/`.name`, so a consumer of the `poetic/browser` export can't
+distinguish error kinds programmatically. This was flagged in the 2026-07-21
+review's TD26072118 batch, but that item's own closing commit explicitly
+deferred this specific piece ("left as-is... not a small, safe edit") without
+filing a follow-on entry, so it existed in no tracked register until now —
+project review 2026-07-26's R-14/F-UX-03/F-GOV-01 both note the tracking gap
+itself as the finding; this entry is that recommendation's entire intended
+end state, already actioned as part of this review. Fix: add `.code`/`.name`
+classification to thrown errors in both browser-render files.
+
+### TD26072618 Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description
+
+Three small, independent doc-accuracy gaps: `scripts/edit-poem`/
+`docs/SCRIPTS.md` document a `-1` no-match exit code that's actually `255`;
+`docs/BUILD.md` carries one "previously"-phrased historical sentence contrary
+to CLAUDE.md's as-built principle; and the same file's File Structure diagram
+mislabels `poetic.js` as Audiomack-specific while omitting its
+postscript-toggle responsibility. Project review 2026-07-26's
+R-15/F-DOC-01/F-DOC-02/F-DOC-03. Fix: reconcile the exit-code docs with
+reality, drop the historical parenthetical, and reword the `poetic.js`
+diagram entry to cover both responsibilities.
+
+### TD26072619 serve-static.js dev server has no graceful shutdown
+
+No `SIGINT`/`SIGTERM` handler; `npm run stop` sends a bare `SIGTERM` that
+terminates the process immediately without draining in-flight responses. Low
+real-world impact (a loopback-bound dev server with nothing stateful to
+flush). Project review 2026-07-26's R-16/F-OPS-02. Fix: call `server.close()`
+on `SIGINT`/`SIGTERM`.
+
+### TD26072620 No fast-subset/watch-mode test workflow documented
+
+`package.json`'s only test script runs the full suite; there's no
+`test:watch` and no documented way to run a subset, though
+`node --test test/<file>.test.js` already works. Minor friction only — the
+full suite is fast (~20s) today. Project review 2026-07-26's
+R-17/F-TOOL-02. Fix: add a `test:watch` script and a one-line note in
+CLAUDE.md's build-commands section.
 
 ## Ledger
 
@@ -213,3 +416,20 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072601 | poem-parser.js still has ~46 methods covering variable substitution and metadata parsing | resolved | 2026-07-26 | #106 |
 | TD26072602 | Blogger sync posts poems strictly sequentially | open | | |
 | TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | resolved | 2026-07-26 | #108 |
+| TD26072604 | changelog-check required status check missing from branch ruleset | open | | |
+| TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | open | | |
+| TD26072606 | footer.source/blogger.template config paths bypass path-guard | open | | |
+| TD26072607 | serve-static.js's real request handler is untested | open | | |
+| TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | open | | |
+| TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | open | | |
+| TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
+| TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | open | | |
+| TD26072612 | Most CI jobs have no timeout-minutes | open | | |
+| TD26072613 | Blogger client secret echoed to terminal during interactive entry | open | | |
+| TD26072614 | No automated licence-compatibility check for dependencies | open | | |
+| TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
+| TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | open | | |
+| TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
+| TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | open | | |
+| TD26072619 | serve-static.js dev server has no graceful shutdown | open | | |
+| TD26072620 | No fast-subset/watch-mode test workflow documented | open | | |
