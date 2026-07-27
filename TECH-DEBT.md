@@ -394,7 +394,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072604 | changelog-check required status check missing from branch ruleset | open | | |
 | TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | resolved | 2026-07-27 | #111 |
 | TD26072606 | footer.source/blogger.template config paths bypass path-guard | open | | |
-| TD26072607 | serve-static.js's real request handler is untested | resolved | 2026-07-27 | TBD |
+| TD26072607 | serve-static.js's real request handler is untested | resolved | 2026-07-27 | #114 |
 | TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | open | | |
 | TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | open | | |
 | TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
