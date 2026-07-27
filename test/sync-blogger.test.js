@@ -5,8 +5,8 @@
  *
  * Covers: parseArgs, resolveConfig, extractSlug, mapBySlug,
  * bloggerAcceptableLabels, composePost, normalizeHtml, postNeedsUpdate,
- * selectRemoved, extractContent, explainBloggerFailure, fetchWithRetry, and
- * (integration-style, with global.fetch mocked) syncPoem and
+ * selectRemoved, extractContent, explainBloggerFailure, fetchWithRetry,
+ * createPost, and (integration-style, with global.fetch mocked) syncPoem and
  * processRemovals — the per-poem create/update/skip decision and the
  * removal-pass loop that main() drives.
  */
@@ -30,6 +30,7 @@ const {
   extractContent,
   explainBloggerFailure,
   fetchWithRetry,
+  createPost,
   syncPoem,
   processRemovals,
 } = require('../src/tools/sync-blogger');
@@ -899,6 +900,40 @@ test('fetchWithRetry: propagates rejection when the retry also fails', async () 
     /network down/
   );
   assert.strictEqual(calls.count, 2);
+});
+
+test('fetchWithRetry: retryable false does not retry a network-level rejection', async () => {
+  let calls = 0;
+  await assert.rejects(
+    () => withMockFetch(
+      async () => { calls++; throw new Error('network down'); },
+      () => fetchWithRetry('https://example.com', undefined, { retryable: false })
+    ),
+    /network down/
+  );
+  assert.strictEqual(calls, 1);
+});
+
+test('fetchWithRetry: retryable false does not retry a 5xx response', async () => {
+  let calls = 0;
+  const response = await withMockFetch(
+    async () => { calls++; return { status: 503 }; },
+    () => fetchWithRetry('https://example.com', undefined, { retryable: false })
+  );
+  assert.strictEqual(response.status, 503);
+  assert.strictEqual(calls, 1);
+});
+
+test('createPost: a rejected create is not retried', async () => {
+  let calls = 0;
+  await assert.rejects(
+    () => withMockFetch(
+      async () => { calls++; throw new Error('connection reset'); },
+      () => createPost('BLOG1', 'TOKEN1', { title: 'x' })
+    ),
+    /connection reset/
+  );
+  assert.strictEqual(calls, 1);
 });
 
 // ── syncPoem / processRemovals (integration: mocked global.fetch) ────────────

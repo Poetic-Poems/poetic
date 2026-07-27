@@ -199,16 +199,6 @@ R-04/F-TEST-02. Fix: capture the request-handler function itself (or use a
 real `listen(0)`) and assert a traversal attempt returns 403, a normal file
 returns 200, and a missing path falls through correctly.
 
-### TD26072609 sync-blogger's createPost retry can duplicate-post a poem
-
-`fetchWithRetry()` retries any rejected fetch once, applied uniformly to
-every Blogger call including the non-idempotent `createPost`. If a create
-request reaches Blogger and is processed, but the response is lost to the
-client (timeout/connection reset), the retry creates a second live post for
-the same poem — no idempotency key, no re-check against existing posts.
-Project review 2026-07-26's R-06/F-OPS-01. Fix: exempt `createPost` from the
-rejection-retry path, or re-check for a same-slug post before retrying it.
-
 ### TD26072610 npm run coverage exists but isn't gated in CI
 
 `c8` is configured and runnable locally, but no workflow runs it, uploads a
@@ -415,7 +405,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072606 | footer.source/blogger.template config paths bypass path-guard | resolved | 2026-07-27 | #113 |
 | TD26072607 | serve-static.js's real request handler is untested | resolved | 2026-07-27 | #114 |
 | TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | resolved | 2026-07-28 | #115 |
-| TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | open | | |
+| TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | resolved | 2026-07-28 | #117 |
 | TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
 | TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | open | | |
 | TD26072612 | Most CI jobs have no timeout-minutes | open | | |

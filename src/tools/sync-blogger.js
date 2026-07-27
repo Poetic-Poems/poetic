@@ -26,8 +26,9 @@
  *   updatePost(blogId, token, postId, post)
  *   revertPost(blogId, token, postId)
  *   deletePost(blogId, token, postId)
- *   fetchWithRetry(url, init)                        - shared fetch wrapper: per-request timeout +
- *                                                       single retry on 429/5xx or network rejection
+ *   fetchWithRetry(url, init, options)                - shared fetch wrapper: per-request timeout +
+ *                                                       single retry on 429/5xx or network rejection,
+ *                                                       unless options.retryable is false
  *   syncPoem({ existing, desired, isoDate, blogId, token, dryRun })
  *                                                     - create/update/skip decision for one poem
  *   processRemovals({ posts, currentSlugs, label, removedMode, blogId, token, dryRun })
@@ -389,20 +390,29 @@ async function assertOk(response, context) {
  * above firing. Only the first attempt's failure is retried; a failure on
  * the retry itself is returned/thrown as-is.
  *
+ * Pass `retryable: false` for non-idempotent calls (e.g. `createPost`):
+ * a rejected request may have reached the server and been processed even
+ * though the client never saw the response, so retrying it risks creating
+ * a second live resource. With `retryable: false` the first attempt's
+ * result — success, failure response, or thrown rejection — is returned
+ * or thrown as-is, never retried.
+ *
  * @param {string} url
  * @param {object} [init] - fetch init options
+ * @param {{ retryable?: boolean }} [options]
  * @returns {Promise<Response>}
  */
-async function fetchWithRetry(url, init) {
+async function fetchWithRetry(url, init, { retryable = true } = {}) {
   const attempt = () => fetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   let response;
   try {
     response = await attempt();
-  } catch {
+  } catch (err) {
+    if (!retryable) throw err;
     await new Promise(resolve => setTimeout(resolve, 500));
     return attempt();
   }
-  if (response.status !== 429 && response.status < 500) return response;
+  if (!retryable || (response.status !== 429 && response.status < 500)) return response;
   await new Promise(resolve => setTimeout(resolve, 500));
   return attempt();
 }
@@ -497,20 +507,31 @@ async function listAllPosts(blogId, token) {
 /**
  * Create a new post on Blogger.
  *
+ * Not idempotent — a lost response after the server has already created
+ * the post would make an automatic retry create a duplicate — so this
+ * call opts out of `fetchWithRetry`'s rejection-retry (see its doc
+ * comment). A failed create surfaces as a normal error for this poem;
+ * the tool is safely re-runnable, so a subsequent sync run sees the poem
+ * as still missing and tries again.
+ *
  * @param {string} blogId
  * @param {string} token
  * @param {object} post
  * @returns {Promise<object>}
  */
 async function createPost(blogId, token, post) {
-  const response = await fetchWithRetry(`${BLOGGER_API}/blogs/${blogId}/posts/`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+  const response = await fetchWithRetry(
+    `${BLOGGER_API}/blogs/${blogId}/posts/`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(post),
     },
-    body: JSON.stringify(post),
-  });
+    { retryable: false }
+  );
   await assertOk(response, 'createPost');
   return response.json();
 }
