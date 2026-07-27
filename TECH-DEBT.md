@@ -188,18 +188,6 @@ live Blogger theme. Project review 2026-07-26's R-03/F-SEC-01. Fix: route
 both functions through `path-guard.js`'s existing helpers, rooted at the repo
 root/`public/`-equivalent scope.
 
-### TD26072607 serve-static.js's real request handler is untested
-
-`test/serve-static.test.js` stubs `http.createServer` to a no-op and only
-exercises four pure helpers extracted from the module — the actual request
-handler (the `/all-poems` endpoint, directory listing, both path-traversal
-guard call sites, the 200/403/404 responses, SPA fallback) has never run
-under test, even though `serve-static.js` is the only place in `src/` that
-wires `path-guard.js` into request handling. Project review 2026-07-26's
-R-04/F-TEST-02. Fix: capture the request-handler function itself (or use a
-real `listen(0)`) and assert a traversal attempt returns 403, a normal file
-returns 200, and a missing path falls through correctly.
-
 ### TD26072608 poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested
 
 Both files' `main()` — the `--all` loop, skip-if-up-to-date counting,
@@ -406,7 +394,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072604 | changelog-check required status check missing from branch ruleset | open | | |
 | TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | resolved | 2026-07-27 | #111 |
 | TD26072606 | footer.source/blogger.template config paths bypass path-guard | open | | |
-| TD26072607 | serve-static.js's real request handler is untested | open | | |
+| TD26072607 | serve-static.js's real request handler is untested | resolved | 2026-07-27 | TBD |
 | TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | open | | |
 | TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | open | | |
 | TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
