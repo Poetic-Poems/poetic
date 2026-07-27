@@ -163,15 +163,6 @@ Project review 2026-07-26's R-08/F-ARCH-01/F-CODE-02. Fix: replace the
 `onclick` attributes with `data-*` attributes and one delegated `click`
 listener in `public/poetic.js`, mirroring the postscript-toggle fix.
 
-### TD26072613 Blogger client secret echoed to terminal during interactive entry
-
-`blogger-auth.js`'s interactive `BLOGGER_CLIENT_SECRET` prompt uses a plain
-`rl.question()` with no output-muting, so the typed secret appears in
-cleartext on screen and in scrollback; the env-var path already avoids this.
-Project review 2026-07-26's R-10/F-SEC-02. Fix: mask the prompt (disable TTY
-echo for that one question), or document the env-var path as the way to
-avoid on-screen echo.
-
 ### TD26072614 No automated licence-compatibility check for dependencies
 
 No CI step or script verifies dependency licences; ~45 transitive packages
@@ -329,7 +320,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
 | TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | open | | |
 | TD26072612 | Most CI jobs have no timeout-minutes | resolved | 2026-07-28 | #119 |
-| TD26072613 | Blogger client secret echoed to terminal during interactive entry | in-progress | | |
+| TD26072613 | Blogger client secret echoed to terminal during interactive entry | resolved | 2026-07-28 | #121 |
 | TD26072614 | No automated licence-compatibility check for dependencies | open | | |
 | TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | open | | |

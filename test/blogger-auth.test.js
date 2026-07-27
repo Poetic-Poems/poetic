@@ -8,12 +8,16 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
+const readline = require('readline');
+const { PassThrough } = require('stream');
+
 const {
   waitForCode,
   generateState,
   generatePkce,
   describeBlogAccess,
   saveFileMode0600,
+  promptHidden,
 } = require('../src/tools/blogger-auth');
 
 function getFreePort() {
@@ -88,6 +92,70 @@ test('waitForCode rejects a callback whose state does not match', async () => {
   const status = await hitCallback(port, '?code=auth-code&state=forged');
   assert.strictEqual(status, 400);
   await rejection;
+});
+
+// ── promptHidden ──────────────────────────────────────────────────────────────
+
+test('promptHidden resolves with the typed value', async () => {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  output.on('data', () => {}); // drain
+  const rl = readline.createInterface({ input, output, terminal: true });
+
+  const pending = promptHidden(rl, 'Enter your BLOGGER_CLIENT_SECRET: ');
+  input.write('super-secret');
+  input.write('\n');
+  assert.strictEqual(await pending, 'super-secret');
+  rl.close();
+});
+
+test('promptHidden never writes the typed characters to the output stream', async () => {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  let captured = '';
+  output.on('data', (chunk) => {
+    captured += chunk.toString();
+  });
+  // terminal: true so the interface echoes keystrokes the same way a real
+  // tty session would — the exact path promptHidden must suppress.
+  const rl = readline.createInterface({ input, output, terminal: true });
+
+  const question = 'Enter your BLOGGER_CLIENT_SECRET: ';
+  const pending = promptHidden(rl, question);
+  input.write('s');
+  input.write('3');
+  input.write('c');
+  input.write('r');
+  input.write('3');
+  input.write('t');
+  input.write('\n');
+  await pending;
+  rl.close();
+
+  assert.doesNotMatch(captured, /s3cr3t/);
+  assert.match(captured, new RegExp(question.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+});
+
+test('promptHidden restores the original output-writing behaviour for later questions', async () => {
+  const input = new PassThrough();
+  const output = new PassThrough();
+  let captured = '';
+  output.on('data', (chunk) => {
+    captured += chunk.toString();
+  });
+  const rl = readline.createInterface({ input, output, terminal: true });
+
+  const hiddenPending = promptHidden(rl, 'secret: ');
+  input.write('hidden-value\n');
+  await hiddenPending;
+
+  captured = '';
+  const visiblePending = new Promise(resolve => rl.question('name: ', resolve));
+  input.write('visible-value\n');
+  assert.strictEqual(await visiblePending, 'visible-value');
+  rl.close();
+
+  assert.match(captured, /visible-value/);
 });
 
 // ── describeBlogAccess ────────────────────────────────────────────────────────

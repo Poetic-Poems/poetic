@@ -107,6 +107,31 @@ function prompt(rl, question) {
   return new Promise(resolve => rl.question(question, resolve));
 }
 
+// Like `prompt`, but the typed answer never reaches the terminal or its
+// scrollback — used for the client secret. `readline` has no built-in
+// masked-input mode; in terminal mode it echoes every keystroke itself (the
+// tty is in raw mode, so the OS won't echo it) by replaying the input line
+// through `rl._writeToOutput` on every keypress. Intercepting that method for
+// the duration of this one question, and only letting the question text
+// itself through, is the standard way to suppress that echo without a
+// dependency. Outside terminal mode (piped input, tests) `_writeToOutput` is
+// not driven by keystrokes at all, so the override is a no-op there.
+function promptHidden(rl, question) {
+  return new Promise(resolve => {
+    const originalWriteToOutput = rl._writeToOutput;
+    rl._writeToOutput = function writeToOutput(stringToWrite) {
+      if (stringToWrite === question) {
+        originalWriteToOutput.call(rl, stringToWrite);
+      }
+    };
+    rl.question(question, value => {
+      rl._writeToOutput = originalWriteToOutput;
+      rl.output.write('\n');
+      resolve(value);
+    });
+  });
+}
+
 // ── CSRF state + PKCE (RFC 8252 / RFC 7636) ───────────────────────────────────
 
 function base64UrlEncode(buf) {
@@ -407,7 +432,7 @@ After running:
     clientId = (await prompt(rl, 'Enter your BLOGGER_CLIENT_ID: ')).trim();
   }
   if (!clientSecret) {
-    clientSecret = (await prompt(rl, 'Enter your BLOGGER_CLIENT_SECRET: ')).trim();
+    clientSecret = (await promptHidden(rl, 'Enter your BLOGGER_CLIENT_SECRET: ')).trim();
   }
 
   if (!clientId || !clientSecret) {
@@ -573,4 +598,5 @@ module.exports = {
   generateState,
   generatePkce,
   saveFileMode0600,
+  promptHidden,
 };
