@@ -128,41 +128,6 @@ it is always obvious where a new item's body belongs.
 
 <!-- Add new items directly below, as `### <id> <title>` sections. -->
 
-### TD26072102 docs/QUICKSTART-VIM.md references a non-existent vim/ root path
-
-The quickstart's install command and example-poem path predate the
-`vim/` → `editors/vim/` move every sibling doc already reflects, so its first
-documented command fails. Fix: update all path references to `editors/vim/` and
-`src/poems/poem/_example.poem`.
-
-### TD26072104 Governance docs don't state that review is currently self-review
-
-`main`'s code-owner review gate is satisfied by the maintainer's own second
-GitHub account (one person, two handles, one email throughout git history); the
-project also has a 100% single-person bus factor with no succession plan.
-CLAUDE.md's multi-agent tooling solves agent concurrency but doesn't provide
-independent review or bus-factor redundancy, and the docs don't say so. Fix:
-add a short, honest statement of this to CLAUDE.md/SECURITY.md.
-### TD26072103 Postscript "See more" toggle is not keyboard-operable
-
-`src/templates/_poem-content.pug`'s postscript preview uses a `display: none`
-checkbox + label, which cannot receive keyboard focus — a live WCAG 2.1.1
-violation, the same defect class the 2026-07-11 review fixed for sort headers
-in a different component. Fix: replace with a real `<button aria-expanded>`
-toggle, mirroring the existing analysis/song-embed controls in the same
-template.
-
-### TD26072602 Blogger sync posts poems strictly sequentially
-
-`sync-blogger.js`'s `main()` loop creates, updates and deletes posts one at a
-time, so a large collection's first sync takes as long as the sum of every
-request's round trip. This is the remaining piece of project review
-2026-07-21's R-14 — TD26072114 covered the job/request timeouts and
-retry-on-rejection and deliberately left concurrency alone as R-14's
-lowest-priority part. Fix: give the `main()` loop a small bounded worker pool
-(process N poems concurrently), keeping the per-poem summary output stable;
-worth doing only if sync runtimes are actually observed to be a problem.
-
 ### TD26072604 changelog-check required status check missing from branch ruleset
 
 `release.yml`'s `changelog-check` job (added by #91) fails a PR that bumps
@@ -174,30 +139,6 @@ push-triggered `release` job doesn't re-check either. Project review
 2026-07-26's R-01/F-CI-01. Fix: add `"changelog-check"` to the ruleset's
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
-
-### TD26072606 footer.source/blogger.template config paths bypass path-guard
-
-`footer.js`'s `resolveFooterSourcePath()` and `build-blogger.js`'s
-`resolveTemplatePath()` both resolve a config-supplied path with no
-containment check, unlike `serve-static.js`, which correctly uses
-`path-guard.js`'s `safeJoin`/`isWithinRoot` for exactly this class of
-problem. A `.poetic-config.yaml` author (a lower bar in a multi-contributor
-poem collection than in this framework repo) can point either at an arbitrary
-file, which then gets published verbatim to GitHub Pages or uploaded as the
-live Blogger theme. Project review 2026-07-26's R-03/F-SEC-01. Fix: route
-both functions through `path-guard.js`'s existing helpers, rooted at the repo
-root/`public/`-equivalent scope.
-### TD26072607 serve-static.js's real request handler is untested
-
-`test/serve-static.test.js` stubs `http.createServer` to a no-op and only
-exercises four pure helpers extracted from the module — the actual request
-handler (the `/all-poems` endpoint, directory listing, both path-traversal
-guard call sites, the 200/403/404 responses, SPA fallback) has never run
-under test, even though `serve-static.js` is the only place in `src/` that
-wires `path-guard.js` into request handling. Project review 2026-07-26's
-R-04/F-TEST-02. Fix: capture the request-handler function itself (or use a
-real `listen(0)`) and assert a traversal attempt returns 403, a normal file
-returns 200, and a missing path falls through correctly.
 
 ### TD26072610 npm run coverage exists but isn't gated in CI
 
@@ -398,7 +339,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072501 | Lint rules reach generated `public/*.js` that consumers may track, but `.gitignore` isn't synced | resolved | 2026-07-25 | #99 |
 | TD26072502 | convertHtmlToPlainText() still loses a trailing newline for single-block multi-element postscript/analysis content | resolved | 2026-07-26 | #103 |
 | TD26072601 | poem-parser.js still has ~46 methods covering variable substitution and metadata parsing | resolved | 2026-07-26 | #106 |
-| TD26072602 | Blogger sync posts poems strictly sequentially | open | | |
+| TD26072602 | Blogger sync posts poems strictly sequentially | not-debt | | #107 |
 | TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | resolved | 2026-07-26 | #108 |
 | TD26072604 | changelog-check required status check missing from branch ruleset | open | | |
 | TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | resolved | 2026-07-27 | #111 |
