@@ -417,7 +417,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072602 | Blogger sync posts poems strictly sequentially | open | | |
 | TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | resolved | 2026-07-26 | #108 |
 | TD26072604 | changelog-check required status check missing from branch ruleset | open | | |
-| TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | open | | |
+| TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | in-progress | | |
 | TD26072606 | footer.source/blogger.template config paths bypass path-guard | open | | |
 | TD26072607 | serve-static.js's real request handler is untested | open | | |
 | TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | open | | |
