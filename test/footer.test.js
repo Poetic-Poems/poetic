@@ -14,7 +14,7 @@ const path = require('path');
 const os = require('os');
 
 const {
-  renderFooter, upsertFooter, DEFAULT_FOOTER_SOURCE, FOOTER_START, FOOTER_END,
+  renderFooter, upsertFooter, resolveFooterSourcePath, DEFAULT_FOOTER_SOURCE, FOOTER_START, FOOTER_END,
 } = require('../src/tools/footer');
 const { generateIndexHtml } = require('../src/tools/build-all-poems');
 const { REPO_ROOT } = require('../src/tools/repo-root');
@@ -81,6 +81,24 @@ test('renderFooter: a missing footer.source file yields an empty string (no thro
     const block = renderFooter({}, repoRoot, { base: '' });
     assert.strictEqual(block, '');
   });
+});
+
+test('resolveFooterSourcePath: a footer.source that escapes repoRoot via ../ falls back to the default path', () => {
+  const repoRoot = tmpRepo({ 'public/poetic-footer.html': '<p>default</p>' });
+  const resolved = resolveFooterSourcePath({ footer: { source: '../../../etc/passwd' } }, repoRoot);
+  assert.strictEqual(resolved, path.join(repoRoot, DEFAULT_FOOTER_SOURCE));
+});
+
+test('resolveFooterSourcePath: an absolute footer.source is confined under repoRoot rather than read literally', () => {
+  const repoRoot = tmpRepo({ 'public/poetic-footer.html': '<p>default</p>' });
+  const resolved = resolveFooterSourcePath({ footer: { source: '/etc/passwd' } }, repoRoot);
+  assert.strictEqual(resolved, path.join(repoRoot, 'etc', 'passwd'));
+});
+
+test('renderFooter: a footer.source that escapes repoRoot renders the default footer instead', () => {
+  const repoRoot = tmpRepo({ 'public/poetic-footer.html': '<p>Default footer</p>' });
+  const block = renderFooter({ footer: { source: '../../../etc/passwd' } }, repoRoot, { base: '' });
+  assert.match(block, /Default footer/);
 });
 
 test('renderFooter: %{base} resolves to "" on root-level pages and "../" one level deep', () => {
