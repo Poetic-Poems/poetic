@@ -101,7 +101,7 @@ public/
 ├── index.html                           # Main landing page
 ├── all-poems.html                       # Generated concatenated view
 ├── poetic.css                           # Framework CSS (synced from poetic)
-├── poetic.js                            # Framework JS — shared Audiomack loader (synced)
+├── poetic.js                            # Framework JS — lazy-load song embeds and postscript toggle (synced)
 ├── index.js                             # Poem-grid renderer for index.html (synced)
 ├── all-poems.js                         # Sort/filter script for all-poems.html (synced)
 ├── date-utils.js                        # Copy of src/tools/date-utils.js (build artefact, gitignored)
@@ -160,10 +160,7 @@ The poem-grid renderer on `index.html` and the sort/filter bar on
 pages:
 
 - `index.html` carries its poem list as a `<script type="application/json"
-  id="poem-data">` data island; `index.js` reads and `JSON.parse`s it. A
-  previously-built `index.html` still carrying an older inline `const
-  allPoems = [...]` script (from before this data island existed) is
-  rewritten to the current format automatically the next time it's built.
+  id="poem-data">` data island; `index.js` reads and `JSON.parse`s it.
 - `all-poems.html` needs no equivalent data island — it reads the poem
   table/sections already present in its own DOM.
 

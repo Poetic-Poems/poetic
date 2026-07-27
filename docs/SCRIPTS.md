@@ -41,7 +41,7 @@ scripts/edit-poem ^at           # open any poem whose filename starts with "at"
 | Code | Meaning |
 |---|---|
 | `0` | Poem opened (build triggered automatically if the file was modified) |
-| `-1` | No poems matched PATTERN |
+| `255` | No poems matched PATTERN |
 | `N > 1` | N poems matched (ambiguous); titles listed to stderr; no file opened |
 
 ### Notes

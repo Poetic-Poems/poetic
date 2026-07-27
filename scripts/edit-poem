@@ -15,7 +15,7 @@
 #
 # Exit codes:
 #    0   poem opened (build triggered automatically if the file was modified)
-#   -1   no poems matched PATTERN
+#  255   no poems matched PATTERN
 #    N   N > 1 poems matched (ambiguous); titles printed to stderr; no file opened
 #
 # Examples:
