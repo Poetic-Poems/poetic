@@ -133,6 +133,10 @@ jobs:
         if: steps.changes.outputs.relevant == 'true'
         run: npm test
 
+      - name: Check coverage thresholds
+        if: steps.changes.outputs.relevant == 'true'
+        run: npm run coverage
+
       - name: Lint
         if: steps.changes.outputs.relevant == 'true'
         run: npm run lint

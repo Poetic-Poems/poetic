@@ -13,6 +13,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`npm run coverage` is now gated in CI with a threshold.**
+  `build-poems.yml`'s `build` job runs it immediately after `npm test`, and
+  `package.json` gained a `c8` config block (`check-coverage: true` plus
+  `lines`/`branches`/`functions` floors a few points below the measured
+  baseline) so a real coverage regression fails the build instead of going
+  unnoticed. Resolves TD26072610.
 - **Every CI workflow job now has a `timeout-minutes`.** Previously only
   `sync-blogger.yml`'s `sync` job set one; every other job — including
   `build-poems.yml`'s required `build` check — defaulted to GitHub Actions'
@@ -58,8 +64,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   DOM as inert text. Both fixes were previously verified manually only.
   Resolves TD26072106.
 - **`npm run coverage` reports code coverage** for `npm test`, via `c8`
-  (works directly with Node's built-in test runner). No CI coverage-floor
-  gate yet. Resolves TD26072112.
+  (works directly with Node's built-in test runner). Resolves TD26072112.
 - **`eslint.config.js` enforces single-quoted strings** (`avoidEscape: true`,
   so a string containing a `'` may use double quotes instead of escaping),
   matching the style already dominant across the codebase; the whole tree was
