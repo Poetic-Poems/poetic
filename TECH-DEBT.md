@@ -309,7 +309,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072612 | Most CI jobs have no timeout-minutes | resolved | 2026-07-28 | #119 |
 | TD26072613 | Blogger client secret echoed to terminal during interactive entry | resolved | 2026-07-28 | #121 |
 | TD26072614 | No automated licence-compatibility check for dependencies | resolved | 2026-07-29 | #127 |
-| TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
+| TD26072615 | build-all-poems.js parses each poem's YAML up to four times | in-progress | | |
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | open | | |
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
