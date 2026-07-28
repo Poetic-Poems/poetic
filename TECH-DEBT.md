@@ -324,5 +324,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | open | | |
-| TD26072620 | No fast-subset/watch-mode test workflow documented | open | | |
+| TD26072620 | No fast-subset/watch-mode test workflow documented | in-progress | | |
 | TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
