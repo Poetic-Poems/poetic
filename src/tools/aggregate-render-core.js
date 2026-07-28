@@ -120,14 +120,16 @@ function renderFreshIndexHtml(islandEntries, { siteTitle, subtitle, favicon }) {
             <p class="subtitle">${subtitle}</p>
         </div>
 
-        <!-- The title filter bar is inserted here by renderPoems()/setupHomeFilter() in index.js. -->
-        <div class="poem-grid" id="poemGrid">
-            <!-- Poems will be populated by JavaScript -->
-        </div>
+        <main>
+            <!-- The title filter bar is inserted here by renderPoems()/setupHomeFilter() in index.js. -->
+            <div class="poem-grid" id="poemGrid">
+                <!-- Poems will be populated by JavaScript -->
+            </div>
 
-        <div class="links">
-            <a href="all-poems.html">View All Poems</a>
-        </div>
+            <div class="links">
+                <a href="all-poems.html">View All Poems</a>
+            </div>
+        </main>
     </div>
 
     ${poemDataIsland}
@@ -196,6 +198,7 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
             <a href="index.html" class="back-link">← Back to Main Page</a>
         </div>
 
+        <main>
         <div class="filter-bar" id="filterBar">
             <label class="filter-field">
                 <span class="filter-icon" aria-hidden="true">🔍</span>
@@ -248,6 +251,7 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
   });
 
   html += `
+        </main>
     </div>
 </body>
 </html>`;

@@ -24,6 +24,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   other production entry; only strictly-dev entries are skipped.
   `scripts/sync-framework.sh` syncs the script, so consumer repos get the same
   check when they sync the workflow that runs it. Resolves TD26072614.
+- **Generated pages carry a `<main>` landmark, and CI runs a non-blocking
+  accessibility check.** `index.html`, `all-poems.html`
+  (`src/tools/aggregate-render-core.js`) and individual poem pages
+  (`src/templates/poem-page.pug`) now wrap their primary content in `<main>`,
+  giving screen-reader/switch-access users a "jump to main content" region.
+  `src/tools/a11y-check.js` (`npm run a11y`) runs axe-core against
+  `public/index.html` and one built poem page, driving the Chrome already
+  installed on GitHub's `ubuntu-latest` runners via `puppeteer-core`; wired
+  into `build-poems.yml` as a `continue-on-error: true` step so findings
+  surface without blocking a merge. Resolves TD26072616.
 
 ### Changed
 

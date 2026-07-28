@@ -160,17 +160,6 @@ the incremental-build fast path's own purpose. Project review 2026-07-26's
 R-12/F-PERF-02. Fix: parse each poem's YAML once per build and share the
 parsed object across metadata extraction and `$ref` resolution.
 
-### TD26072616 No `<main>` landmark on generated pages; no automated accessibility checker
-
-None of `index.html`, `all-poems.html`, or individual poem pages contain a
-`<main>` landmark (screen-reader/switch-access users have no "jump to main
-content" region, distinct from heading navigation), and no automated
-accessibility tool (axe/pa11y) runs anywhere — both prior real a11y
-regressions (the keyboard-trap toggle, WCAG contrast failures) were caught by
-manual review only. Project review 2026-07-26's R-13/F-UX-01/F-UX-02. Fix:
-wrap each template's primary content in `<main>`, and add a non-blocking
-`pa11y-ci`/`axe-core` CI check against the index and one poem page.
-
 ### TD26072617 Browser-renderer errors are unclassified plain Error objects
 
 `src/browser/render.js`/`render-aggregate.js` throw bare `Error`s with no
@@ -310,7 +299,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072613 | Blogger client secret echoed to terminal during interactive entry | resolved | 2026-07-28 | #121 |
 | TD26072614 | No automated licence-compatibility check for dependencies | resolved | 2026-07-29 | #127 |
 | TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
-| TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | in-progress | | |
+| TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | resolved | 2026-07-29 | #129 |
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | open | | |
