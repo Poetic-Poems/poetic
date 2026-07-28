@@ -95,6 +95,34 @@ single-source-of-truth pattern `render-core.js` uses for the single-poem path
 outputs cannot silently diverge; asserted by
 [`test/browser-render-aggregate.test.js`](../test/browser-render-aggregate.test.js).
 
+## Error classification
+
+All four exported functions throw a `PoemRenderError` — never a bare `Error`
+— on failure, so a consumer can branch on `.code` instead of matching
+`.message` text:
+
+```js
+const { renderPoem, PoemRenderError } = require('poetic/browser');
+
+try {
+  renderPoem(sourceText, { config, slug });
+} catch (err) {
+  if (err instanceof PoemRenderError) {
+    // err.name === 'PoemRenderError'; err.code is one of:
+    //   MISSING_TITLE, MISSING_DATE, INVALID_DATE, RESERVED_ESCAPE, RENDER_ERROR
+  }
+}
+```
+
+`MISSING_TITLE`/`MISSING_DATE`/`INVALID_DATE` cover the mandatory-header
+failures `PoemParser` (`src/tools/poem-parser.js`) throws; `RESERVED_ESCAPE`
+covers the reserved `\?` escape (`src/tools/poem-markup.js`). `RENDER_ERROR`
+is the fallback for anything else — a malformed `poems` argument to
+`renderAllPoems`/`renderIndex`, for instance. Classification happens in
+[`src/browser/render-errors.js`](../src/browser/render-errors.js), wrapping
+each exported function; it does not touch `poem-parser.js`/`poem-markup.js`
+themselves, which are shared with the Node CLI build path.
+
 ## Packaging & consumption
 
 `poetic` stays `private: true` — it is not published to the npm registry. Its

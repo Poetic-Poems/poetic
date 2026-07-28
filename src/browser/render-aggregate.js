@@ -34,6 +34,7 @@ const { formatDateForDisplay, parseDateForSorting } = require('../tools/date-uti
 const {
   escapeAmpersand, summarizePoem, renderAllPoemsHtml, renderFreshIndexHtml,
 } = require('../tools/aggregate-render-core');
+const { classifyingCall } = require('./render-errors');
 
 /**
  * Render one poem's fragment HTML from its raw (pre-augmentation) data,
@@ -60,19 +61,22 @@ function renderPoemDataFragment(data, slug, config) {
  *   favicon - favicon href, any leading `public/` already stripped
  *             (default `'poetic-logo.svg'`).
  * @returns {string} full HTML document — UNTRUSTED; sanitise before display
+ * @throws {PoemRenderError} classified by `.code` — see ./render-errors.js
  */
 function renderAllPoems(poems, opts = {}) {
-  const { config = {}, title = 'My Poems', favicon = 'poetic-logo.svg' } = opts;
+  return classifyingCall(() => {
+    const { config = {}, title = 'My Poems', favicon = 'poetic-logo.svg' } = opts;
 
-  const entries = poems.map(({ data, slug }) => ({
-    ...summarizePoem({ data, slug }, config),
-    content: renderPoemDataFragment(data, slug, config),
-  }));
+    const entries = poems.map(({ data, slug }) => ({
+      ...summarizePoem({ data, slug }, config),
+      content: renderPoemDataFragment(data, slug, config),
+    }));
 
-  // Oldest first, matching the Node build's display order.
-  entries.sort((a, b) => parseDateForSorting(a.date) - parseDateForSorting(b.date));
+    // Oldest first, matching the Node build's display order.
+    entries.sort((a, b) => parseDateForSorting(a.date) - parseDateForSorting(b.date));
 
-  return renderAllPoemsHtml(entries, { siteTitle: escapeAmpersand(title), favicon });
+    return renderAllPoemsHtml(entries, { siteTitle: escapeAmpersand(title), favicon });
+  });
 }
 
 /**
@@ -92,20 +96,23 @@ function renderAllPoems(poems, opts = {}) {
  *   favicon  - favicon href, any leading `public/` already stripped
  *              (default `'poetic-logo.svg'`).
  * @returns {string} full HTML document — UNTRUSTED; sanitise before display
+ * @throws {PoemRenderError} classified by `.code` — see ./render-errors.js
  */
 function renderIndex(poems, opts = {}) {
-  const {
-    config = {}, title = 'My Poems', subtitle = 'My Poems', favicon = 'poetic-logo.svg',
-  } = opts;
+  return classifyingCall(() => {
+    const {
+      config = {}, title = 'My Poems', subtitle = 'My Poems', favicon = 'poetic-logo.svg',
+    } = opts;
 
-  const islandEntries = poems
-    .map(({ data, slug }) => summarizePoem({ data, slug }, config))
-    .sort((a, b) => a.slug.localeCompare(b.slug)) // alphabetical, matching the Node build
-    .map((e) => ({
-      file: `${e.slug}/`, title: e.title, titleHtml: e.titleHtml, hasAudio: e.hasAudio, date: e.isoDate, labels: e.labels,
-    }));
+    const islandEntries = poems
+      .map(({ data, slug }) => summarizePoem({ data, slug }, config))
+      .sort((a, b) => a.slug.localeCompare(b.slug)) // alphabetical, matching the Node build
+      .map((e) => ({
+        file: `${e.slug}/`, title: e.title, titleHtml: e.titleHtml, hasAudio: e.hasAudio, date: e.isoDate, labels: e.labels,
+      }));
 
-  return renderFreshIndexHtml(islandEntries, { siteTitle: escapeAmpersand(title), subtitle, favicon });
+    return renderFreshIndexHtml(islandEntries, { siteTitle: escapeAmpersand(title), subtitle, favicon });
+  });
 }
 
 module.exports = { renderAllPoems, renderIndex };

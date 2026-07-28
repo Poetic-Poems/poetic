@@ -34,6 +34,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   installed on GitHub's `ubuntu-latest` runners via `puppeteer-core`; wired
   into `build-poems.yml` as a `continue-on-error: true` step so findings
   surface without blocking a merge. Resolves TD26072616.
+- **Browser-renderer errors are now classified.** `renderPoem`/`renderPoemPage`
+  (`src/browser/render.js`) and `renderAllPoems`/`renderIndex`
+  (`src/browser/render-aggregate.js`) now throw a `PoemRenderError` — carrying
+  `.name` (`'PoemRenderError'`) and a `.code` (`MISSING_TITLE`, `MISSING_DATE`,
+  `INVALID_DATE`, `RESERVED_ESCAPE`, or the generic `RENDER_ERROR`) — instead of
+  a bare `Error`, so a `poetic/browser` consumer can distinguish error kinds
+  programmatically rather than matching on `.message` text. Classification
+  happens in the new `src/browser/render-errors.js` at the boundary of the four
+  exported functions, without touching the shared `poem-parser.js`/
+  `poem-markup.js` throw sites those functions call into. Resolves TD26072617.
 
 ### Changed
 

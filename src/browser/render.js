@@ -31,6 +31,7 @@ const { renderFragmentTemplate, renderPageTemplate } = require('../tools/poem-te
 const { slugify } = require('../tools/slugify');
 const { formatDateForDisplay } = require('../tools/date-utils');
 const { renderAllPoems, renderIndex } = require('./render-aggregate');
+const { PoemRenderError, classifyingCall } = require('./render-errors');
 
 /**
  * Parse `.poem` source and augment it exactly as the Node build does before
@@ -63,12 +64,15 @@ function parseAndAugment(text, opts) {
  *     all-poems.html/single-poem-page callers; pass `false` to match
  *     renderFragment()'s bare-fragment default instead)
  * @returns {string} HTML fragment — UNTRUSTED; sanitise before display
+ * @throws {PoemRenderError} classified by `.code` — see ./render-errors.js
  */
 function renderPoem(text, opts = {}) {
-  const { config = {}, standalone = true } = opts;
-  const data = resolveContextVars(parseAndAugment(text, opts));
-  const songs = songsFor(data, config);
-  return renderFragmentTemplate({ ...data, songs, labelBase: '', standalone });
+  return classifyingCall(() => {
+    const { config = {}, standalone = true } = opts;
+    const data = resolveContextVars(parseAndAugment(text, opts));
+    const songs = songsFor(data, config);
+    return renderFragmentTemplate({ ...data, songs, labelBase: '', standalone });
+  });
 }
 
 /**
@@ -79,14 +83,17 @@ function renderPoem(text, opts = {}) {
  * @param {{ config?: object, slug?: string, favicon?: string, subtitle?: string }} [opts]
  *   favicon must already have any leading "public/" stripped.
  * @returns {string} full HTML document — UNTRUSTED; sanitise before display
+ * @throws {PoemRenderError} classified by `.code` — see ./render-errors.js
  */
 function renderPoemPage(text, opts = {}) {
-  const { config = {}, favicon = 'poetic-logo.svg', subtitle = 'My Poems' } = opts;
-  const data = resolveContextVars(parseAndAugment(text, opts));
-  const songs = songsFor(data, config);
-  return renderPageTemplate({ ...data, favicon, subtitle, songs, labelBase: '../' });
+  return classifyingCall(() => {
+    const { config = {}, favicon = 'poetic-logo.svg', subtitle = 'My Poems' } = opts;
+    const data = resolveContextVars(parseAndAugment(text, opts));
+    const songs = songsFor(data, config);
+    return renderPageTemplate({ ...data, favicon, subtitle, songs, labelBase: '../' });
+  });
 }
 
 module.exports = {
-  renderPoem, renderPoemPage, parseAndAugment, renderAllPoems, renderIndex,
+  renderPoem, renderPoemPage, parseAndAugment, renderAllPoems, renderIndex, PoemRenderError,
 };
