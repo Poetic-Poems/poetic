@@ -7,6 +7,15 @@ heading as `### <id> <title>` sections. Once an issue has been resolved, remove
 its `### <id> <title>` section from Current Items below — but never remove its
 row from the Ledger table at the bottom of this file; see "Ledger" below.
 
+`perl scripts/td-check.pl TECH-DEBT.md` (also `npm run check:td-register`) is
+the consistency gate for those rules: every open or in-progress row must have
+exactly one body, and no resolved or not-debt row may still have one. CI runs
+it on every pull request, so a resolution that flips a row but leaves the body
+behind fails its own build. `perl scripts/drop-sections.pl TECH-DEBT.md <id>...`
+is the safe way to remove a body — it refuses to touch anything outside
+Current Items — and it never edits the Ledger, so flipping the row stays your
+job.
+
 Format:
 ```
 ### <id> <short title>

@@ -1,0 +1,32 @@
+name: Tech-debt register check
+
+# Gates TECH-DEBT.md's own consistency: every open/in-progress Ledger row must
+# have exactly one "### <id>" body under Current Items, and no resolved or
+# not-debt row may still have one. Resolving an item is a two-part edit — flip
+# the Ledger row, remove the body — and the second part was repeatedly missed,
+# leaving resolved items looking live. This job makes the PR that flips a row
+# without deleting its body fail its own CI.
+#
+# Deliberately `pull_request` (not `pull_request_target`), so a fork PR never
+# runs with write-scoped secrets, and ungated by `paths:` — the register is
+# checked on every PR, since a body can also be orphaned by an edit elsewhere.
+#
+# scripts/td-check.pl is the canonical copy for the sibling repositories,
+# which hold byte-identical copies guarded by their td-tooling-drift workflow.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check TECH-DEBT.md consistency
+        run: perl scripts/td-check.pl TECH-DEBT.md
