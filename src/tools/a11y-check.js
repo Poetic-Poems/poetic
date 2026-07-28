@@ -9,9 +9,10 @@
  * Chrome out of the box — see docs/BUILD.md) rather than downloading a bundled
  * browser, so this stays a small, dependency-light devDependency.
  *
- * Exits non-zero when violations are found or when no built pages exist yet
- * (run `npm run build` first); exits 0 when no usable Chrome is found, since
- * that is an environment gap, not an accessibility finding. Either way the
+ * Exits non-zero when violations are found, when no built pages exist yet (run
+ * `npm run build` first), or when the check itself crashes; exits 0 when no
+ * usable Chrome is found, since that is an environment gap the check can name
+ * precisely, not an accessibility finding. Either way the
  * CI step invoking this (`.github/workflows/build-poems.yml`) runs it with
  * `continue-on-error: true`, so this check never blocks a merge — see
  * TD26072616.
@@ -141,7 +142,12 @@ async function main() {
 
 if (require.main === module) {
   main().catch((err) => {
+    // A crash (browser launch, navigation, axe injection) is a broken check,
+    // not a clean bill of health, so it exits non-zero like a violation would
+    // — the CI step is `continue-on-error: true`, so this still never blocks a
+    // merge, but someone running `npm run a11y` locally gets a truthful status.
     console.error('Accessibility check failed to run:', err.message);
+    process.exitCode = 1;
   });
 }
 
