@@ -202,15 +202,6 @@ real-world impact (a loopback-bound dev server with nothing stateful to
 flush). Project review 2026-07-26's R-16/F-OPS-02. Fix: call `server.close()`
 on `SIGINT`/`SIGTERM`.
 
-### TD26072620 No fast-subset/watch-mode test workflow documented
-
-`package.json`'s only test script runs the full suite; there's no
-`test:watch` and no documented way to run a subset, though
-`node --test test/<file>.test.js` already works. Minor friction only — the
-full suite is fast (~20s) today. Project review 2026-07-26's
-R-17/F-TOOL-02. Fix: add a `test:watch` script and a one-line note in
-CLAUDE.md's build-commands section.
-
 ### TD26072801 path-guard.js's containment checks don't resolve symlinks
 
 `safeJoin()` and `isWithinRoot()` compare strings only — neither calls
@@ -313,5 +304,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | open | | |
-| TD26072620 | No fast-subset/watch-mode test workflow documented | open | | |
+| TD26072620 | No fast-subset/watch-mode test workflow documented | resolved | 2026-07-28 | #125 |
 | TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
