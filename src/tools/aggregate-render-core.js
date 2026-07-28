@@ -115,10 +115,10 @@ function renderFreshIndexHtml(islandEntries, { siteTitle, subtitle, favicon }) {
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <header class="header">
             <h1>${siteTitle}</h1>
             <p class="subtitle">${subtitle}</p>
-        </div>
+        </header>
 
         <main>
             <!-- The title filter bar is inserted here by renderPoems()/setupHomeFilter() in index.js. -->
@@ -192,11 +192,11 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <header class="header">
             <h1>${siteTitle}</h1>
             <p class="subtitle">Concatenated view of all poems (${entries.length} poems)</p>
             <a href="index.html" class="back-link">← Back to Main Page</a>
-        </div>
+        </header>
 
         <main>
         <div class="filter-bar" id="filterBar">
