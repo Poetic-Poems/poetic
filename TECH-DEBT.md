@@ -298,7 +298,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | resolved | 2026-07-28 | #126 |
 | TD26072612 | Most CI jobs have no timeout-minutes | resolved | 2026-07-28 | #119 |
 | TD26072613 | Blogger client secret echoed to terminal during interactive entry | resolved | 2026-07-28 | #121 |
-| TD26072614 | No automated licence-compatibility check for dependencies | open | | |
+| TD26072614 | No automated licence-compatibility check for dependencies | in-progress | | |
 | TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | open | | |
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
