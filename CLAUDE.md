@@ -42,6 +42,7 @@ npm run build          # .poem → YAML → HTML
 npm run build:all      # build + start dev server at http://localhost:8080
 npm start              # start dev server only
 npm test               # run Node.js built-in test suite
+npm run test:watch     # run tests in watch mode; also: `node --test test/<file>.test.js` for a subset
 npm run check          # verify no trailing whitespace in tracked files (also runs in CI)
 npm run check:build    # verify expected build artefacts exist after `npm run build` (also runs in CI)
 ```

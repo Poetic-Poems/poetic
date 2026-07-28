@@ -23,6 +23,7 @@
   },
   "scripts": {
     "test": "node --test",
+    "test:watch": "node --test --watch",
     "coverage": "c8 npm test",
     "lint": "eslint .",
     "check": "bash scripts/remove-trailing-spaces.sh --check",
