@@ -149,18 +149,6 @@ push-triggered `release` job doesn't re-check either. Project review
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
 
-### TD26072610 npm run coverage exists but isn't gated in CI
-
-`c8` is configured and runnable locally, but no workflow runs it, uploads a
-report, or checks a threshold — the 2026-07-21 review's R-12 is satisfied at
-the "tool exists" level, not the "CI enforces it" level, and several of this
-framework's riskiest paths (see TD26072605, TD26072607) already sit at the
-lower end of the coverage range with no tripwire against further slippage.
-Project review 2026-07-26's R-07/F-CI-02/F-TOOL-01 (the identical gap found
-independently by two dimension passes). Fix: add a `coverage` step to
-`build-poems.yml`'s `build` job using `c8 --check-coverage` with a floor a
-little below the current 79%/82%/88%.
-
 ### TD26072611 Analysis toggle uses inline onclick handlers instead of delegated listener
 
 `_poem-content.pug`'s four analysis show/hide/selector controls use
@@ -171,15 +159,6 @@ toggle's already-fixed delegated-listener pattern in `public/poetic.js`.
 Project review 2026-07-26's R-08/F-ARCH-01/F-CODE-02. Fix: replace the
 `onclick` attributes with `data-*` attributes and one delegated `click`
 listener in `public/poetic.js`, mirroring the postscript-toggle fix.
-
-### TD26072613 Blogger client secret echoed to terminal during interactive entry
-
-`blogger-auth.js`'s interactive `BLOGGER_CLIENT_SECRET` prompt uses a plain
-`rl.question()` with no output-muting, so the typed secret appears in
-cleartext on screen and in scrollback; the env-var path already avoids this.
-Project review 2026-07-26's R-10/F-SEC-02. Fix: mask the prompt (disable TTY
-echo for that one question), or document the env-var path as the way to
-avoid on-screen echo.
 
 ### TD26072614 No automated licence-compatibility check for dependencies
 
@@ -335,10 +314,10 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072607 | serve-static.js's real request handler is untested | resolved | 2026-07-27 | #114 |
 | TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | resolved | 2026-07-28 | #115 |
 | TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | resolved | 2026-07-28 | #117 |
-| TD26072610 | npm run coverage exists but isn't gated in CI | open | | |
+| TD26072610 | npm run coverage exists but isn't gated in CI | resolved | 2026-07-28 | #122 |
 | TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | open | | |
 | TD26072612 | Most CI jobs have no timeout-minutes | resolved | 2026-07-28 | #119 |
-| TD26072613 | Blogger client secret echoed to terminal during interactive entry | open | | |
+| TD26072613 | Blogger client secret echoed to terminal during interactive entry | resolved | 2026-07-28 | #121 |
 | TD26072614 | No automated licence-compatibility check for dependencies | open | | |
 | TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | open | | |
