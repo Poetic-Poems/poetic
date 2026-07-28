@@ -104,6 +104,13 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of resolving to an arbitrary file, which could be published
   verbatim to GitHub Pages or uploaded as the live Blogger theme. Resolves
   TD26072606.
+- **`blogger-auth.js`'s interactive client-secret prompt no longer echoes to
+  the terminal.** The `BLOGGER_CLIENT_SECRET` prompt used a plain
+  `rl.question()`, so the typed secret appeared on screen and in scrollback;
+  it now uses a `promptHidden()` helper that suppresses readline's own echo
+  for that one question, matching how a password prompt normally behaves. The
+  `BLOGGER_CLIENT_ID` prompt is unaffected — an ID isn't a secret. Resolves
+  TD26072613.
 
 ### Changed
 
