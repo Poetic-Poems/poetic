@@ -9,6 +9,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [6.2.0] — 2026-07-28
+
 ### Added
 
 - **Every CI workflow job now has a `timeout-minutes`.** Previously only
