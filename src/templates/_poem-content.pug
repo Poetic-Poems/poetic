@@ -168,40 +168,47 @@ mixin poemContent
 
     if analysis
       //- begin analysis section
+      //- Show/hide and synopsis/full switching are wired via a delegated click
+      //- listener in public/poetic.js (mirroring the postscript-toggle pattern):
+      //- aria-expanded/aria-pressed/data-* attributes carry the state, and
+      //- public/poetic.css keys visibility off them via attribute selectors.
       button.analysis.show(
         id=`show-analysis--${slug}`
         type="button"
-        onclick=`document.getElementById('analysis--${slug}').style.display = 'block'; document.getElementById('show-analysis--${slug}').style.display = 'none';`
+        aria-expanded="false"
+        aria-controls=`analysis--${slug}`
       ) Show analysis
 
       div.analysis(id=`analysis--${slug}`)
         button.analysis.hide(
           id=`hide-analysis--${slug}`
           type="button"
-          onclick=`document.getElementById('analysis--${slug}').style.display = 'none'; document.getElementById('show-analysis--${slug}').style.display = 'block';`
+          data-analysis-toggle=`show-analysis--${slug}`
         ) Hide analysis
 
         if analysis.synopsis && analysis.full
-          .full-or-synopsis-selector
-            button.analysis.selector.selected(
+          .full-or-synopsis-selector(data-selected="synopsis")
+            button.analysis.selector(
               id=`analysis-select-syno--${slug}`
               type="button"
-              onclick=`el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'none'; el('syno').style.display = 'block'; el('select-full').classList.remove('selected'); el('select-syno').classList.add('selected');`
+              aria-pressed="true"
+              data-analysis-select="synopsis"
             ) Synopsis
             button.analysis.selector(
               id=`analysis-select-full--${slug}`
               type="button"
-              onclick=`el = name => document.getElementById('analysis-' + name + '--${slug}'); el('full').style.display = 'block'; el('syno').style.display = 'none'; el('select-full').classList.add('selected'); el('select-syno').classList.remove('selected');`
+              aria-pressed="false"
+              data-analysis-select="full"
             ) Full Analysis
           //- end full-or-synopsis-selector
 
-          div(id=`analysis-syno--${slug}`)
+          div.analysis-panel(id=`analysis-syno--${slug}` data-analysis-panel="synopsis")
             h2 Analysis of <em>!{titleHtml}</em> (synopsis)
             - const processedSynopsis = processAnalysisText(analysis.synopsis)
             != processedSynopsis
           //- end analysis-syno
 
-          div(id=`analysis-full--${slug}` class="hidden")
+          div.analysis-panel(id=`analysis-full--${slug}` data-analysis-panel="full")
             h2 Analysis of <em>!{titleHtml}</em>
             - const processedFull = processAnalysisText(analysis.full)
             != processedFull

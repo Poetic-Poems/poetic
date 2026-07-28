@@ -444,6 +444,60 @@ test('postscript with an invalid preview-lines value falls back to the default o
   assert.ok(html.includes('data-preview-lines="5"'), 'non-numeric preview-lines must fall back to 5');
 });
 
+// ── analysis show/hide + synopsis/full toggle ───────────────────────────────
+
+// Minimal poemData for exercising the analysis toggle directly.
+function analysisPoemData(analysis) {
+  return {
+    title: 'Analysis Poem',
+    author: 'Test Author',
+    date: '1970-01-31',
+    slug: 'analysis-poem',
+    versions: [{ segments: [{ lines: 'Hello world\n' }] }],
+    analysis,
+  };
+}
+
+test('analysis show/hide controls use aria-expanded/aria-controls/data-* instead of onclick', () => {
+  const poemData = analysisPoemData({ full: '<p>Full text</p>' });
+  const html = renderFragment(poemData, {});
+
+  assert.ok(!html.includes('onclick'), 'analysis controls must have NO onclick attribute');
+  assert.ok(
+    html.includes('class="analysis show" id="show-analysis--analysis-poem" type="button" aria-expanded="false" aria-controls="analysis--analysis-poem"'),
+    'show button must carry aria-expanded="false" and aria-controls pointing at the analysis div'
+  );
+  assert.ok(
+    html.includes('class="analysis hide" id="hide-analysis--analysis-poem" type="button" data-analysis-toggle="show-analysis--analysis-poem"'),
+    'hide button must reference the show button via data-analysis-toggle'
+  );
+});
+
+test('analysis synopsis/full selector uses aria-pressed/data-* instead of onclick', () => {
+  const poemData = analysisPoemData({ synopsis: '<p>Short</p>', full: '<p>Long</p>' });
+  const html = renderFragment(poemData, {});
+
+  assert.ok(!html.includes('onclick'), 'selector buttons must have NO onclick attribute');
+  assert.ok(html.includes('class="full-or-synopsis-selector" data-selected="synopsis"'), 'selector wrapper must default to data-selected="synopsis"');
+  assert.ok(
+    html.includes('id="analysis-select-syno--analysis-poem" type="button" aria-pressed="true" data-analysis-select="synopsis"'),
+    'synopsis selector button must start aria-pressed="true"'
+  );
+  assert.ok(
+    html.includes('id="analysis-select-full--analysis-poem" type="button" aria-pressed="false" data-analysis-select="full"'),
+    'full selector button must start aria-pressed="false"'
+  );
+  assert.ok(
+    html.includes('class="analysis-panel" id="analysis-syno--analysis-poem" data-analysis-panel="synopsis"'),
+    'synopsis panel must carry data-analysis-panel="synopsis"'
+  );
+  assert.ok(
+    html.includes('class="analysis-panel" id="analysis-full--analysis-poem" data-analysis-panel="full"'),
+    'full panel must carry data-analysis-panel="full"'
+  );
+  assert.ok(!html.includes('class="hidden"'), 'no panel should rely on the .hidden utility class any more; visibility is CSS-attribute-selector-driven');
+});
+
 // ── slug derivation ──────────────────────────────────────────────────────────
 
 test('loadPoemData: slug is derived from the filename stem, not the title', () => {
