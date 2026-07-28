@@ -11,11 +11,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const yaml = require('js-yaml');
 const { slugFromFile } = require('./slugify');
 const { parseDateForSorting, formatDateForDisplay, toISODate } = require('./date-utils');
 const { readPoeticConfig, CONFIG_FILENAME } = require('./poetic-config');
-const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, FRAGMENT_TEMPLATE } = require('./poem-render');
+const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, readYamlCached, FRAGMENT_TEMPLATE } = require('./poem-render');
 const { hasResolvableSongs } = require('./song-handlers');
 const { renderTitleMarkup, BEAUTIFY_OPTIONS } = require('./render-core');
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require('./footer');
@@ -54,12 +53,16 @@ function copyDateUtilsAsset(publicDir) {
  *   src/poems/yaml (tests only; the npm run build / CLI entry point below
  *   always uses the default) — see the matching option on buildAllPoems() in
  *   build-poems.js.
+ * @param {Map<string, *>} [options.yamlCache] - Shared parse cache passed in
+ *   by main() so a poem's YAML parsed for the staleness-check sources set or
+ *   generateIndexHtml() isn't parsed again here; see readYamlCached() in
+ *   poem-render.js. Defaults to a private, call-scoped cache when omitted.
  */
 function concatenateAllHtmlFiles(
   dirPath,
   favicon = 'poetic-logo.svg',
   config = {},
-  { poemsDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml') } = {}
+  { poemsDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml'), yamlCache = new Map() } = {}
 ) {
   try {
     const siteTitle = escapeAmpersand(config.title || 'My Poems');
@@ -72,8 +75,7 @@ function concatenateAllHtmlFiles(
       const yamlPath = path.join(poemsDir, file);
 
       try {
-        const yamlContent = fs.readFileSync(yamlPath, 'utf8');
-        const data = yaml.load(yamlContent);
+        const data = readYamlCached(yamlPath, yamlCache);
 
         const title = data.title;
         if (!title) {
@@ -114,7 +116,7 @@ function concatenateAllHtmlFiles(
     const entries = [];
     poemData.forEach((poem) => {
       try {
-        const poemDataObj = loadPoemData(poem.yamlPath);
+        const poemDataObj = loadPoemData(poem.yamlPath, yamlCache);
         if (!poemDataObj) {
           throw new Error(`Failed to load poem data from ${poem.yamlPath}`);
         }
@@ -150,13 +152,17 @@ function concatenateAllHtmlFiles(
  *   src/poems/yaml (tests only; the npm run build / CLI entry point below
  *   always uses the default) — see the matching option on buildAllPoems() in
  *   build-poems.js.
+ * @param {Map<string, *>} [options.yamlCache] - Shared parse cache passed in
+ *   by main() so a poem's YAML parsed for the staleness-check sources set or
+ *   concatenateAllHtmlFiles() isn't parsed again here; see readYamlCached() in
+ *   poem-render.js. Defaults to a private, call-scoped cache when omitted.
  */
 function generateIndexHtml(
   publicDir,
   favicon = 'poetic-logo.svg',
   subtitle = undefined,
   config = {},
-  { poemsDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml') } = {}
+  { poemsDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml'), yamlCache = new Map() } = {}
 ) {
   try {
     // Read YAML files from the poems directory for metadata
@@ -168,8 +174,7 @@ function generateIndexHtml(
       const yamlPath = path.join(poemsDir, yamlFile);
 
       try {
-        const yamlContent = fs.readFileSync(yamlPath, 'utf8');
-        const data = yaml.load(yamlContent);
+        const data = readYamlCached(yamlPath, yamlCache);
 
         const title = data.title;
         if (!title) {
@@ -364,9 +369,13 @@ function main() {
   // removals within the set are detected by comparing it against a sidecar
   // manifest (see needsRebuildAggregate), not by the directory's own mtime —
   // which not every filesystem or sync tool updates.
+  // Shared across the sources set below and the two generators further down,
+  // so each poem's YAML is parsed at most once per build (see
+  // readYamlCached() in poem-render.js) rather than once per site.
+  const yamlCache = new Map();
   const dirEntries = fs.readdirSync(poemsDir).map((f) => path.join(poemsDir, f));
   const refTargets = listPoemYamlFiles(poemsDir)
-    .flatMap((f) => refFilesForPoem(path.join(poemsDir, f)));
+    .flatMap((f) => refFilesForPoem(path.join(poemsDir, f), yamlCache));
   const sources = [...new Set([...dirEntries, ...refTargets])];
   const extraInputs = [
     FRAGMENT_TEMPLATE,
@@ -382,7 +391,7 @@ function main() {
   console.log('Step 1: Building all-poems.html...');
 
   const { html: allPoemsHtml, errorCount: poemErrorCount } =
-    concatenateAllHtmlFiles(publicDir, favicon, config);
+    concatenateAllHtmlFiles(publicDir, favicon, config, { yamlCache });
   const concatenatedContent = upsertFooter(allPoemsHtml, footerBlock);
 
   const prettifiedContent = beautify.html(concatenatedContent, BEAUTIFY_OPTIONS);
@@ -395,7 +404,7 @@ function main() {
 
   console.log('\nStep 2: Updating index.html...');
 
-  const updatedIndexContent = generateIndexHtml(publicDir, favicon, subtitle, config);
+  const updatedIndexContent = generateIndexHtml(publicDir, favicon, subtitle, config, { yamlCache });
   let indexErrorCount = 0;
   if (updatedIndexContent) {
     const finalIndexContent = upsertFooter(updatedIndexContent, footerBlock);
