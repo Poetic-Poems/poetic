@@ -9,6 +9,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Dependency licences are now checked in CI.** `build-poems.yml`'s `build`
+  job runs `npm run check:licenses` (`license-checker-rseidelsohn --production
+  --onlyAllow`) against the production dependency tree, failing the pull
+  request if a transitive dependency's licence isn't on the allow-list (MIT,
+  ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, BlueOak-1.0.0, Python-2.0,
+  0BSD, CC0-1.0). Resolves TD26072614.
+
 ### Changed
 
 - **Analysis show/hide and synopsis/full-selector controls no longer use inline

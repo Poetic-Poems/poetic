@@ -141,6 +141,10 @@ jobs:
         if: steps.changes.outputs.relevant == 'true'
         run: npm run lint
 
+      - name: Check dependency licences
+        if: steps.changes.outputs.relevant == 'true'
+        run: npm run check:licenses
+
       - name: Check for trailing whitespace
         if: steps.changes.outputs.relevant == 'true'
         run: npm run check

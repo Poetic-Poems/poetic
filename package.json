@@ -29,6 +29,7 @@
     "check": "bash scripts/remove-trailing-spaces.sh --check",
     "check:build": "bash scripts/check-build-artifacts.sh",
     "check:td-register": "perl scripts/td-check.pl TECH-DEBT.md",
+    "check:licenses": "license-checker-rseidelsohn --production --excludePrivatePackages --onlyAllow 'MIT;ISC;BSD-2-Clause;BSD-3-Clause;Apache-2.0;BlueOak-1.0.0;Python-2.0;0BSD;CC0-1.0' --summary",
     "start": "node src/tools/serve-static.js",
     "stop": "pkill -f 'node src/tools/serve-static.js' || true",
     "stop:win": "for /f \"tokens=5\" %a in ('netstat -ano ^| findstr :8080') do taskkill /PID %a /F",
@@ -45,7 +46,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "c8": "^12.0.0",
-    "eslint": "^10.8.0"
+    "eslint": "^10.8.0",
+    "license-checker-rseidelsohn": "^5.0.1"
   },
   "c8": {
     "check-coverage": true,

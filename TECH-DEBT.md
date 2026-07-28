@@ -149,16 +149,6 @@ push-triggered `release` job doesn't re-check either. Project review
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
 
-### TD26072614 No automated licence-compatibility check for dependencies
-
-No CI step or script verifies dependency licences; ~45 transitive packages
-have no recorded licence field in `package-lock.json` (well-known
-permissively-licensed tooling, no evidence of an actual conflict today).
-Nothing would catch a future dependency introducing a copyleft or otherwise
-MIT-incompatible licence before it lands. Project review 2026-07-26's
-R-11/F-DEPS-01. Fix: add a CI step running `license-checker --onlyAllow` (or
-equivalent) against the production dependency tree.
-
 ### TD26072615 build-all-poems.js parses each poem's YAML up to four times
 
 `concatenateAllHtmlFiles()`, `loadPoemData()`, `generateIndexHtml()`, and the
@@ -298,7 +288,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | resolved | 2026-07-28 | #126 |
 | TD26072612 | Most CI jobs have no timeout-minutes | resolved | 2026-07-28 | #119 |
 | TD26072613 | Blogger client secret echoed to terminal during interactive entry | resolved | 2026-07-28 | #121 |
-| TD26072614 | No automated licence-compatibility check for dependencies | in-progress | | |
+| TD26072614 | No automated licence-compatibility check for dependencies | resolved | 2026-07-29 | #127 |
 | TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | open | | |
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
