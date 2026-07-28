@@ -11,6 +11,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`TECH-DEBT.md`'s own consistency is now checked in CI.**
+  `scripts/td-check.pl` cross-checks the register — every open or in-progress
+  Ledger row must have exactly one `### <id>` body under Current Items, no
+  resolved or not-debt row may still have one, every body must have a row, and
+  every row must carry a recognised status and appear once. It exits 0 when
+  consistent and 1 when it finds problems, so the new
+  `.github/workflows/tech-debt-register.yml` job — and
+  `npm run check:td-register` locally — fails the pull request that resolves
+  an item without deleting its body, the drift that had to be cleaned up by
+  hand in #118. `scripts/drop-sections.pl` does that deletion safely, removing
+  `### <id>` sections while refusing to touch anything outside Current Items
+  and never editing the Ledger. Both scripts sync to consumer repositories.
 - **Every CI workflow job now has a `timeout-minutes`.** Previously only
   `sync-blogger.yml`'s `sync` job set one; every other job — including
   `build-poems.yml`'s required `build` check — defaulted to GitHub Actions'

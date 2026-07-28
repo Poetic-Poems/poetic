@@ -144,6 +144,7 @@ FRAMEWORK_PATHS=(
   public/poetic.css
   public/poetic.js
   scripts/check-build-artifacts.sh
+  scripts/drop-sections.pl
   scripts/edit-poem
   scripts/get-tech-debt-record.pl
   scripts/new-poem
@@ -151,6 +152,7 @@ FRAMEWORK_PATHS=(
   scripts/remove-trailing-spaces.sh
   scripts/setup-linux.sh
   scripts/sync-framework.sh
+  scripts/td-check.pl
   src/browser
   src/poems/poem/_example.poem
   src/poems/poem/_minimal.poem
