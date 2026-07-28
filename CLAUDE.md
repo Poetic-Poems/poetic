@@ -45,6 +45,7 @@ npm test               # run Node.js built-in test suite
 npm run test:watch     # run tests in watch mode; also: `node --test test/<file>.test.js` for a subset
 npm run check          # verify no trailing whitespace in tracked files (also runs in CI)
 npm run check:build    # verify expected build artefacts exist after `npm run build` (also runs in CI)
+npm run check:licenses # verify production dependency licences are on the allow-list (also runs in CI)
 ```
 
 **On WSL/Linux**, use `./scripts/setup-linux.sh npm run ...` to ensure the correct Node.js is used.

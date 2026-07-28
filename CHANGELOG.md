@@ -16,7 +16,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   against the production dependency tree resolved in `package-lock.json`,
   failing the pull request if a transitive dependency's licence isn't on the
   allow-list (MIT, ISC, BSD-2-Clause, BSD-3-Clause, Apache-2.0, BlueOak-1.0.0,
-  Python-2.0, 0BSD, CC0-1.0). Resolves TD26072614.
+  Python-2.0, 0BSD, CC0-1.0). `scripts/sync-framework.sh` syncs the script, so
+  consumer repos get the same check when they sync the workflow that runs it.
+  Resolves TD26072614.
 
 ### Changed
 

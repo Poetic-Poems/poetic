@@ -144,6 +144,7 @@ FRAMEWORK_PATHS=(
   public/poetic.css
   public/poetic.js
   scripts/check-build-artifacts.sh
+  scripts/check-licenses.js
   scripts/drop-sections.pl
   scripts/edit-poem
   scripts/get-tech-debt-record.pl
