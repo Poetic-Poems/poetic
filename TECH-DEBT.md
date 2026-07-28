@@ -149,17 +149,6 @@ push-triggered `release` job doesn't re-check either. Project review
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
 
-### TD26072611 Analysis toggle uses inline onclick handlers instead of delegated listener
-
-`_poem-content.pug`'s four analysis show/hide/selector controls use
-hand-written, string-interpolated `onclick` JS (including a helper redefined
-identically in two adjacent buttons), contradicting the template's own "do
-not add a script block here" comment and diverging from the postscript
-toggle's already-fixed delegated-listener pattern in `public/poetic.js`.
-Project review 2026-07-26's R-08/F-ARCH-01/F-CODE-02. Fix: replace the
-`onclick` attributes with `data-*` attributes and one delegated `click`
-listener in `public/poetic.js`, mirroring the postscript-toggle fix.
-
 ### TD26072614 No automated licence-compatibility check for dependencies
 
 No CI step or script verifies dependency licences; ~45 transitive packages
@@ -315,7 +304,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072608 | poem-to-yaml.js/poem-to-raw.js CLI orchestration (main()) is untested | resolved | 2026-07-28 | #115 |
 | TD26072609 | sync-blogger's createPost retry can duplicate-post a poem | resolved | 2026-07-28 | #117 |
 | TD26072610 | npm run coverage exists but isn't gated in CI | resolved | 2026-07-28 | #122 |
-| TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | open | | |
+| TD26072611 | Analysis toggle uses inline onclick handlers instead of delegated listener | resolved | 2026-07-28 | #126 |
 | TD26072612 | Most CI jobs have no timeout-minutes | resolved | 2026-07-28 | #119 |
 | TD26072613 | Blogger client secret echoed to terminal during interactive entry | resolved | 2026-07-28 | #121 |
 | TD26072614 | No automated licence-compatibility check for dependencies | open | | |

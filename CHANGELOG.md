@@ -9,6 +9,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Analysis show/hide and synopsis/full-selector controls no longer use inline
+  `onclick` handlers.** `_poem-content.pug`'s four controls now carry
+  `aria-expanded`/`aria-controls`/`aria-pressed`/`data-*` attributes, and a
+  single delegated `click` listener in `public/poetic.js` drives state —
+  mirroring the postscript-toggle pattern — with `public/poetic.css` keying
+  visibility off those attributes via attribute selectors instead of inline
+  `style.display` writes. Resolves TD26072611.
+
 ## [6.2.0] — 2026-07-28
 
 ### Added
