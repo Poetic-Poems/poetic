@@ -596,7 +596,9 @@ h2.poem-title {
   content: "See less \2B9D";
 }
 
-/* Analysis */
+/* Analysis. Show/hide and synopsis/full state (aria-expanded, aria-pressed,
+   data-selected/data-analysis-panel) is toggled by the delegated click handler in
+   poetic.js; these attribute selectors are what actually change visibility. */
 
 .analysis {
   background-color: #ffeedd;
@@ -613,6 +615,10 @@ button.analysis {
   font-size: 90%;
   font-weight: bold;
   padding: 1ex 1em;
+}
+
+button.analysis.show[aria-expanded="true"] {
+  display: none;
 }
 
 button.analysis.hide {
@@ -634,13 +640,26 @@ button.analysis.selector {
   margin: 1ex auto;
 }
 
-button.selected {
+button.analysis.selector[aria-pressed="true"] {
   background-color: #fff8ee;
 }
 
 div.analysis {
   display: none;
   padding: 2ex 2em;
+}
+
+button.analysis.show[aria-expanded="true"] ~ div.analysis {
+  display: block;
+}
+
+.analysis-panel {
+  display: none;
+}
+
+.full-or-synopsis-selector[data-selected="synopsis"] ~ .analysis-panel[data-analysis-panel="synopsis"],
+.full-or-synopsis-selector[data-selected="full"] ~ .analysis-panel[data-analysis-panel="full"] {
+  display: block;
 }
 
 .analysis h2 {
@@ -842,7 +861,7 @@ html.dark-mode button.analysis {
 }
 
 html.dark-mode button.analysis.hide,
-html.dark-mode button.selected {
+html.dark-mode button.analysis.selector[aria-pressed="true"] {
   background-color: #0c1416;
 }
 
@@ -1012,7 +1031,7 @@ html.dark-mode .poetic-footer {
   }
 
   button.analysis.hide,
-  button.selected {
+  button.analysis.selector[aria-pressed="true"] {
     background-color: #0c1416;
   }
 
