@@ -29,6 +29,7 @@
     "check": "bash scripts/remove-trailing-spaces.sh --check",
     "check:build": "bash scripts/check-build-artifacts.sh",
     "check:td-register": "perl scripts/td-check.pl TECH-DEBT.md",
+    "check:licenses": "node scripts/check-licenses.js",
     "start": "node src/tools/serve-static.js",
     "stop": "pkill -f 'node src/tools/serve-static.js' || true",
     "stop:win": "for /f \"tokens=5\" %a in ('netstat -ano ^| findstr :8080') do taskkill /PID %a /F",
