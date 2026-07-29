@@ -163,10 +163,12 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
 </head>
 <body>
     <div class="container">
-        <div class="poem-section text-center">
-            <h1>No Poems Found</h1>
-            <p>No YAML files were found in the poems directory.</p>
-        </div>
+        <main>
+            <div class="poem-section text-center">
+                <h1>No Poems Found</h1>
+                <p>No YAML files were found in the poems directory.</p>
+            </div>
+        </main>
     </div>
 </body>
 </html>`;

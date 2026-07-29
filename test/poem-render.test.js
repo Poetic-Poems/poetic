@@ -283,6 +283,17 @@ test('renderPage: produces a full <!DOCTYPE html> document', () => {
   assert.ok(html.includes('<body'), 'must have <body>');
 });
 
+test('renderPage: wraps the poem section in a <main> landmark', () => {
+  const { yamlPath } = writeTempYaml(FIXTURE_YAML);
+  const poemData = loadPoemData(yamlPath);
+  const html = renderPage(poemData, { favicon: 'poetic-logo.svg', config: { song_handlers: { audiomack: { artist: 'myartist' } } } });
+
+  assert.match(html, /<main><div class="poem-section"/, 'poem section must sit inside <main>');
+  assert.strictEqual((html.match(/<main>/g) || []).length, 1, 'exactly one <main> landmark');
+  // The nav stays outside the landmark — it is site navigation, not page content.
+  assert.match(html, /<\/nav><main>/);
+});
+
 test('renderPage: links poetic.css, custom.css, poetic.js with ../ prefix', () => {
   const { yamlPath } = writeTempYaml(FIXTURE_YAML);
   const poemData = loadPoemData(yamlPath);
