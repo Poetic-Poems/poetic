@@ -360,3 +360,25 @@ server.listen(PORT, HOST, () => {
     'Usage: node tools/serve-static.js --port 9000 --dir public --host 127.0.0.1'
   );
 });
+
+// Let in-flight responses finish instead of dropping them when `npm run
+// stop` (or an interactive Ctrl-C) sends SIGTERM/SIGINT.
+//
+// Keyed off a well-known symbol on `process` (rather than added
+// unconditionally) so that re-loading this module in the same process —
+// as test/serve-static.test.js does, compiling the source afresh per test
+// to reach its unexported helpers — replaces the previous pair of listeners
+// instead of piling up new ones each time.
+const SHUTDOWN_HANDLERS_KEY = Symbol.for('poetic.serveStatic.shutdownHandlers');
+const previousHandlers = process[SHUTDOWN_HANDLERS_KEY];
+if (previousHandlers) {
+  process.off('SIGINT', previousHandlers.SIGINT);
+  process.off('SIGTERM', previousHandlers.SIGTERM);
+}
+function shutdown(signal) {
+  console.log(`\nReceived ${signal}, shutting down gracefully...`);
+  server.close(() => process.exit(0));
+}
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+process[SHUTDOWN_HANDLERS_KEY] = { SIGINT: shutdown, SIGTERM: shutdown };

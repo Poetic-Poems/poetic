@@ -31,6 +31,7 @@ const os = require('os');
 const path = require('path');
 const Module = require('module');
 const http = require('http');
+const { spawn } = require('child_process');
 
 const SERVE_STATIC_PATH = path.join(__dirname, '..', 'src', 'tools', 'serve-static.js');
 const PATH_GUARD_PATH = path.join(path.dirname(SERVE_STATIC_PATH), 'path-guard.js');
@@ -78,6 +79,17 @@ function loadServeStaticInternals(dirForStartupCheck, extraArgs = [], { pathGuar
   }
 }
 
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const srv = http.createServer();
+    srv.on('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
+    });
+  });
+}
+
 function withTempDir(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'serve-static-test-'));
   try {
@@ -115,10 +127,10 @@ function withRunningServer(requestHandler, fn) {
   });
 }
 
-function httpGet(port, requestPath) {
+function httpGet(port, requestPath, { agent } = {}) {
   return new Promise((resolve, reject) => {
     const req = http.request(
-      { host: '127.0.0.1', port, path: requestPath, method: 'GET' },
+      { host: '127.0.0.1', port, path: requestPath, method: 'GET', agent },
       (res) => {
         const chunks = [];
         res.on('data', (chunk) => chunks.push(chunk));
@@ -336,5 +348,120 @@ test('request handler: returns 403 when the traversal guard trips on the directo
 
     assert.strictEqual(res.statusCode, 403);
     assert.strictEqual(res.body, 'Forbidden');
+  });
+});
+
+/*
+ * Graceful-shutdown tests below spawn the real serve-static.js as a child
+ * process, rather than using the throwaway-Module technique above — that
+ * technique stubs `http.createServer`'s `listen`/`close` away entirely
+ * (see loadServeStaticInternals) and so can't exercise a real signal
+ * reaching a real `process.exit`. TD26072619: before this fix, `npm run
+ * stop`'s bare SIGTERM terminated the process immediately, mid-response.
+ */
+
+function waitForServerReady(child) {
+  return new Promise((resolve, reject) => {
+    let output = '';
+    const onData = (chunk) => {
+      output += chunk;
+      if (output.includes('Serving ')) {
+        child.stdout.removeListener('data', onData);
+        resolve();
+      }
+    };
+    child.stdout.on('data', onData);
+    child.once('error', reject);
+    child.once('exit', (code, signal) =>
+      reject(new Error(`server exited before it was ready (code ${code}, signal ${signal})`))
+    );
+  });
+}
+
+function waitForExit(child) {
+  return new Promise((resolve) => {
+    child.once('exit', (code, signal) => resolve({ code, signal }));
+  });
+}
+
+test('SIGTERM (the signal `npm run stop` sends) lets an already-connected client finish and exits cleanly', async () => {
+  await withTempDirAsync(async (dir) => {
+    fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
+    const port = await getFreePort();
+
+    const child = spawn(
+      process.execPath,
+      [SERVE_STATIC_PATH, '--port', String(port), '--dir', dir, '--host', '127.0.0.1'],
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+    // Keep-alive so the second request below reuses the same already-open
+    // socket rather than opening a new one — `server.close()` stops
+    // *accepting* new connections but keeps serving ones already open, so
+    // this is what distinguishes "drains in-flight work" from "still
+    // listening".
+    const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+
+    try {
+      await waitForServerReady(child);
+
+      // Establish the connection and let it go idle-but-open before the
+      // signal arrives.
+      const warmup = await httpGet(port, '/hello.txt', { agent });
+      assert.strictEqual(warmup.statusCode, 200);
+
+      child.kill('SIGTERM');
+      // Reuses the warmed-up socket rather than accepting a new one; a
+      // regression back to abrupt termination would either drop this or
+      // never let it start.
+      const response = await httpGet(port, '/hello.txt', { agent });
+
+      assert.strictEqual(response.statusCode, 200);
+      assert.strictEqual(response.body, 'hello world');
+
+      // Close the client side of the keep-alive socket so the server sees
+      // it end and `server.close()`'s pending callback can fire — otherwise
+      // the idle socket would sit open until the server's own
+      // keep-alive-timeout, keeping the process alive for several seconds.
+      agent.destroy();
+
+      const { code, signal } = await waitForExit(child);
+
+      // A graceful `server.close()` shutdown calls `process.exit(0)`; a
+      // process killed abruptly by the signal itself would instead report
+      // code null and the signal's name.
+      assert.strictEqual(code, 0);
+      assert.strictEqual(signal, null);
+    } finally {
+      agent.destroy();
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL');
+      }
+    }
+  });
+});
+
+test('SIGINT exits cleanly via the same graceful shutdown path', async () => {
+  await withTempDirAsync(async (dir) => {
+    fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
+    const port = await getFreePort();
+
+    const child = spawn(
+      process.execPath,
+      [SERVE_STATIC_PATH, '--port', String(port), '--dir', dir, '--host', '127.0.0.1'],
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+
+    try {
+      await waitForServerReady(child);
+      child.kill('SIGINT');
+      const { code, signal } = await waitForExit(child);
+
+      assert.strictEqual(code, 0);
+      assert.strictEqual(signal, null);
+    } finally {
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL');
+      }
+    }
   });
 });
