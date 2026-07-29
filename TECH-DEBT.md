@@ -149,17 +149,6 @@ push-triggered `release` job doesn't re-check either. Project review
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
 
-### TD26072615 build-all-poems.js parses each poem's YAML up to four times
-
-`concatenateAllHtmlFiles()`, `loadPoemData()`, `generateIndexHtml()`, and the
-staleness-check's `sources`-set computation each independently read+parse
-every poem's YAML — including before the "nothing changed, skip" fast path
-even runs, so it isn't actually O(1). Linear, not quadratic, and likely
-negligible at real-world scale, but avoidable redundant I/O that undercuts
-the incremental-build fast path's own purpose. Project review 2026-07-26's
-R-12/F-PERF-02. Fix: parse each poem's YAML once per build and share the
-parsed object across metadata extraction and `$ref` resolution.
-
 ### TD26072617 Browser-renderer errors are unclassified plain Error objects
 
 `src/browser/render.js`/`render-aggregate.js` throw bare `Error`s with no
@@ -317,7 +306,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072612 | Most CI jobs have no timeout-minutes | resolved | 2026-07-28 | #119 |
 | TD26072613 | Blogger client secret echoed to terminal during interactive entry | resolved | 2026-07-28 | #121 |
 | TD26072614 | No automated licence-compatibility check for dependencies | resolved | 2026-07-29 | #127 |
-| TD26072615 | build-all-poems.js parses each poem's YAML up to four times | open | | |
+| TD26072615 | build-all-poems.js parses each poem's YAML up to four times | resolved | 2026-07-29 | #128 |
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | resolved | 2026-07-29 | #129 |
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |

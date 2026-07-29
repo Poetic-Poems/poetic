@@ -8,6 +8,7 @@
  *   renderFragment(poemData, { config })            - compile poem.pug fragment
  *   renderPage(poemData, { favicon, subtitle, config }) - compile poem-page.pug full doc
  *   listPoemYamlFiles(dir)                          - list poem YAML basenames in a directory
+ *   readYamlCached(filePath, cache)                 - read+parse YAML, cached by path when a cache is passed
  */
 
 const fs = require('fs');
@@ -34,6 +35,32 @@ const POEMS_DIR = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
  * Cache for resolved $ref references
  */
 const refCache = new Map();
+
+/**
+ * Read and parse a poem's raw (unresolved) YAML, optionally sharing the
+ * result across callers via a caller-supplied cache keyed by absolute path.
+ *
+ * Passing the same `cache` Map into multiple calls (e.g. from
+ * build-all-poems.js, where the same poem's YAML is otherwise read once each
+ * for staleness sources, metadata and rendering) parses each file at most
+ * once per cache; omitting `cache` parses uncached, as before. Safe to share
+ * because every reader here only reads fields off the returned value or feeds
+ * it to resolveRefs() (which returns a new object rather than mutating it).
+ *
+ * @param {string} filePath - absolute path to a YAML file
+ * @param {Map<string, *>} [cache]
+ * @returns {*} parsed YAML value
+ */
+function readYamlCached(filePath, cache) {
+  if (cache && cache.has(filePath)) {
+    return cache.get(filePath);
+  }
+  const data = yaml.load(fs.readFileSync(filePath, 'utf8'));
+  if (cache) {
+    cache.set(filePath, data);
+  }
+  return data;
+}
 
 /**
  * Thrown by resolveRefs when a $ref chain loops back on itself. Kept as a
@@ -201,12 +228,13 @@ function collectRefFiles(data, basePath = POEMS_DIR, seen = new Set()) {
  * collectRefFiles() for the traversal semantics.
  *
  * @param {string} yamlPath - absolute path to a poem's YAML source
+ * @param {Map<string, *>} [cache] - shared parse cache, see readYamlCached()
  * @returns {string[]}
  */
-function refFilesForPoem(yamlPath) {
+function refFilesForPoem(yamlPath, cache) {
   let data;
   try {
-    data = yaml.load(fs.readFileSync(yamlPath, 'utf8'));
+    data = readYamlCached(yamlPath, cache);
   } catch {
     return [];
   }
@@ -238,12 +266,12 @@ function listPoemYamlFiles(dir) {
  * Read and parse a YAML poem file, resolving $ref references.
  *
  * @param {string} filePath - Absolute path to the .yaml file
+ * @param {Map<string, *>} [cache] - shared parse cache, see readYamlCached()
  * @returns {object|null}
  */
-function readPoemFile(filePath) {
+function readPoemFile(filePath, cache) {
   try {
-    const content = fs.readFileSync(filePath, 'utf8');
-    const data = yaml.load(content);
+    const data = readYamlCached(filePath, cache);
     const resolvedData = resolveRefs(data, path.dirname(filePath));
     return resolvedData;
   } catch (err) {
@@ -263,10 +291,11 @@ function clearRefCache() {
  * Read a YAML poem file, resolve $ref references, and augment with slug + display date.
  *
  * @param {string} yamlPath - Absolute path to the .yaml file
+ * @param {Map<string, *>} [cache] - shared parse cache, see readYamlCached()
  * @returns {object|null} Poem data object or null on error
  */
-function loadPoemData(yamlPath) {
-  const poemData = readPoemFile(yamlPath);
+function loadPoemData(yamlPath, cache) {
+  const poemData = readPoemFile(yamlPath, cache);
   if (!poemData) return null;
   poemData.slug = slugFromFile(yamlPath);
   if (poemData.date) {
@@ -318,6 +347,6 @@ function renderPage(poemData, opts = {}) {
 module.exports = {
   resolveRefs, readPoemFile, clearRefCache, loadPoemData, renderFragment, renderPage,
   substituteContextVars, resolveContextVars, CONTEXT_VAR_NAMES, listPoemYamlFiles,
-  collectRefFiles, refFilesForPoem,
+  collectRefFiles, refFilesForPoem, readYamlCached,
   FRAGMENT_TEMPLATE, PAGE_TEMPLATE,
 };
