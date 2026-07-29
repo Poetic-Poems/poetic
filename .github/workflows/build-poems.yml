@@ -157,6 +157,15 @@ jobs:
         if: steps.changes.outputs.relevant == 'true'
         run: npm run check:build
 
+      # Non-blocking: surfaces axe-core findings (missing landmarks, contrast
+      # failures, etc.) against index.html and one poem page without gating
+      # the merge — see TD26072616. Drives the Chrome already installed on
+      # this runner image rather than downloading a bundled browser.
+      - name: Accessibility check (non-blocking)
+        if: steps.changes.outputs.relevant == 'true'
+        continue-on-error: true
+        run: npm run a11y
+
       - name: Setup Pages
         if: steps.changes.outputs.relevant == 'true' && steps.precheck.outputs.pages == 'true'
         uses: actions/configure-pages@v6

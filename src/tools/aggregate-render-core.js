@@ -115,19 +115,21 @@ function renderFreshIndexHtml(islandEntries, { siteTitle, subtitle, favicon }) {
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <header class="header">
             <h1>${siteTitle}</h1>
             <p class="subtitle">${subtitle}</p>
-        </div>
+        </header>
 
-        <!-- The title filter bar is inserted here by renderPoems()/setupHomeFilter() in index.js. -->
-        <div class="poem-grid" id="poemGrid">
-            <!-- Poems will be populated by JavaScript -->
-        </div>
+        <main>
+            <!-- The title filter bar is inserted here by renderPoems()/setupHomeFilter() in index.js. -->
+            <div class="poem-grid" id="poemGrid">
+                <!-- Poems will be populated by JavaScript -->
+            </div>
 
-        <div class="links">
-            <a href="all-poems.html">View All Poems</a>
-        </div>
+            <div class="links">
+                <a href="all-poems.html">View All Poems</a>
+            </div>
+        </main>
     </div>
 
     ${poemDataIsland}
@@ -161,10 +163,12 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
 </head>
 <body>
     <div class="container">
-        <div class="poem-section text-center">
-            <h1>No Poems Found</h1>
-            <p>No YAML files were found in the poems directory.</p>
-        </div>
+        <main>
+            <div class="poem-section text-center">
+                <h1>No Poems Found</h1>
+                <p>No YAML files were found in the poems directory.</p>
+            </div>
+        </main>
     </div>
 </body>
 </html>`;
@@ -190,12 +194,13 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <header class="header">
             <h1>${siteTitle}</h1>
             <p class="subtitle">Concatenated view of all poems (${entries.length} poems)</p>
             <a href="index.html" class="back-link">← Back to Main Page</a>
-        </div>
+        </header>
 
+        <main>
         <div class="filter-bar" id="filterBar">
             <label class="filter-field">
                 <span class="filter-icon" aria-hidden="true">🔍</span>
@@ -248,6 +253,7 @@ function renderAllPoemsHtml(entries, { siteTitle, favicon }) {
   });
 
   html += `
+        </main>
     </div>
 </body>
 </html>`;

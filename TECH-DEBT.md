@@ -149,17 +149,6 @@ push-triggered `release` job doesn't re-check either. Project review
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
 
-### TD26072616 No `<main>` landmark on generated pages; no automated accessibility checker
-
-None of `index.html`, `all-poems.html`, or individual poem pages contain a
-`<main>` landmark (screen-reader/switch-access users have no "jump to main
-content" region, distinct from heading navigation), and no automated
-accessibility tool (axe/pa11y) runs anywhere — both prior real a11y
-regressions (the keyboard-trap toggle, WCAG contrast failures) were caught by
-manual review only. Project review 2026-07-26's R-13/F-UX-01/F-UX-02. Fix:
-wrap each template's primary content in `<main>`, and add a non-blocking
-`pa11y-ci`/`axe-core` CI check against the index and one poem page.
-
 ### TD26072617 Browser-renderer errors are unclassified plain Error objects
 
 `src/browser/render.js`/`render-aggregate.js` throw bare `Error`s with no
@@ -219,6 +208,25 @@ input side already is — after recording `mtimeBefore`, rewind the output's
 mtime into the past with `fs.utimesSync`, so a regenerated file's fresh
 mtime is unambiguously newer (or assert on changed content instead of the
 mtime).
+
+### TD26072902 generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks
+
+`generateIndexHtml()` (`src/tools/build-all-poems.js`) has two branches: no
+`public/index.html` on disk means `renderFreshIndexHtml()` builds one from the
+template, which since TD26072616 (#129) carries `<header class="header">` and
+`<main>`; an existing `index.html` is instead patched in place (favicon,
+subtitle, title, CSS/JS links, poem-data island) and keeps whatever body
+structure it already had. So a consumer repo that tracks a hand-customised
+`public/index.html` — rather than treating it as a build artefact, as this repo
+does via `.gitignore` — never retroactively gains the landmarks, which is the
+very defect TD26072616 set out to fix. Deliberately scoped out of #129:
+rewriting arbitrary user HTML by regex is riskier than the narrow case
+warrants. Mitigated, not hidden — `npm run a11y` checks whatever
+`public/index.html` it finds, so such a page reports axe's `region` /
+`landmark-one-main` violations non-blockingly in the consumer's own CI. Fix:
+self-heal the landmarks too, structurally rather than by regex, or document
+that a tracked `index.html` must be re-created from scratch to pick up template
+changes.
 
 ## Ledger
 
@@ -299,10 +307,11 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072613 | Blogger client secret echoed to terminal during interactive entry | resolved | 2026-07-28 | #121 |
 | TD26072614 | No automated licence-compatibility check for dependencies | resolved | 2026-07-29 | #127 |
 | TD26072615 | build-all-poems.js parses each poem's YAML up to four times | resolved | 2026-07-29 | #128 |
-| TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | open | | |
+| TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | resolved | 2026-07-29 | #129 |
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | open | | |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | resolved | 2026-07-28 | #125 |
 | TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
 | TD26072901 | poem-to-raw/poem-to-yaml regeneration tests flake on output-mtime granularity | open | | |
+| TD26072902 | generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks | open | | |

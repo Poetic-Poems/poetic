@@ -21,7 +21,8 @@ html(lang="en")
         a(href="../") ← Poems
         |  ·&nbsp;
         a(href="../all-poems.html") All Poems
-      div.poem-section(id=`poem-${slug}`)
-        h1.poem-title!= titleHtml
-        div.poem-content
-          +poemContent
+      main
+        div.poem-section(id=`poem-${slug}`)
+          h1.poem-title!= titleHtml
+          div.poem-content
+            +poemContent

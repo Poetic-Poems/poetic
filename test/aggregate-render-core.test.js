@@ -85,10 +85,40 @@ test('renderFreshIndexHtml: embeds the site title/subtitle/favicon and the poem-
   assert.match(html, /"hasAudio": true/);
 });
 
+test('renderFreshIndexHtml: wraps the banner in <header> and the poem grid in a single <main> landmark', () => {
+  const html = renderFreshIndexHtml(
+    [{ file: 'a/', title: 'Poem A', hasAudio: false, date: '2020-01-01', labels: [] }],
+    { siteTitle: 'My Site', subtitle: 'A Subtitle', favicon: 'icon.svg' }
+  );
+
+  assert.match(html, /<header class="header">/);
+  assert.match(html, /<\/header>/);
+  assert.strictEqual((html.match(/<main>/g) || []).length, 1, 'exactly one <main> landmark');
+  // Every element of the page body belongs to one landmark or the other, which
+  // is what axe-core's "region" and "landmark-one-main" rules require.
+  assert.match(html, /<main>[\s\S]*id="poemGrid"[\s\S]*<\/main>/);
+  assert.match(html, /<main>[\s\S]*all-poems\.html[\s\S]*<\/main>/);
+});
+
+test('renderAllPoemsHtml: wraps the banner in <header> and the listing in a single <main> landmark', () => {
+  const entries = [{
+    slug: 'first', title: 'First Poem', titleHtml: 'First Poem', date: 'Wednesday, 1 January 2020',
+    isoDate: '2020-01-01', hasAudio: false, content: '<p>first content</p>',
+  }];
+  const html = renderAllPoemsHtml(entries, { siteTitle: 'My Site', favicon: 'icon.svg' });
+
+  assert.match(html, /<header class="header">[\s\S]*<\/header>/);
+  assert.strictEqual((html.match(/<main>/g) || []).length, 1, 'exactly one <main> landmark');
+  assert.match(html, /<main>[\s\S]*id="filterBar"[\s\S]*<\/main>/);
+  assert.match(html, /<main>[\s\S]*id="poem-first"[\s\S]*<\/main>/);
+});
+
 test('renderAllPoemsHtml: returns the "No Poems Found" page for an empty entry list', () => {
   const html = renderAllPoemsHtml([], { siteTitle: 'My Site', favicon: 'icon.svg' });
   assert.match(html, /<title>No Poems Found<\/title>/);
   assert.doesNotMatch(html, /My Site/);
+  // The empty-state page is a landmark of its own too, not an exception.
+  assert.match(html, /<main>[\s\S]*<h1>No Poems Found<\/h1>[\s\S]*<\/main>/);
 });
 
 test('renderAllPoemsHtml: renders a table-of-contents row and poem-section per entry, with a working audio icon', () => {
