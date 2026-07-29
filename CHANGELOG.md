@@ -44,6 +44,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   happens in the new `src/browser/render-errors.js` at the boundary of the four
   exported functions, without touching the shared `poem-parser.js`/
   `poem-markup.js` throw sites those functions call into. Resolves TD26072617.
+- **The dev server shuts down gracefully.** `src/tools/serve-static.js` now
+  handles `SIGINT`/`SIGTERM` by calling `server.close()` instead of exiting
+  immediately, so `npm run stop` (and Ctrl-C) let already-open connections
+  finish instead of dropping them mid-response. Resolves TD26072619.
 
 ### Changed
 

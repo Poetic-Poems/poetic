@@ -149,14 +149,6 @@ push-triggered `release` job doesn't re-check either. Project review
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
 
-### TD26072619 serve-static.js dev server has no graceful shutdown
-
-No `SIGINT`/`SIGTERM` handler; `npm run stop` sends a bare `SIGTERM` that
-terminates the process immediately without draining in-flight responses. Low
-real-world impact (a loopback-bound dev server with nothing stateful to
-flush). Project review 2026-07-26's R-16/F-OPS-02. Fix: call `server.close()`
-on `SIGINT`/`SIGTERM`.
-
 ### TD26072801 path-guard.js's containment checks don't resolve symlinks
 
 `safeJoin()` and `isWithinRoot()` compare strings only — neither calls
@@ -297,7 +289,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | resolved | 2026-07-29 | #129 |
 | TD26072617 | Browser-renderer errors are unclassified plain Error objects | resolved | 2026-07-29 | #130 |
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
-| TD26072619 | serve-static.js dev server has no graceful shutdown | in-progress | | |
+| TD26072619 | serve-static.js dev server has no graceful shutdown | resolved | 2026-07-30 | #132 |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | resolved | 2026-07-28 | #125 |
 | TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
 | TD26072901 | poem-to-raw/poem-to-yaml regeneration tests flake on output-mtime granularity | open | | |
