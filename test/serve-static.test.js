@@ -31,6 +31,7 @@ const os = require('os');
 const path = require('path');
 const Module = require('module');
 const http = require('http');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 const SERVE_STATIC_PATH = path.join(__dirname, '..', 'src', 'tools', 'serve-static.js');
@@ -127,10 +128,10 @@ function withRunningServer(requestHandler, fn) {
   });
 }
 
-function httpGet(port, requestPath, { agent } = {}) {
+function httpGet(port, requestPath) {
   return new Promise((resolve, reject) => {
     const req = http.request(
-      { host: '127.0.0.1', port, path: requestPath, method: 'GET', agent },
+      { host: '127.0.0.1', port, path: requestPath, method: 'GET' },
       (res) => {
         const chunks = [];
         res.on('data', (chunk) => chunks.push(chunk));
@@ -384,9 +385,18 @@ function waitForExit(child) {
   });
 }
 
-test('SIGTERM (the signal `npm run stop` sends) lets an already-connected client finish and exits cleanly', async () => {
+test('SIGTERM (the signal `npm run stop` sends) lets an in-flight response finish and exits cleanly', async () => {
   await withTempDirAsync(async (dir) => {
-    fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
+    // Large enough that the file is still streaming out (not yet fully
+    // buffered/flushed) when SIGTERM arrives, so this exercises a request
+    // that's genuinely in-flight. An earlier version of this test sent the
+    // signal between two requests on an idle keep-alive socket instead —
+    // `server.close()` only guarantees to drain connections with an active
+    // request, not idle ones, so that version flaked (~15% locally) on
+    // whichever side of the close() the client's next request happened to
+    // land.
+    const content = crypto.randomBytes(5 * 1024 * 1024);
+    fs.writeFileSync(path.join(dir, 'big.bin'), content);
     const port = await getFreePort();
 
     const child = spawn(
@@ -394,35 +404,34 @@ test('SIGTERM (the signal `npm run stop` sends) lets an already-connected client
       [SERVE_STATIC_PATH, '--port', String(port), '--dir', dir, '--host', '127.0.0.1'],
       { stdio: ['ignore', 'pipe', 'pipe'] }
     );
-    // Keep-alive so the second request below reuses the same already-open
-    // socket rather than opening a new one — `server.close()` stops
-    // *accepting* new connections but keeps serving ones already open, so
-    // this is what distinguishes "drains in-flight work" from "still
-    // listening".
-    const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
 
     try {
       await waitForServerReady(child);
 
-      // Establish the connection and let it go idle-but-open before the
-      // signal arrives.
-      const warmup = await httpGet(port, '/hello.txt', { agent });
-      assert.strictEqual(warmup.statusCode, 200);
+      const response = await new Promise((resolve, reject) => {
+        const req = http.request(
+          { host: '127.0.0.1', port, path: '/big.bin', method: 'GET' },
+          (res) => {
+            // Headers have arrived but the body is still streaming; signal
+            // now so the shutdown handler races the in-flight response,
+            // not a request that hasn't been sent yet.
+            child.kill('SIGTERM');
+            const chunks = [];
+            res.on('data', (chunk) => chunks.push(chunk));
+            res.on('end', () =>
+              resolve({ statusCode: res.statusCode, body: Buffer.concat(chunks) })
+            );
+            res.on('error', reject);
+          }
+        );
+        req.on('error', reject);
+        req.end();
+      });
 
-      child.kill('SIGTERM');
-      // Reuses the warmed-up socket rather than accepting a new one; a
-      // regression back to abrupt termination would either drop this or
-      // never let it start.
-      const response = await httpGet(port, '/hello.txt', { agent });
-
+      // A regression back to abrupt termination would truncate this body
+      // instead of letting the stream finish.
       assert.strictEqual(response.statusCode, 200);
-      assert.strictEqual(response.body, 'hello world');
-
-      // Close the client side of the keep-alive socket so the server sees
-      // it end and `server.close()`'s pending callback can fire — otherwise
-      // the idle socket would sit open until the server's own
-      // keep-alive-timeout, keeping the process alive for several seconds.
-      agent.destroy();
+      assert.ok(response.body.equals(content));
 
       const { code, signal } = await waitForExit(child);
 
@@ -432,7 +441,6 @@ test('SIGTERM (the signal `npm run stop` sends) lets an already-connected client
       assert.strictEqual(code, 0);
       assert.strictEqual(signal, null);
     } finally {
-      agent.destroy();
       if (child.exitCode === null && child.signalCode === null) {
         child.kill('SIGKILL');
       }
