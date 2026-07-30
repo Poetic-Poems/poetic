@@ -111,13 +111,13 @@ test('convertAllPoemsToYaml regenerates a poem\'s YAML once the source .poem cha
   convertAllPoemsToYaml({ poemDir, yamlDir });
 
   const yamlPath = path.join(yamlDir, 'sample.yaml');
-  const mtimeBefore = fs.statSync(yamlPath).mtimeMs;
 
-  // Rewind the output's mtime into the past so a regenerated file's fresh
-  // mtime is unambiguously newer, regardless of filesystem mtime-resolution
-  // granularity.
+  // Rewind the output's mtime into the past, then read it back as the
+  // baseline, so a regenerated file's fresh mtime is unambiguously newer,
+  // regardless of filesystem mtime-resolution granularity.
   const past = (Date.now() - 60_000) / 1000;
   fs.utimesSync(yamlPath, past, past);
+  const mtimeBefore = fs.statSync(yamlPath).mtimeMs;
 
   // Bump the source's mtime into the future so it's unambiguously newer,
   // regardless of filesystem mtime-resolution granularity.
