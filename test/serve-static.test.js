@@ -31,6 +31,8 @@ const os = require('os');
 const path = require('path');
 const Module = require('module');
 const http = require('http');
+const crypto = require('crypto');
+const { spawn } = require('child_process');
 
 const SERVE_STATIC_PATH = path.join(__dirname, '..', 'src', 'tools', 'serve-static.js');
 const PATH_GUARD_PATH = path.join(path.dirname(SERVE_STATIC_PATH), 'path-guard.js');
@@ -76,6 +78,17 @@ function loadServeStaticInternals(dirForStartupCheck, extraArgs = [], { pathGuar
       }
     }
   }
+}
+
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const srv = http.createServer();
+    srv.on('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
+    });
+  });
 }
 
 function withTempDir(fn) {
@@ -336,5 +349,127 @@ test('request handler: returns 403 when the traversal guard trips on the directo
 
     assert.strictEqual(res.statusCode, 403);
     assert.strictEqual(res.body, 'Forbidden');
+  });
+});
+
+/*
+ * Graceful-shutdown tests below spawn the real serve-static.js as a child
+ * process, rather than using the throwaway-Module technique above — that
+ * technique stubs `http.createServer`'s `listen`/`close` away entirely
+ * (see loadServeStaticInternals) and so can't exercise a real signal
+ * reaching a real `process.exit`. TD26072619: before this fix, `npm run
+ * stop`'s bare SIGTERM terminated the process immediately, mid-response.
+ */
+
+function waitForServerReady(child) {
+  return new Promise((resolve, reject) => {
+    let output = '';
+    const onData = (chunk) => {
+      output += chunk;
+      if (output.includes('Serving ')) {
+        child.stdout.removeListener('data', onData);
+        resolve();
+      }
+    };
+    child.stdout.on('data', onData);
+    child.once('error', reject);
+    child.once('exit', (code, signal) =>
+      reject(new Error(`server exited before it was ready (code ${code}, signal ${signal})`))
+    );
+  });
+}
+
+function waitForExit(child) {
+  return new Promise((resolve) => {
+    child.once('exit', (code, signal) => resolve({ code, signal }));
+  });
+}
+
+test('SIGTERM (the signal `npm run stop` sends) lets an in-flight response finish and exits cleanly', async () => {
+  await withTempDirAsync(async (dir) => {
+    // Large enough that the file is still streaming out (not yet fully
+    // buffered/flushed) when SIGTERM arrives, so this exercises a request
+    // that's genuinely in-flight. An earlier version of this test sent the
+    // signal between two requests on an idle keep-alive socket instead —
+    // `server.close()` only guarantees to drain connections with an active
+    // request, not idle ones, so that version flaked (~15% locally) on
+    // whichever side of the close() the client's next request happened to
+    // land.
+    const content = crypto.randomBytes(5 * 1024 * 1024);
+    fs.writeFileSync(path.join(dir, 'big.bin'), content);
+    const port = await getFreePort();
+
+    const child = spawn(
+      process.execPath,
+      [SERVE_STATIC_PATH, '--port', String(port), '--dir', dir, '--host', '127.0.0.1'],
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+
+    try {
+      await waitForServerReady(child);
+
+      const response = await new Promise((resolve, reject) => {
+        const req = http.request(
+          { host: '127.0.0.1', port, path: '/big.bin', method: 'GET' },
+          (res) => {
+            // Headers have arrived but the body is still streaming; signal
+            // now so the shutdown handler races the in-flight response,
+            // not a request that hasn't been sent yet.
+            child.kill('SIGTERM');
+            const chunks = [];
+            res.on('data', (chunk) => chunks.push(chunk));
+            res.on('end', () =>
+              resolve({ statusCode: res.statusCode, body: Buffer.concat(chunks) })
+            );
+            res.on('error', reject);
+          }
+        );
+        req.on('error', reject);
+        req.end();
+      });
+
+      // A regression back to abrupt termination would truncate this body
+      // instead of letting the stream finish.
+      assert.strictEqual(response.statusCode, 200);
+      assert.ok(response.body.equals(content));
+
+      const { code, signal } = await waitForExit(child);
+
+      // A graceful `server.close()` shutdown calls `process.exit(0)`; a
+      // process killed abruptly by the signal itself would instead report
+      // code null and the signal's name.
+      assert.strictEqual(code, 0);
+      assert.strictEqual(signal, null);
+    } finally {
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL');
+      }
+    }
+  });
+});
+
+test('SIGINT exits cleanly via the same graceful shutdown path', async () => {
+  await withTempDirAsync(async (dir) => {
+    fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
+    const port = await getFreePort();
+
+    const child = spawn(
+      process.execPath,
+      [SERVE_STATIC_PATH, '--port', String(port), '--dir', dir, '--host', '127.0.0.1'],
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+
+    try {
+      await waitForServerReady(child);
+      child.kill('SIGINT');
+      const { code, signal } = await waitForExit(child);
+
+      assert.strictEqual(code, 0);
+      assert.strictEqual(signal, null);
+    } finally {
+      if (child.exitCode === null && child.signalCode === null) {
+        child.kill('SIGKILL');
+      }
+    }
   });
 });
