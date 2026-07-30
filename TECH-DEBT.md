@@ -292,5 +292,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072619 | serve-static.js dev server has no graceful shutdown | resolved | 2026-07-30 | #132 |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | resolved | 2026-07-28 | #125 |
 | TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
-| TD26072901 | poem-to-raw/poem-to-yaml regeneration tests flake on output-mtime granularity | open | | |
+| TD26072901 | poem-to-raw/poem-to-yaml regeneration tests flake on output-mtime granularity | in-progress | | |
 | TD26072902 | generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks | open | | |
