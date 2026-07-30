@@ -149,19 +149,6 @@ push-triggered `release` job doesn't re-check either. Project review
 `required_status_checks` list (a GitHub settings change, not a code change —
 needs admin/maintain permission on the repo).
 
-### TD26072617 Browser-renderer errors are unclassified plain Error objects
-
-`src/browser/render.js`/`render-aggregate.js` throw bare `Error`s with no
-`.code`/`.name`, so a consumer of the `poetic/browser` export can't
-distinguish error kinds programmatically. This was flagged in the 2026-07-21
-review's TD26072118 batch, but that item's own closing commit explicitly
-deferred this specific piece ("left as-is... not a small, safe edit") without
-filing a follow-on entry, so it existed in no tracked register until now —
-project review 2026-07-26's R-14/F-UX-03/F-GOV-01 both note the tracking gap
-itself as the finding; this entry is that recommendation's entire intended
-end state, already actioned as part of this review. Fix: add `.code`/`.name`
-classification to thrown errors in both browser-render files.
-
 ### TD26072619 serve-static.js dev server has no graceful shutdown
 
 No `SIGINT`/`SIGTERM` handler; `npm run stop` sends a bare `SIGTERM` that
@@ -308,7 +295,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072614 | No automated licence-compatibility check for dependencies | resolved | 2026-07-29 | #127 |
 | TD26072615 | build-all-poems.js parses each poem's YAML up to four times | resolved | 2026-07-29 | #128 |
 | TD26072616 | No `<main>` landmark on generated pages; no automated accessibility checker | resolved | 2026-07-29 | #129 |
-| TD26072617 | Browser-renderer errors are unclassified plain Error objects | open | | |
+| TD26072617 | Browser-renderer errors are unclassified plain Error objects | resolved | 2026-07-29 | #130 |
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | open | | |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | resolved | 2026-07-28 | #125 |
