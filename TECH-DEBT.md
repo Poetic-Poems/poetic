@@ -273,4 +273,4 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072620 | No fast-subset/watch-mode test workflow documented | resolved | 2026-07-28 | #125 |
 | TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
 | TD26072901 | poem-to-raw/poem-to-yaml regeneration tests flake on output-mtime granularity | resolved | 2026-07-31 | #133 |
-| TD26072902 | generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks | open | | |
+| TD26072902 | generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks | in-progress | | |
