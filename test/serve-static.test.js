@@ -352,6 +352,42 @@ test('request handler: returns 403 when the traversal guard trips on the directo
   });
 });
 
+test('request handler: returns 403 for a symlink committed inside root whose target resolves outside it', async () => {
+  // No pathGuardOverrides here — this exercises the real path-guard.js
+  // against a genuine on-disk symlink, the scenario TD26072801 fixed
+  // (e.g. public/theme.html -> /etc/passwd, published verbatim).
+  await withTempDirAsync(async (dir) => {
+    const root = fs.realpathSync(dir);
+    const outsideFile = path.join(root, '..', `serve-static-secret-${crypto.randomUUID()}.txt`);
+    fs.writeFileSync(outsideFile, 'top secret');
+    fs.symlinkSync(outsideFile, path.join(root, 'linked.txt'));
+    const { requestHandler } = loadServeStaticInternals(root);
+
+    try {
+      const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/linked.txt'));
+      assert.strictEqual(res.statusCode, 403);
+      assert.strictEqual(res.body, 'Forbidden');
+    } finally {
+      fs.rmSync(outsideFile, { force: true });
+    }
+  });
+});
+
+test('request handler: still answers 404 for a request path that does not exist on disk', async () => {
+  // A missing target can't be resolved by realpath (ENOENT), so the
+  // symlink-aware containment check must fall back to its lexical result
+  // rather than crash — the existing fileExists() check downstream is what
+  // turns "not found" into a 404.
+  await withTempDirAsync(async (dir) => {
+    const { requestHandler } = loadServeStaticInternals(dir);
+
+    const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/no-such-file.txt'));
+
+    assert.strictEqual(res.statusCode, 404);
+    assert.strictEqual(res.body, 'Not Found');
+  });
+});
+
 /*
  * Graceful-shutdown tests below spawn the real serve-static.js as a child
  * process, rather than using the throwaway-Module technique above — that
