@@ -4,7 +4,8 @@
  * Path-containment helpers shared by the static dev server.
  *
  * Extracted so the traversal guards can be unit-tested without starting a
- * server. No dependencies beyond Node's built-in `path`.
+ * server. No dependencies beyond Node's built-in `path` and `fs` — the
+ * latter for the `realpath` resolution that makes containment symlink-aware.
  */
 
 const fs = require('fs');
