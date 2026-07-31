@@ -406,6 +406,12 @@ test('request handler: a directory index.html symlinked out of root is not serve
       assert.strictEqual(res.statusCode, 200);
       assert.doesNotMatch(res.body, /top secret/);
       assert.match(res.body, /Directory Listing/);
+      // The listing may name the symlink (requesting it 403s), but must not
+      // stat through it: printing the resolved target's size ("10 B" for the
+      // ten-byte outside file) would leak metadata about a file the server
+      // just declined to serve.
+      assert.match(res.body, /index\.html/);
+      assert.doesNotMatch(res.body, /class="size"/);
     } finally {
       fs.rmSync(outsideFile, { force: true });
     }

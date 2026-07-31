@@ -69,7 +69,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   altogether: a symlinked `public/sub/index.html` was served on the strength
   of its directory's clearance, and a symlinked `public/index.html` was served
   for any extensionless route. An uncontained directory `index.html` now falls
-  through to the generated listing, and an uncontained root one to a 404.
+  through to the generated listing, and an uncontained root one to a 404 —
+  each logging a warning, like the config resolvers' fallbacks. The generated
+  listing also no longer prints a size for symlink entries: `fs.statSync`
+  follows the link, so the size column would otherwise have leaked the byte
+  count of the out-of-root target the server had just declined to serve.
   Resolves TD26072801.
 
 ### Changed
