@@ -1,8 +1,7 @@
 'use strict';
 
 // Tests for scripts/get-tech-debt-record.pl, scripts/next-tech-debt-id.pl
-// and scripts/td-check.pl, in both register formats: the legacy single-file
-// TECH-DEBT.md and the per-item tech-debt/ directory.
+// and scripts/td-check.pl against the per-item tech-debt/ register format.
 //
 // Each test builds a throwaway git repo containing a fixture register, so
 // the scripts' repo-root discovery (git rev-parse) and --ref reading (git
@@ -44,57 +43,6 @@ function git(cwd, ...args) {
   return r.stdout;
 }
 
-const FIXTURE = `# Tech debt
-
-## Current Items
-
-### TD26071901 Old item one
-
-Body A.
-
-### TD26072001 Todays item one
-
-Body B.
-
-### TD26072002 Todays item two
-
-Body C.
-
-## Ledger
-
-| ID | Title | Status | Resolved | Ref |
-|----|-------|--------|----------|-----|
-| TD26071901 | Old item one | open | | |
-| TD26072001 | Todays item one | open | | |
-| TD26072002 | Todays item two | open | | |
-`;
-
-const EXTRA_RECORD = `
-### TD26072003 Uncommitted item
-
-Body D.
-`;
-
-function makeRepo(t) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-scripts-'));
-  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-  git(dir, 'init', '-q');
-  fs.writeFileSync(path.join(dir, 'TECH-DEBT.md'), FIXTURE);
-  git(dir, 'add', 'TECH-DEBT.md');
-  git(dir, 'commit', '-q', '-m', 'fixture');
-  return dir;
-}
-
-// Insert an extra record into the working tree only (not committed), so
-// default and --ref runs see different registers.
-function addUncommittedRecord(dir) {
-  const file = path.join(dir, 'TECH-DEBT.md');
-  const updated = fs
-    .readFileSync(file, 'utf8')
-    .replace('\n## Ledger\n', `${EXTRA_RECORD}\n## Ledger\n`);
-  fs.writeFileSync(file, updated);
-}
-
 function runRecord(cwd, ...args) {
   return spawnSync('perl', [RECORD_SCRIPT, ...args], {
     cwd,
@@ -114,95 +62,6 @@ function runNextId(cwd, ...args) {
 function ids(stdout) {
   return [...stdout.matchAll(/^id:\s+(\S+)/gm)].map((m) => m[1]);
 }
-
-test('a unique suffix resolves to exactly one record (exit 0)', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  const r = runRecord(repo, '72001');
-  assert.strictEqual(r.status, 0, r.stderr);
-  assert.deepStrictEqual(ids(r.stdout), ['TD26072001']);
-  assert.match(r.stdout, /Body B\./);
-});
-
-test('a shared suffix is ambiguous (exit = matches - 1)', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  const r = runRecord(repo, '1');
-  assert.strictEqual(r.status, 1, r.stderr);
-  assert.deepStrictEqual(ids(r.stdout), ['TD26071901', 'TD26072001']);
-});
-
-test('an infix-only segment does not match (exit 255)', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  const r = runRecord(repo, '719');
-  assert.strictEqual(r.status, 255);
-  assert.deepStrictEqual(ids(r.stdout), []);
-});
-
-test('full IDs match, with or without the TD/D prefix', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  for (const segment of ['TD26072002', 'D26072002', '26072002']) {
-    const r = runRecord(repo, segment);
-    assert.strictEqual(r.status, 0, `${segment}: ${r.stderr}`);
-    assert.deepStrictEqual(ids(r.stdout), ['TD26072002'], segment);
-  }
-});
-
-test('an invalid segment dies without matching', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  const r = runRecord(repo, 'xyz');
-  assert.notStrictEqual(r.status, 0);
-  assert.match(r.stderr, /Invalid ID segment/);
-});
-
-test('--ref reads the register at the ref, not the working tree', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  addUncommittedRecord(repo);
-
-  const workingTree = runRecord(repo, '2003');
-  assert.strictEqual(workingTree.status, 0, workingTree.stderr);
-  assert.deepStrictEqual(ids(workingTree.stdout), ['TD26072003']);
-
-  const atRef = runRecord(repo, '--ref', 'HEAD', '2003');
-  assert.strictEqual(atRef.status, 255);
-  assert.deepStrictEqual(ids(atRef.stdout), []);
-
-  const committed = runRecord(repo, '--ref', 'HEAD', '72001');
-  assert.strictEqual(committed.status, 0, committed.stderr);
-  assert.deepStrictEqual(ids(committed.stdout), ['TD26072001']);
-});
-
-test('--ref with an unknown ref fails loudly', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  const r = runRecord(repo, '--ref', 'no-such-ref', '72001');
-  assert.notStrictEqual(r.status, 0);
-  assert.match(r.stderr, /git show failed/);
-});
-
-test('next-tech-debt-id counts the Ledger, not just visible items', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  const r = runNextId(repo, '260720');
-  assert.strictEqual(r.status, 0, r.stderr);
-  assert.strictEqual(r.stdout.trim(), 'TD26072003');
-});
-
-test('next-tech-debt-id --ref allocates from the ref, not the working tree', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  addUncommittedRecord(repo);
-
-  const workingTree = runNextId(repo, '260720');
-  assert.strictEqual(workingTree.status, 0, workingTree.stderr);
-  assert.strictEqual(workingTree.stdout.trim(), 'TD26072004');
-
-  const atRef = runNextId(repo, '--ref', 'HEAD', '260720');
-  assert.strictEqual(atRef.status, 0, atRef.stderr);
-  assert.strictEqual(atRef.stdout.trim(), 'TD26072003');
-});
-
-test('next-tech-debt-id rejects a malformed date', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  const r = runNextId(repo, '2607');
-  assert.notStrictEqual(r.status, 0);
-  assert.match(r.stderr, /Invalid date/);
-});
 
 // ---------------------------------------------------------------------------
 // Per-item register format (tech-debt/ directory + scoped IDs)
@@ -437,24 +296,32 @@ test('per-item: an empty register (scope declared, no directory yet) is per-item
   assert.strictEqual(record.stderr, '');
 });
 
-test('legacy: td-check passes the consistent fixture and flags a stale body', { skip: !HAVE_PERL }, (t) => {
-  const repo = makeRepo(t);
-  const clean = runCheck(repo, 'TECH-DEBT.md');
-  assert.strictEqual(clean.status, 0, clean.stdout);
-  assert.match(clean.stdout, /consistent/);
+test('per-item: TD/D-prefixed legacy segments resolve via legacy-id', { skip: !HAVE_PERL }, (t) => {
+  const repo = makeItemRepo(t);
+  for (const segment of ['TD26072001', 'D26072001', '26072001']) {
+    const r = runRecord(repo, segment);
+    assert.strictEqual(r.status, 0, `${segment}: ${r.stderr}`);
+    assert.deepStrictEqual(ids(r.stdout), ['TD-PPtest-26072001'], segment);
+  }
+});
 
-  // Flip a row to resolved without removing its body: STALE BODY drift.
-  const file = path.join(repo, 'TECH-DEBT.md');
-  fs.writeFileSync(
-    file,
-    fs
-      .readFileSync(file, 'utf8')
-      .replace(
-        '| TD26071901 | Old item one | open | | |',
-        '| TD26071901 | Old item one | resolved | 2026-07-25 | #9 |'
-      )
-  );
-  const drifted = runCheck(repo, 'TECH-DEBT.md');
-  assert.strictEqual(drifted.status, 1, drifted.stdout);
-  assert.match(drifted.stdout, /STALE BODY {5}TD26071901/);
+test('per-item: an invalid segment dies without matching', { skip: !HAVE_PERL }, (t) => {
+  const repo = makeItemRepo(t);
+  const r = runRecord(repo, 'xyz');
+  assert.notStrictEqual(r.status, 0);
+  assert.match(r.stderr, /Invalid ID segment/);
+});
+
+test('per-item: --ref with an unknown ref fails loudly', { skip: !HAVE_PERL }, (t) => {
+  const repo = makeItemRepo(t);
+  const r = runRecord(repo, '--ref', 'no-such-ref', '72001');
+  assert.notStrictEqual(r.status, 0);
+  assert.match(r.stderr, /Cannot resolve ref/);
+});
+
+test('per-item: next-tech-debt-id rejects a malformed date', { skip: !HAVE_PERL }, (t) => {
+  const repo = makeItemRepo(t);
+  const r = runNextId(repo, '2607');
+  assert.notStrictEqual(r.status, 0);
+  assert.match(r.stderr, /Invalid date/);
 });
