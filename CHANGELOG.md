@@ -49,6 +49,21 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   immediately, so `npm run stop` (and Ctrl-C) let already-open connections
   finish instead of dropping them mid-response. Resolves TD26072619.
 
+### Security
+
+- **`path-guard.js`'s containment checks now resolve symlinks.** `isWithinRoot()`
+  previously compared paths lexically only, so a symlink committed inside a
+  served or config root (e.g. `public/theme.html -> /etc/passwd`) resolved to
+  an in-root path, passed containment, and was then read and published
+  verbatim — to GitHub Pages via `footer.js`'s `footer.source`, as the live
+  Blogger theme via `build-blogger.js`'s `blogger.template`, or over HTTP by
+  `serve-static.js`. `isWithinRoot()` now re-resolves both `root` and
+  `candidate` with `fs.realpathSync` once the lexical check passes and
+  compares again; a target that can't be resolved (missing, permissions, a
+  symlink loop) falls back to the lexical result rather than crashing, so
+  `serve-static.js` still answers 404 for a missing file and the two config
+  resolvers still fall back to their defaults. Resolves TD26072801.
+
 ### Changed
 
 - **Analysis show/hide and synopsis/full-selector controls no longer use inline

@@ -138,25 +138,6 @@ it is always obvious where a new item's body belongs.
 
 <!-- Add new items directly below, as `### <id> <title>` sections. -->
 
-### TD26072801 path-guard.js's containment checks don't resolve symlinks
-
-`safeJoin()` and `isWithinRoot()` compare strings only — neither calls
-`fs.realpathSync`, so containment is purely lexical. A symlink committed
-inside the root (say `public/theme.html -> /etc/passwd`) resolves to an
-in-root path, passes `isWithinRoot()`, and is then read and published
-verbatim — to GitHub Pages via `footer.js`'s `footer.source`, as the live
-Blogger theme via `build-blogger.js`'s `blogger.template`, or over HTTP by
-`serve-static.js`'s two guard sites. Flagged deliberately as out of scope
-while fixing TD26072606 (#113), whose work order asked for `path-guard.js`'s
-existing helpers rather than a new containment check. Lower severity than
-TD26072606 was: it needs a committed file rather than just a config edit, and
-someone who can commit a symlink can usually commit its target's contents
-directly. Fix: resolve symlinks inside `path-guard.js` so all three call
-sites are covered at once. That needs a decision on the
-target-does-not-exist case, where `realpath` throws `ENOENT` —
-`serve-static.js` must still answer 404, and both config resolvers must still
-fall back to their defaults rather than crash.
-
 ### TD26072902 generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks
 
 `generateIndexHtml()` (`src/tools/build-all-poems.js`) has two branches: no
@@ -282,7 +263,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | resolved | 2026-07-30 | #132 |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | resolved | 2026-07-28 | #125 |
-| TD26072801 | path-guard.js's containment checks don't resolve symlinks | in-progress | | |
+| TD26072801 | path-guard.js's containment checks don't resolve symlinks | resolved | 2026-07-31 | #134 |
 | TD26072901 | poem-to-raw/poem-to-yaml regeneration tests flake on output-mtime granularity | resolved | 2026-07-31 | #133 |
 | TD26072902 | generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks | open | | |
 | TD26080101 | Tech-debt register has no way to detect drift against live GitHub state | open | | |
