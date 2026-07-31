@@ -28,7 +28,7 @@ const os = require('os');
 const yaml = require('js-yaml');
 
 const {
-  concatenateAllHtmlFiles, generateIndexHtml, copyDateUtilsAsset,
+  concatenateAllHtmlFiles, generateIndexHtml, copyDateUtilsAsset, selfHealLandmarks,
 } = require('../src/tools/build-all-poems');
 const { REPO_ROOT } = require('../src/tools/repo-root');
 
@@ -341,6 +341,87 @@ test('generateIndexHtml: injects missing poetic.css/custom.css/poetic.js links i
   assert.strictEqual((updated.match(/href="poetic\.css"/g) || []).length, 1);
   assert.strictEqual((updated.match(/href="custom\.css"/g) || []).length, 1);
   assert.strictEqual((updated.match(/src="poetic\.js"/g) || []).length, 1);
+});
+
+// ── Self-healing <header>/<main> landmarks (TD26072902) ─────────────────────
+
+test('generateIndexHtml: self-heals a pre-landmark index.html (bare "header" div + poem-grid) into <header>/<main>', (t) => {
+  const poemsDir = tmpPoemsDir(t);
+  writeFixturePoem(poemsDir, FIXTURE_FILE, { title: FIXTURE_TITLE });
+  const dir = tmpPublicDir(t);
+
+  const preLandmark = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="poetic-logo.svg" type="image/svg+xml">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>My Poems</h1>
+            <p class="subtitle">My Poems</p>
+        </div>
+        <div class="poem-grid" id="poemGrid"></div>
+    </div>
+
+    <script type="application/json" id="poem-data">
+[]
+    </script>
+    <script src="index.js" defer></script>
+</body>
+</html>`;
+  fs.writeFileSync(path.join(dir, 'index.html'), preLandmark, 'utf8');
+
+  const healed = generateIndexHtml(dir, 'poetic-logo.svg', 'My Poems', undefined, { poemsDir });
+  assert.match(healed, /<header class="header">[\s\S]*<h1>My Poems<\/h1>[\s\S]*<\/header>/);
+  assert.match(healed, /<main>[\s\S]*<div class="poem-grid" id="poemGrid"><\/div>[\s\S]*<\/main>/);
+  assert.doesNotMatch(healed, /<div class="header">/, 'the header div should be retagged, not left duplicated');
+  assert.strictEqual((healed.match(/<header/g) || []).length, 1);
+  assert.strictEqual((healed.match(/<main/g) || []).length, 1);
+});
+
+test('generateIndexHtml: self-heals a pre-migration index.html (no header info at all) by wrapping its content in <main> only', (t) => {
+  const poemsDir = tmpPoemsDir(t);
+  writeFixturePoem(poemsDir, FIXTURE_FILE, { title: FIXTURE_TITLE });
+  const dir = tmpPublicDir(t);
+
+  const noHeaderInfo = `<!DOCTYPE html>
+<html lang="en">
+<head></head>
+<body>
+    <div class="container">
+        <div class="poem-grid" id="poemGrid"></div>
+    </div>
+
+    <script>
+        const allPoems = [];
+        function renderPoems() {}
+    </script>
+</body>
+</html>`;
+  fs.writeFileSync(path.join(dir, 'index.html'), noHeaderInfo, 'utf8');
+
+  const healed = generateIndexHtml(dir, 'poetic-logo.svg', 'My Poems', undefined, { poemsDir });
+  assert.match(healed, /<main>[\s\S]*<div class="poem-grid" id="poemGrid"><\/div>[\s\S]*<\/main>/);
+  assert.doesNotMatch(healed, /<header/, 'no header content existed to retag, so none should be invented');
+});
+
+test('generateIndexHtml: an already-landmarked index.html is left with exactly one <header> and one <main>', (t) => {
+  const poemsDir = tmpPoemsDir(t);
+  writeFixturePoem(poemsDir, FIXTURE_FILE, { title: FIXTURE_TITLE });
+  const dir = tmpPublicDir(t);
+
+  const first = generateIndexHtml(dir, 'poetic-logo.svg', 'My Poems', undefined, { poemsDir });
+  fs.writeFileSync(path.join(dir, 'index.html'), first, 'utf8');
+
+  const second = generateIndexHtml(dir, 'poetic-logo.svg', 'My Poems', undefined, { poemsDir });
+  assert.strictEqual((second.match(/<header/g) || []).length, 1);
+  assert.strictEqual((second.match(/<main/g) || []).length, 1);
+});
+
+test('selfHealLandmarks: leaves HTML with no recognisable .container wrapper untouched', () => {
+  const custom = '<!DOCTYPE html><html><body><section id="app"></section></body></html>';
+  assert.strictEqual(selfHealLandmarks(custom), custom);
 });
 
 // ── copyDateUtilsAsset ───────────────────────────────────────────────────────

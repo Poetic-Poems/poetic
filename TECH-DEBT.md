@@ -138,25 +138,6 @@ it is always obvious where a new item's body belongs.
 
 <!-- Add new items directly below, as `### <id> <title>` sections. -->
 
-### TD26072902 generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks
-
-`generateIndexHtml()` (`src/tools/build-all-poems.js`) has two branches: no
-`public/index.html` on disk means `renderFreshIndexHtml()` builds one from the
-template, which since TD26072616 (#129) carries `<header class="header">` and
-`<main>`; an existing `index.html` is instead patched in place (favicon,
-subtitle, title, CSS/JS links, poem-data island) and keeps whatever body
-structure it already had. So a consumer repo that tracks a hand-customised
-`public/index.html` — rather than treating it as a build artefact, as this repo
-does via `.gitignore` — never retroactively gains the landmarks, which is the
-very defect TD26072616 set out to fix. Deliberately scoped out of #129:
-rewriting arbitrary user HTML by regex is riskier than the narrow case
-warrants. Mitigated, not hidden — `npm run a11y` checks whatever
-`public/index.html` it finds, so such a page reports axe's `region` /
-`landmark-one-main` violations non-blockingly in the consumer's own CI. Fix:
-self-heal the landmarks too, structurally rather than by regex, or document
-that a tracked `index.html` must be re-created from scratch to pick up template
-changes.
-
 ### TD26080101 Tech-debt register has no way to detect drift against live GitHub state
 
 `TD26072604` sat `open` for three days and five PRs (`#124` through `#136`)
@@ -265,5 +246,5 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072620 | No fast-subset/watch-mode test workflow documented | resolved | 2026-07-28 | #125 |
 | TD26072801 | path-guard.js's containment checks don't resolve symlinks | resolved | 2026-07-31 | #134 |
 | TD26072901 | poem-to-raw/poem-to-yaml regeneration tests flake on output-mtime granularity | resolved | 2026-07-31 | #133 |
-| TD26072902 | generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks | open | | |
+| TD26072902 | generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks | resolved | 2026-07-31 | #135 |
 | TD26080101 | Tech-debt register has no way to detect drift against live GitHub state | open | | |
