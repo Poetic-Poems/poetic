@@ -90,6 +90,46 @@ describe('resolveTemplatePath', () => {
     assert.equal(result, path.join(tmpDir, 'blogger-template.html'));
     fs.rmSync(tmpDir, { recursive: true });
   });
+
+  it('rejects a blogger.template that is a symlink escaping the repo root and falls back to the default', () => {
+    const repoRoot = fs.realpathSync(makeTempDir());
+    const publicDir = path.join(repoRoot, 'public');
+    const canonicalPath = path.join(publicDir, 'blogger-template.html');
+    touch(canonicalPath, 'default template');
+    // Named after the (unique) temp dir: this lands in os.tmpdir() itself,
+    // where a fixed name would collide with a concurrent run of this suite.
+    const outsideFile = path.join(
+      repoRoot,
+      '..',
+      `secret-template-${path.basename(repoRoot)}.html`
+    );
+    touch(outsideFile, 'attacker-controlled');
+    const linkPath = path.join(publicDir, 'linked-template.html');
+    fs.symlinkSync(outsideFile, linkPath);
+
+    const result = resolveTemplatePath(
+      { blogger: { template: 'public/linked-template.html' } },
+      publicDir
+    );
+    assert.equal(result, canonicalPath);
+    fs.rmSync(outsideFile, { force: true });
+    fs.rmSync(repoRoot, { recursive: true });
+  });
+
+  it('accepts a blogger.template that references a nonexistent file without crashing (missing-target is not a containment failure)', () => {
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    const canonicalPath = path.join(publicDir, 'blogger-template.html');
+    touch(canonicalPath, 'default template');
+    assert.doesNotThrow(() => {
+      const result = resolveTemplatePath(
+        { blogger: { template: 'public/does-not-exist.html' } },
+        publicDir
+      );
+      assert.equal(result, path.join(publicDir, 'does-not-exist.html'));
+    });
+    fs.rmSync(repoRoot, { recursive: true });
+  });
 });
 
 // ---------------------------------------------------------------------------

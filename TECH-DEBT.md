@@ -128,6 +128,7 @@ is still visible; claiming it here would silently retire work nobody has done.
 | [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-15 — Fix three documentation-accuracy gaps | TD26072618 |
 | [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-16 — Add graceful shutdown to the dev server | TD26072619 |
 | [project-review-2026-07-26](reviews/project-review-2026-07-26/) | R-17 — Document a fast-subset/watch-mode test workflow | TD26072620 |
+| [project-review-2026-07-31](reviews/project-review-2026-07-31/) | R-01 — Correct the stale tech-debt register entry and stop it recurring | TD26080101 |
 
 ## Current Items
 
@@ -137,36 +138,27 @@ it is always obvious where a new item's body belongs.
 
 <!-- Add new items directly below, as `### <id> <title>` sections. -->
 
-### TD26072604 changelog-check required status check missing from branch ruleset
+### TD26080101 Tech-debt register has no way to detect drift against live GitHub state
 
-`release.yml`'s `changelog-check` job (added by #91) fails a PR that bumps
-`package.json`'s version without a matching `CHANGELOG.md` entry, but the
-active branch ruleset's `required_status_checks` list only names `build`,
-`commit-format`, and the two `Analyze` contexts — `changelog-check` isn't in
-it, so "Squash and merge" stays clickable even while it's red, and the
-push-triggered `release` job doesn't re-check either. Project review
-2026-07-26's R-01/F-CI-01. Fix: add `"changelog-check"` to the ruleset's
-`required_status_checks` list (a GitHub settings change, not a code change —
-needs admin/maintain permission on the repo).
-
-### TD26072801 path-guard.js's containment checks don't resolve symlinks
-
-`safeJoin()` and `isWithinRoot()` compare strings only — neither calls
-`fs.realpathSync`, so containment is purely lexical. A symlink committed
-inside the root (say `public/theme.html -> /etc/passwd`) resolves to an
-in-root path, passes `isWithinRoot()`, and is then read and published
-verbatim — to GitHub Pages via `footer.js`'s `footer.source`, as the live
-Blogger theme via `build-blogger.js`'s `blogger.template`, or over HTTP by
-`serve-static.js`'s two guard sites. Flagged deliberately as out of scope
-while fixing TD26072606 (#113), whose work order asked for `path-guard.js`'s
-existing helpers rather than a new containment check. Lower severity than
-TD26072606 was: it needs a committed file rather than just a config edit, and
-someone who can commit a symlink can usually commit its target's contents
-directly. Fix: resolve symlinks inside `path-guard.js` so all three call
-sites are covered at once. That needs a decision on the
-target-does-not-exist case, where `realpath` throws `ENOENT` —
-`serve-static.js` must still answer 404, and both config resolvers must still
-fall back to their defaults rather than crash.
+`TD26072604` sat `open` for three days and five PRs (`#124` through `#136`)
+after the branch ruleset it described was actually fixed out-of-band
+(GitHub UI, 2026-07-28) — `td-check.pl` checks only *internal* register
+consistency (every open/in-progress row has exactly one body, no
+resolved/not-debt row has one) and has no way to notice that a resolved
+real-world fact (a ruleset, a repo setting, anything outside this
+repository's own tracked files) still reads `open` here. Found and the
+`TD26072604` entry itself corrected by project-review-2026-07-31
+(`reviews/project-review-2026-07-31/`, R-01/F-CI-01); this entry is the
+residual: a stale root file, `RULESET-CHANGELOG-CHECK.md`, that narrated
+the same fix as already applied and should be deleted (its substance
+folded into `CHANGELOG.md`'s existing `v6.2.0` entry for the changelog-check
+work), plus the absence of any drift-detection mechanism. Fix: delete
+`RULESET-CHANGELOG-CHECK.md`; then decide and document how a future review
+or maintainer would notice register-vs-live-GitHub drift again — a
+periodic manual check (e.g. a step in the project-review skill's CI
+dimension, which this review's own subagent already performed by hand via
+`gh api .../rulesets/...`) is an acceptable answer and does not require new
+automation.
 
 ## Ledger
 
@@ -235,7 +227,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072601 | poem-parser.js still has ~46 methods covering variable substitution and metadata parsing | resolved | 2026-07-26 | #106 |
 | TD26072602 | Blogger sync posts poems strictly sequentially | not-debt | | #107 |
 | TD26072603 | poem-parser.js still has metadata-parsing methods sharing mutable instance state | resolved | 2026-07-26 | #108 |
-| TD26072604 | changelog-check required status check missing from branch ruleset | open | | |
+| TD26072604 | changelog-check required status check missing from branch ruleset | resolved | 2026-07-28 | ruleset 18226786 (out-of-band GitHub settings change; discovered by project-review-2026-07-31) |
 | TD26072605 | sync-blogger.js's main() has zero test coverage and untested complexity | resolved | 2026-07-27 | #111 |
 | TD26072606 | footer.source/blogger.template config paths bypass path-guard | resolved | 2026-07-27 | #113 |
 | TD26072607 | serve-static.js's real request handler is untested | resolved | 2026-07-27 | #114 |
@@ -252,6 +244,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | resolved | 2026-07-30 | #132 |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | resolved | 2026-07-28 | #125 |
-| TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
+| TD26072801 | path-guard.js's containment checks don't resolve symlinks | resolved | 2026-07-31 | #134 |
 | TD26072901 | poem-to-raw/poem-to-yaml regeneration tests flake on output-mtime granularity | resolved | 2026-07-31 | #133 |
 | TD26072902 | generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks | resolved | 2026-07-31 | #135 |
+| TD26080101 | Tech-debt register has no way to detect drift against live GitHub state | open | | |

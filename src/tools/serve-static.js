@@ -180,8 +180,14 @@ function generateDirectoryListing(dirPath, relativePath = '/') {
             const icon = isDir ? '📁' : '📄';
             const className = isDir ? 'folder' : 'file';
 
+            // statSync follows symlinks, and the listing is what gets served
+            // when a directory's index.html escapes containment — so the
+            // size column must not stat through a link and print the byte
+            // count of the very target the server just declined to read.
+            // Symlinks get no size; requesting one resolves (or 403s) as
+            // usual.
             let size = '';
-            if (!isDir) {
+            if (!isDir && !item.isSymbolicLink()) {
               try {
                 const stat = fs.statSync(path.join(dirPath, item.name));
                 size = formatFileSize(stat.size);
@@ -259,19 +265,32 @@ const server = http.createServer((req, res) => {
 
       // Check if it's a directory
       if (directoryExists(dirPath)) {
-        // Serve index.html if it exists (production-correct behaviour)
+        // Serve index.html if it exists (production-correct behaviour).
+        // The guard above cleared `dirPath`, not this file: an `index.html`
+        // that is itself a symlink out of the root has to be re-checked, or
+        // it would be streamed on the strength of its directory's clearance.
+        // An uncontained one is simply not servable, so fall through to the
+        // generated listing rather than 403 an otherwise legitimate directory
+        // — the same discard-the-candidate fallback footer.js and
+        // build-blogger.js apply to an uncontained config path, warning
+        // included.
         const indexFile = path.join(dirPath, 'index.html');
         if (fileExists(indexFile)) {
-          res.writeHead(200, {
-            ...CORS_HEADERS,
-            'Cache-Control':
-              'no-store, no-cache, must-revalidate, proxy-revalidate',
-            Pragma: 'no-cache',
-            Expires: '0',
-            'Content-Type': 'text/html; charset=utf-8',
-          });
-          fs.createReadStream(indexFile).pipe(res);
-          return;
+          if (isWithinRoot(ROOT_DIR, indexFile)) {
+            res.writeHead(200, {
+              ...CORS_HEADERS,
+              'Cache-Control':
+                'no-store, no-cache, must-revalidate, proxy-revalidate',
+              Pragma: 'no-cache',
+              Expires: '0',
+              'Content-Type': 'text/html; charset=utf-8',
+            });
+            fs.createReadStream(indexFile).pipe(res);
+            return;
+          }
+          console.warn(
+            `Warning: ${indexFile} resolves outside the served root; serving the directory listing instead`
+          );
         }
 
         // Fall back to generated directory listing when no index.html
@@ -325,14 +344,22 @@ const server = http.createServer((req, res) => {
     // SPA fallback to /index.html for non-asset routes (no dot in last segment)
     const lastSegment = path.basename(pathname);
     if (!lastSegment.includes('.')) {
+      // This path never went through the guard above — it's synthesised here
+      // from ROOT_DIR — so containment is checked on it directly; a root
+      // `index.html` symlinked out of the root falls through to the 404.
       const indexPath = path.join(ROOT_DIR, 'index.html');
       if (fileExists(indexPath)) {
-        res.writeHead(200, {
-          ...headers,
-          'Content-Type': 'text/html; charset=utf-8',
-        });
-        fs.createReadStream(indexPath).pipe(res);
-        return;
+        if (isWithinRoot(ROOT_DIR, indexPath)) {
+          res.writeHead(200, {
+            ...headers,
+            'Content-Type': 'text/html; charset=utf-8',
+          });
+          fs.createReadStream(indexPath).pipe(res);
+          return;
+        }
+        console.warn(
+          `Warning: ${indexPath} resolves outside the served root; skipping the SPA fallback`
+        );
       }
     }
 
