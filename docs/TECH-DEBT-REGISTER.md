@@ -3,7 +3,10 @@
 The tech-debt tooling (`scripts/get-tech-debt-record.pl`,
 `scripts/next-tech-debt-id.pl`, `scripts/td-check.pl`) supports two register
 formats and detects which one a repository uses by the presence of a
-`tech-debt/` directory:
+`tech-debt/` directory — or, for a per-item register that has not yet filed
+its first item (git cannot commit an empty directory), by the `scope:`
+declaration in `TECH-DEBT.md`'s frontmatter, so allocation is scoped from
+the very first item:
 
 - **Per-item format** (this document): one file per item under `tech-debt/`,
   with the root `TECH-DEBT.md` holding only policy — the format pointer, the
@@ -113,6 +116,10 @@ Other orgs record their own repo codes in their governance home (Artist-OS:
 | poetic | `poet` |
 | poetic-fiddle | `pfid` |
 | .github | `ghub` |
+
+| warwick-allen repo | Code |
+|--------------------|------|
+| fragments-and-unity | `frag` |
 
 ## Derived views
 
