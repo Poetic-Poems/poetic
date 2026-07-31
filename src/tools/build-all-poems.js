@@ -140,6 +140,93 @@ function concatenateAllHtmlFiles(
 }
 
 /**
+ * Find a balanced HTML element by its opening tag, returning byte offsets for
+ * its open tag, inner content, and closing tag. Tracks the nesting depth of
+ * same-named tags rather than matching a single fixed-shape regex against the
+ * whole document, so it finds the *matching* close tag through nested
+ * same-named children and regardless of indentation or line breaks — needed
+ * because selfHealLandmarks (below) runs against previously-built HTML whose
+ * exact formatting this codebase doesn't control.
+ *
+ * @param {string} html
+ * @param {RegExp} openTagPattern - matches only the element's opening tag,
+ *   e.g. /<div class="container">/i
+ * @param {string} tagName - the element name (e.g. "div"), used to track
+ *   nesting depth
+ * @returns {{start: number, openEnd: number, closeStart: number, end: number}|null}
+ */
+function findBalancedBlock(html, openTagPattern, tagName) {
+  const openMatch = openTagPattern.exec(html);
+  if (!openMatch) return null;
+
+  const start = openMatch.index;
+  const openEnd = start + openMatch[0].length;
+  const tagRe = new RegExp(`<${tagName}\\b[^>]*>|</${tagName}\\s*>`, 'gi');
+  tagRe.lastIndex = openEnd;
+
+  let depth = 1;
+  let match;
+  while ((match = tagRe.exec(html)) !== null) {
+    if (match[0][1] === '/') {
+      depth -= 1;
+      if (depth === 0) {
+        return { start, openEnd, closeStart: match.index, end: match.index + match[0].length };
+      }
+    } else {
+      depth += 1;
+    }
+  }
+  return null;
+}
+
+/**
+ * Self-heal the `<header>`/`<main>` landmarks TD26072616 (#129) added to the
+ * fresh-build template (renderFreshIndexHtml, aggregate-render-core.js) into
+ * an existing `public/index.html` that predates them, e.g. one a consumer
+ * repo tracks in git rather than treating as a build artefact — see
+ * TD26072902.
+ *
+ * Structural rather than regex-over-the-whole-document: it locates the
+ * `.container` wrapper and, within it, any `<div class="header">` block by
+ * tracking tag-nesting depth (findBalancedBlock above), so varied
+ * indentation or nested markup inside those elements doesn't throw it off
+ * the way a single fixed-shape regex would.
+ *
+ * Recognises only the shapes this framework itself has ever produced. If it
+ * can't find a `.container` wrapper at all — the body structure has been
+ * replaced by hand — it leaves the file untouched; `npm run a11y` still
+ * reports the missing landmarks non-blockingly rather than this silently
+ * misrewriting arbitrary hand-authored HTML.
+ *
+ * @param {string} html
+ * @returns {string}
+ */
+function selfHealLandmarks(html) {
+  let result = html;
+
+  if (!/<header[\s>]/i.test(result)) {
+    const headerDiv = findBalancedBlock(result, /<div class="header">/i, 'div');
+    if (headerDiv) {
+      const headerInner = result.slice(headerDiv.openEnd, headerDiv.closeStart);
+      result = `${result.slice(0, headerDiv.start)}<header class="header">${headerInner}</header>${result.slice(headerDiv.end)}`;
+    }
+  }
+
+  if (!/<main[\s>]/i.test(result)) {
+    const container = findBalancedBlock(result, /<div class="container">/i, 'div');
+    if (container) {
+      const inner = result.slice(container.openEnd, container.closeStart);
+      const headerBlock = findBalancedBlock(inner, /<header\b[^>]*>/i, 'header');
+      const prefix = headerBlock ? inner.slice(0, headerBlock.end) : '';
+      const rest = headerBlock ? inner.slice(headerBlock.end) : inner;
+      result = `${result.slice(0, container.openEnd)}${prefix}\n\n        <main>${rest}</main>\n    ${result.slice(container.closeStart)}`;
+    }
+  }
+
+  return result;
+}
+
+/**
  * Build or refresh index.html's poem-data JSON island (and, on an existing
  * file, sync favicon/title/subtitle and self-heal older formats).
  *
@@ -296,6 +383,9 @@ function generateIndexHtml(
           () => poemDataIsland
         );
       }
+
+      // Self-heal the <header>/<main> landmarks: see TD26072902.
+      indexContent = selfHealLandmarks(indexContent);
     } else {
       // Create a default index.html template
       const siteTitle = escapeAmpersand(config.title || 'My Poems');
@@ -441,4 +531,6 @@ module.exports = {
   concatenateAllHtmlFiles,
   generateIndexHtml,
   copyDateUtilsAsset,
+  findBalancedBlock,
+  selfHealLandmarks,
 };

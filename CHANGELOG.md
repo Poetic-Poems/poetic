@@ -59,6 +59,20 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   visibility off those attributes via attribute selectors instead of inline
   `style.display` writes. Resolves TD26072611.
 
+### Fixed
+
+- **`generateIndexHtml()`'s self-heal path now adds the `<header>`/`<main>`
+  landmarks TD26072616 (#129) gave the fresh-build template.** Previously,
+  rebuilding over an existing `public/index.html` — the path a consumer repo
+  that tracks a hand-customised `index.html` always takes — left whatever body
+  structure the file already had, so it never gained the landmarks. The
+  self-heal now locates the `.container` wrapper and any `<div class="header">`
+  block by tracking HTML tag-nesting depth (`findBalancedBlock()` in
+  `src/tools/build-all-poems.js`), rather than a fixed-shape regex, so it isn't
+  thrown off by indentation or formatting differences: it retags an existing
+  header `div` to `<header>` and wraps the remaining content in `<main>`, both
+  only when missing. Resolves TD26072902.
+
 ## [6.2.0] — 2026-07-28
 
 ### Added
