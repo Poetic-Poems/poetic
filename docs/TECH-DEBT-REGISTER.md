@@ -1,20 +1,13 @@
 # Tech-debt register — per-item format and scope-code registry
 
-The tech-debt tooling (`scripts/get-tech-debt-record.pl`,
-`scripts/next-tech-debt-id.pl`, `scripts/td-check.pl`) supports two register
-formats and detects which one a repository uses by the presence of a
-`tech-debt/` directory — or, for a per-item register that has not yet filed
-its first item (git cannot commit an empty directory), by the `scope:`
-declaration in `TECH-DEBT.md`'s frontmatter, so allocation is scoped from
-the very first item:
-
-- **Per-item format** (this document): one file per item under `tech-debt/`,
-  with the root `TECH-DEBT.md` holding only policy — the format pointer, the
-  "Claiming an item" workflow, and the repository's declared scope.
-- **Legacy format**: a single `TECH-DEBT.md` holding `### <id> <title>`
-  sections under `## Current Items` plus an append-only `## Ledger` table.
-  Repositories still on this format migrate to the per-item format; the
-  tooling's legacy support exists for that transition.
+The tech-debt register is per-item: one file per item under `tech-debt/`,
+with the root `TECH-DEBT.md` holding only policy — the format pointer, the
+"Claiming an item" workflow, and the repository's declared scope. The
+tooling (`scripts/get-tech-debt-record.pl`, `scripts/next-tech-debt-id.pl`,
+`scripts/td-check.pl`) recognises a register by the `tech-debt/` directory
+— or, for a register that has not yet filed its first item (git cannot
+commit an empty directory), by the `scope:` declaration in `TECH-DEBT.md`'s
+frontmatter, so allocation is scoped from the very first item.
 
 The per-item format exists because a single shared register file makes
 concurrent work on *adjacent* items collide: resolving an item edited both a
@@ -44,7 +37,7 @@ resolve an ID-allocation collision inside a PR.
 ```markdown
 ---
 id: TD-PPpoet-26072424        # equals the filename stem
-legacy-id: TD26072424         # only on items migrated from the legacy format
+legacy-id: TD26072424         # only on items migrated from the old format
 title: One-line summary of the debt
 status: open                  # open | in-progress | resolved | not-debt
 filed: 2026-07-24             # date matching the ID's YYMMDD
@@ -61,8 +54,9 @@ The body **stays when the item is resolved** — the file becomes the item's
 permanent record (description, provenance, resolution date and reference),
 and `git log --follow` on it is the item's audit trail. A resolved item is
 history, like a `CHANGELOG.md` entry, not living documentation. Items
-migrated from the legacy format after they were already resolved have empty
-bodies (the legacy convention deleted prose on resolution).
+migrated from the earlier single-file register after they were already
+resolved have empty bodies (that register's convention deleted prose on
+resolution).
 
 Lifecycle edits are frontmatter-only: claiming flips `status:` to
 `in-progress` (on the `td/<id>` claim branch, per the "Claiming an item"
@@ -131,7 +125,7 @@ format removes.
 ## Consistency gate
 
 `perl scripts/td-check.pl` (also `npm run check:td-register`) validates the
-register in either format and runs on every pull request via
+register and runs on every pull request via
 `.github/workflows/tech-debt-register.yml`, alongside the deletion guard
 (no `tech-debt/` file may be deleted or renamed once on `main`) and the
 regression guard (no `### TD` item sections may reappear in `TECH-DEBT.md`
