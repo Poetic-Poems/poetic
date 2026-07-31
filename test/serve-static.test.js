@@ -352,6 +352,93 @@ test('request handler: returns 403 when the traversal guard trips on the directo
   });
 });
 
+test('request handler: returns 403 for a symlink committed inside root whose target resolves outside it', async () => {
+  // No pathGuardOverrides here — this exercises the real path-guard.js
+  // against a genuine on-disk symlink, the scenario TD26072801 fixed
+  // (e.g. public/theme.html -> /etc/passwd, published verbatim).
+  await withTempDirAsync(async (dir) => {
+    const root = fs.realpathSync(dir);
+    const outsideFile = path.join(root, '..', `serve-static-secret-${crypto.randomUUID()}.txt`);
+    fs.writeFileSync(outsideFile, 'top secret');
+    fs.symlinkSync(outsideFile, path.join(root, 'linked.txt'));
+    const { requestHandler } = loadServeStaticInternals(root);
+
+    try {
+      const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/linked.txt'));
+      assert.strictEqual(res.statusCode, 403);
+      assert.strictEqual(res.body, 'Forbidden');
+    } finally {
+      fs.rmSync(outsideFile, { force: true });
+    }
+  });
+});
+
+test('request handler: still answers 404 for a request path that does not exist on disk', async () => {
+  // A missing target can't be resolved by realpath (ENOENT), so the
+  // symlink-aware containment check must fall back to its lexical result
+  // rather than crash — the existing fileExists() check downstream is what
+  // turns "not found" into a 404.
+  await withTempDirAsync(async (dir) => {
+    const { requestHandler } = loadServeStaticInternals(dir);
+
+    const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/no-such-file.txt'));
+
+    assert.strictEqual(res.statusCode, 404);
+    assert.strictEqual(res.body, 'Not Found');
+  });
+});
+
+test('request handler: a directory index.html symlinked out of root is not served, and the listing is generated instead', async () => {
+  // The traversal guard on a directory request clears the *directory*; the
+  // index.html served in its place is a separate path and needs its own
+  // containment check, or a symlinked public/sub/index.html rides in on the
+  // directory's clearance.
+  await withTempDirAsync(async (dir) => {
+    const root = fs.realpathSync(dir);
+    const outsideFile = path.join(root, '..', `serve-static-secret-${crypto.randomUUID()}.txt`);
+    fs.writeFileSync(outsideFile, 'top secret');
+    fs.mkdirSync(path.join(root, 'sub'));
+    fs.symlinkSync(outsideFile, path.join(root, 'sub', 'index.html'));
+    const { requestHandler } = loadServeStaticInternals(root);
+
+    try {
+      const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/sub/'));
+      assert.strictEqual(res.statusCode, 200);
+      assert.doesNotMatch(res.body, /top secret/);
+      assert.match(res.body, /Directory Listing/);
+      // The listing may name the symlink (requesting it 403s), but must not
+      // stat through it: printing the resolved target's size ("10 B" for the
+      // ten-byte outside file) would leak metadata about a file the server
+      // just declined to serve.
+      assert.match(res.body, /index\.html/);
+      assert.doesNotMatch(res.body, /class="size"/);
+    } finally {
+      fs.rmSync(outsideFile, { force: true });
+    }
+  });
+});
+
+test('request handler: the SPA fallback does not serve a root index.html symlinked out of root', async () => {
+  // ROOT_DIR/index.html is synthesised for the fallback rather than derived
+  // from the request, so it bypasses the guard applied to request paths and
+  // has to be checked where it is built.
+  await withTempDirAsync(async (dir) => {
+    const root = fs.realpathSync(dir);
+    const outsideFile = path.join(root, '..', `serve-static-secret-${crypto.randomUUID()}.txt`);
+    fs.writeFileSync(outsideFile, 'top secret');
+    fs.symlinkSync(outsideFile, path.join(root, 'index.html'));
+    const { requestHandler } = loadServeStaticInternals(root);
+
+    try {
+      const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/some/route'));
+      assert.strictEqual(res.statusCode, 404);
+      assert.strictEqual(res.body, 'Not Found');
+    } finally {
+      fs.rmSync(outsideFile, { force: true });
+    }
+  });
+});
+
 /*
  * Graceful-shutdown tests below spawn the real serve-static.js as a child
  * process, rather than using the throwaway-Module technique above — that

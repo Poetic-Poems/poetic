@@ -114,6 +114,65 @@ test('renderFooter: a footer.source that escapes repoRoot renders the default fo
   assert.match(block, /Default footer/);
 });
 
+test('resolveFooterSourcePath: a footer.source that is a symlink escaping repoRoot falls back to the default path', () => {
+  const repoRoot = fs.realpathSync(
+    tmpRepo({ 'public/poetic-footer.html': '<p>default</p>' })
+  );
+  // Named after the (unique) temp dir: this lands in os.tmpdir() itself,
+  // where a fixed name would collide with a concurrent run of this suite.
+  const outsideFile = path.join(
+    repoRoot,
+    '..',
+    `secret-footer-${path.basename(repoRoot)}.html`
+  );
+  fs.writeFileSync(outsideFile, '<p>attacker-controlled</p>', 'utf8');
+  fs.symlinkSync(outsideFile, path.join(repoRoot, 'public', 'linked-footer.html'));
+
+  try {
+    const resolved = resolveFooterSourcePath(
+      { footer: { source: 'public/linked-footer.html' } },
+      repoRoot
+    );
+    assert.strictEqual(resolved, path.join(repoRoot, DEFAULT_FOOTER_SOURCE));
+  } finally {
+    fs.rmSync(outsideFile, { force: true });
+  }
+});
+
+test('resolveFooterSourcePath: a footer.source pointing at a nonexistent file resolves without crashing', () => {
+  const repoRoot = tmpRepo({ 'public/poetic-footer.html': '<p>default</p>' });
+  assert.doesNotThrow(() => {
+    const resolved = resolveFooterSourcePath(
+      { footer: { source: 'public/does-not-exist.html' } },
+      repoRoot
+    );
+    assert.strictEqual(resolved, path.join(repoRoot, 'public', 'does-not-exist.html'));
+  });
+});
+
+test('renderFooter: a footer.source that is a symlink escaping repoRoot renders the default footer instead', () => {
+  const repoRoot = fs.realpathSync(
+    tmpRepo({ 'public/poetic-footer.html': '<p>Default footer</p>' })
+  );
+  // Named after the (unique) temp dir: this lands in os.tmpdir() itself,
+  // where a fixed name would collide with a concurrent run of this suite.
+  const outsideFile = path.join(
+    repoRoot,
+    '..',
+    `secret-footer-${path.basename(repoRoot)}.html`
+  );
+  fs.writeFileSync(outsideFile, '<p>Attacker-controlled</p>', 'utf8');
+  fs.symlinkSync(outsideFile, path.join(repoRoot, 'public', 'linked-footer.html'));
+
+  try {
+    const block = renderFooter({ footer: { source: 'public/linked-footer.html' } }, repoRoot, { base: '' });
+    assert.match(block, /Default footer/);
+    assert.doesNotMatch(block, /Attacker-controlled/);
+  } finally {
+    fs.rmSync(outsideFile, { force: true });
+  }
+});
+
 test('renderFooter: %{base} resolves to "" on root-level pages and "../" one level deep', () => {
   const repoRoot = tmpRepo({
     'public/poetic-footer.html': '<img src="%{base}poetic-logo.svg">',
