@@ -120,6 +120,12 @@ test('convertAllPoemsToRaw regenerates a poem\'s raw file once the source .poem 
   convertAllPoemsToRaw({ repoTop });
 
   const rawPath = path.join(repoTop, 'raw', 'sample');
+
+  // Rewind the output's mtime into the past, then read it back as the
+  // baseline, so a regenerated file's fresh mtime is unambiguously newer,
+  // regardless of filesystem mtime-resolution granularity.
+  const past = (Date.now() - 60_000) / 1000;
+  fs.utimesSync(rawPath, past, past);
   const mtimeBefore = fs.statSync(rawPath).mtimeMs;
 
   // Bump the source's mtime into the future so it's unambiguously newer,
