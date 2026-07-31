@@ -282,7 +282,7 @@ resolved one, but nothing was fixed, so the `Resolved` column stays blank; the
 | TD26072618 | Documentation-accuracy gaps: edit-poem exit code, BUILD.md phrasing/description | resolved | 2026-07-28 | #120 |
 | TD26072619 | serve-static.js dev server has no graceful shutdown | resolved | 2026-07-30 | #132 |
 | TD26072620 | No fast-subset/watch-mode test workflow documented | resolved | 2026-07-28 | #125 |
-| TD26072801 | path-guard.js's containment checks don't resolve symlinks | open | | |
+| TD26072801 | path-guard.js's containment checks don't resolve symlinks | in-progress | | |
 | TD26072901 | poem-to-raw/poem-to-yaml regeneration tests flake on output-mtime granularity | resolved | 2026-07-31 | #133 |
 | TD26072902 | generateIndexHtml's self-heal path never adds the `<main>`/`<header>` landmarks | open | | |
 | TD26080101 | Tech-debt register has no way to detect drift against live GitHub state | open | | |
