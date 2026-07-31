@@ -28,7 +28,7 @@
     "lint": "eslint .",
     "check": "bash scripts/remove-trailing-spaces.sh --check",
     "check:build": "bash scripts/check-build-artifacts.sh",
-    "check:td-register": "perl scripts/td-check.pl TECH-DEBT.md",
+    "check:td-register": "perl scripts/td-check.pl",
     "check:licenses": "node scripts/check-licenses.js",
     "start": "node src/tools/serve-static.js",
     "stop": "pkill -f 'node src/tools/serve-static.js' || true",
