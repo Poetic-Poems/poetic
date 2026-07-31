@@ -259,9 +259,14 @@ const server = http.createServer((req, res) => {
 
       // Check if it's a directory
       if (directoryExists(dirPath)) {
-        // Serve index.html if it exists (production-correct behaviour)
+        // Serve index.html if it exists (production-correct behaviour).
+        // The guard above cleared `dirPath`, not this file: an `index.html`
+        // that is itself a symlink out of the root has to be re-checked, or
+        // it would be streamed on the strength of its directory's clearance.
+        // An uncontained one is simply not servable, so fall through to the
+        // generated listing rather than 403 an otherwise legitimate directory.
         const indexFile = path.join(dirPath, 'index.html');
-        if (fileExists(indexFile)) {
+        if (fileExists(indexFile) && isWithinRoot(ROOT_DIR, indexFile)) {
           res.writeHead(200, {
             ...CORS_HEADERS,
             'Cache-Control':
@@ -325,8 +330,11 @@ const server = http.createServer((req, res) => {
     // SPA fallback to /index.html for non-asset routes (no dot in last segment)
     const lastSegment = path.basename(pathname);
     if (!lastSegment.includes('.')) {
+      // This path never went through the guard above — it's synthesised here
+      // from ROOT_DIR — so containment is checked on it directly; a root
+      // `index.html` symlinked out of the root falls through to the 404.
       const indexPath = path.join(ROOT_DIR, 'index.html');
-      if (fileExists(indexPath)) {
+      if (fileExists(indexPath) && isWithinRoot(ROOT_DIR, indexPath)) {
         res.writeHead(200, {
           ...headers,
           'Content-Type': 'text/html; charset=utf-8',

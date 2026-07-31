@@ -62,7 +62,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   compares again; a target that can't be resolved (missing, permissions, a
   symlink loop) falls back to the lexical result rather than crashing, so
   `serve-static.js` still answers 404 for a missing file and the two config
-  resolvers still fall back to their defaults. Resolves TD26072801.
+  resolvers still fall back to their defaults. `serve-static.js` also applies
+  the check to the two files it serves without deriving them from the request
+  path — the `index.html` inside a requested directory, and the `index.html`
+  the SPA fallback reaches for — which previously bypassed the guard
+  altogether: a symlinked `public/sub/index.html` was served on the strength
+  of its directory's clearance, and a symlinked `public/index.html` was served
+  for any extensionless route. An uncontained directory `index.html` now falls
+  through to the generated listing, and an uncontained root one to a 404.
+  Resolves TD26072801.
 
 ### Changed
 

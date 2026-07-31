@@ -96,7 +96,13 @@ describe('resolveTemplatePath', () => {
     const publicDir = path.join(repoRoot, 'public');
     const canonicalPath = path.join(publicDir, 'blogger-template.html');
     touch(canonicalPath, 'default template');
-    const outsideFile = path.join(repoRoot, '..', 'secret-template.html');
+    // Named after the (unique) temp dir: this lands in os.tmpdir() itself,
+    // where a fixed name would collide with a concurrent run of this suite.
+    const outsideFile = path.join(
+      repoRoot,
+      '..',
+      `secret-template-${path.basename(repoRoot)}.html`
+    );
     touch(outsideFile, 'attacker-controlled');
     const linkPath = path.join(publicDir, 'linked-template.html');
     fs.symlinkSync(outsideFile, linkPath);

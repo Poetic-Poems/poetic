@@ -118,7 +118,13 @@ test('resolveFooterSourcePath: a footer.source that is a symlink escaping repoRo
   const repoRoot = fs.realpathSync(
     tmpRepo({ 'public/poetic-footer.html': '<p>default</p>' })
   );
-  const outsideFile = path.join(repoRoot, '..', 'secret-footer.html');
+  // Named after the (unique) temp dir: this lands in os.tmpdir() itself,
+  // where a fixed name would collide with a concurrent run of this suite.
+  const outsideFile = path.join(
+    repoRoot,
+    '..',
+    `secret-footer-${path.basename(repoRoot)}.html`
+  );
   fs.writeFileSync(outsideFile, '<p>attacker-controlled</p>', 'utf8');
   fs.symlinkSync(outsideFile, path.join(repoRoot, 'public', 'linked-footer.html'));
 
@@ -148,7 +154,13 @@ test('renderFooter: a footer.source that is a symlink escaping repoRoot renders 
   const repoRoot = fs.realpathSync(
     tmpRepo({ 'public/poetic-footer.html': '<p>Default footer</p>' })
   );
-  const outsideFile = path.join(repoRoot, '..', 'secret-footer.html');
+  // Named after the (unique) temp dir: this lands in os.tmpdir() itself,
+  // where a fixed name would collide with a concurrent run of this suite.
+  const outsideFile = path.join(
+    repoRoot,
+    '..',
+    `secret-footer-${path.basename(repoRoot)}.html`
+  );
   fs.writeFileSync(outsideFile, '<p>Attacker-controlled</p>', 'utf8');
   fs.symlinkSync(outsideFile, path.join(repoRoot, 'public', 'linked-footer.html'));
 
