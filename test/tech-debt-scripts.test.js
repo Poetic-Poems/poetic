@@ -410,6 +410,33 @@ test('per-item: td-check reports the drift classes', { skip: !HAVE_PERL }, (t) =
   assert.match(r.stdout, /STALE FIELD {4}TD-PPtest-26072501\.md \(resolved/);
 });
 
+test('per-item: an empty register (scope declared, no directory yet) is per-item', { skip: !HAVE_PERL }, (t) => {
+  // A register that has not filed its first item cannot commit an empty
+  // tech-debt/ directory, so the scope: declaration alone must put the repo
+  // on the per-item format — otherwise its first allocation would come out
+  // unscoped.
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-empty-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  git(dir, 'init', '-q');
+  fs.writeFileSync(path.join(dir, 'TECH-DEBT.md'), SCOPED_POLICY);
+  git(dir, 'add', '-A');
+  git(dir, 'commit', '-q', '-m', 'fixture');
+
+  const first = runNextId(dir, '260801');
+  assert.strictEqual(first.status, 0, first.stderr);
+  assert.strictEqual(first.stdout.trim(), 'TD-PPtest-26080101');
+
+  const atRef = runNextId(dir, '--ref', 'HEAD', '260801');
+  assert.strictEqual(atRef.status, 0, atRef.stderr);
+  assert.strictEqual(atRef.stdout.trim(), 'TD-PPtest-26080101');
+
+  // The resolver sees an empty register: no matches, never a die.
+  const record = runRecord(dir, '101');
+  assert.strictEqual(record.status, 255);
+  assert.deepStrictEqual(ids(record.stdout), []);
+  assert.strictEqual(record.stderr, '');
+});
+
 test('legacy: td-check passes the consistent fixture and flags a stale body', { skip: !HAVE_PERL }, (t) => {
   const repo = makeRepo(t);
   const clean = runCheck(repo, 'TECH-DEBT.md');

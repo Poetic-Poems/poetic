@@ -129,6 +129,7 @@ FRAMEWORK_PATHS=(
   .github/workflows/build-poems.yml
   .github/workflows/sync-blogger.yml
   .github/workflows/sync-framework.yml
+  .github/workflows/tech-debt-register.yml
   LICENCE
   docs
   editors
