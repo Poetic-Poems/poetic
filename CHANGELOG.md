@@ -132,8 +132,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `changelog-check` job: whenever a PR changes `package.json`'s `version`
   field, it requires `CHANGELOG.md` to have gained a matching
   `## [<version>]` heading in the same PR. The existing tag/release job is
-  unaffected — it still only runs on a `push` to `main`. Resolves
-  TD26072113.
+  unaffected — it still only runs on a `push` to `main`. `changelog-check`
+  was also added to the branch ruleset's required status checks (ruleset
+  `18226786`), making it a merge gate rather than an advisory check.
+  Resolves TD26072113.
 - **Restricted title inline markup now also renders on the index grid and
   all-poems listing**, matching the single-poem page. A title using
   `*emphasis*`, `**strong**` or `~~strikethrough~~` previously showed the
