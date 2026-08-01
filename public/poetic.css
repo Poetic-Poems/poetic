@@ -860,6 +860,12 @@ html.dark-mode .analysis {
   color: #e6eef6;
 }
 
+html.dark-mode .analysis h2,
+html.dark-mode .analysis h3,
+html.dark-mode .analysis h4 {
+  color: #e6eef6;
+}
+
 html.dark-mode button.analysis {
   background-color: #122026;
   color: #e6eef6;
@@ -1028,6 +1034,12 @@ html.dark-mode .poetic-footer {
   .analysis {
     background-color: #0e1619;
     border-color: var(--border);
+    color: var(--text);
+  }
+
+  .analysis h2,
+  .analysis h3,
+  .analysis h4 {
     color: var(--text);
   }
 
