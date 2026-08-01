@@ -8,8 +8,8 @@
  * test/yaml-to-poem-roundtrip.test.js for the pure converter-class tests.
  *
  * convertAllYamlToPoem() accepts optional { yamlDir, poemDir } overrides
- * (see src/tools/yaml-to-poem.js) — the npm run build / CLI entry point
- * never passes them and uses the real REPO_ROOT-derived paths, but tests do,
+ * (see src/tools/yaml-to-poem.js) — the `--all` CLI entry point never passes
+ * them and uses the real REPO_ROOT-derived paths, but tests do,
  * so each test runs against its own isolated temp directories rather than
  * the real src/poems/yaml and src/poems/poem.
  */
@@ -40,7 +40,7 @@ function tmpDirs(t) {
   return { yamlDir, poemDir };
 }
 
-test('convertAllYamlToPoem is exported and is a no-op (no throw, no output) when the yaml dir is empty', (t) => {
+test('convertAllYamlToPoem is exported and is a no-op (no throw, nothing written) when the yaml dir is empty', (t) => {
   assert.strictEqual(typeof convertAllYamlToPoem, 'function');
   const { yamlDir, poemDir } = tmpDirs(t);
 

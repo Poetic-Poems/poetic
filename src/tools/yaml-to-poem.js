@@ -856,8 +856,8 @@ function convertYamlToPoem(yamlFilePath) {
  *
  * @param {object} [options]
  * @param {string} [options.yamlDir] - Override the default `src/poems/yaml`
- *   directory (tests only; the npm run build / CLI entry point below always
- *   uses the default).
+ *   directory (tests only; the `--all` CLI entry point below always uses the
+ *   default — this tool is not part of `npm run build`).
  * @param {string} [options.poemDir] - Override the default `src/poems/poem`
  *   directory (tests only).
  * @returns {number} the number of files converted
