@@ -9,6 +9,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`yaml-to-poem.js --all` converts files again.** It looked for `.yaml`
+  files directly under `src/poems/`, but they live in `src/poems/yaml/`, so
+  it always matched zero files and silently reported "Converted 0 YAML
+  files". It now resolves `src/poems/yaml/` and `src/poems/poem/` via the
+  shared `REPO_ROOT` constant, matching `poem-to-yaml.js`'s and
+  `poem-to-raw.js`'s `--all` conventions, and its loop is extracted into an
+  exported, unit-tested `convertAllYamlToPoem()` function.
+
 ## [6.3.0] — 2026-08-01
 
 ### Added
