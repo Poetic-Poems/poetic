@@ -7,6 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
+const { REPO_ROOT } = require('./repo-root');
 
 /**
  * Every entity convertEntitiesToMarkup understands, keyed by its exact
@@ -846,6 +847,50 @@ function convertYamlToPoem(yamlFilePath) {
 }
 
 /**
+ * Convert every non-partial .yaml file in `yamlDir` to a .poem file in
+ * `poemDir`, mirroring poem-to-yaml.js's convertAllPoemsToYaml() and
+ * poem-to-raw.js's convertAllPoemsToRaw(): a partial/private file (leading
+ * '_' or '.', e.g. `_example.yaml`/`_shared.yaml`) is skipped, and a
+ * per-file conversion failure is logged and skipped rather than aborting
+ * the run.
+ *
+ * @param {object} [options]
+ * @param {string} [options.yamlDir] - Override the default `src/poems/yaml`
+ *   directory (tests only; the `--all` CLI entry point below always uses the
+ *   default — this tool is not part of `npm run build`).
+ * @param {string} [options.poemDir] - Override the default `src/poems/poem`
+ *   directory (tests only).
+ * @returns {number} the number of files converted
+ */
+function convertAllYamlToPoem({
+  yamlDir = path.join(REPO_ROOT, 'src', 'poems', 'yaml'),
+  poemDir = path.join(REPO_ROOT, 'src', 'poems', 'poem'),
+} = {}) {
+  const files = fs.readdirSync(yamlDir);
+
+  let converted = 0;
+  for (const file of files) {
+    if (file.endsWith('.yaml') && !file.startsWith('_') && !file.startsWith('.')) {
+      const yamlPath = path.join(yamlDir, file);
+      const poemPath = path.join(poemDir, file.replace('.yaml', '.poem'));
+
+      try {
+        console.log(`Converting ${file}...`);
+        const poemContent = convertYamlToPoem(yamlPath);
+        fs.writeFileSync(poemPath, poemContent, 'utf8');
+        console.log(`  → ${path.basename(poemPath)}`);
+        converted++;
+      } catch (error) {
+        console.error(`Error converting ${file}:`, error.message);
+      }
+    }
+  }
+
+  console.log(`\nConverted ${converted} YAML files to .poem format`);
+  return converted;
+}
+
+/**
  * Main function
  */
 function main() {
@@ -858,31 +903,7 @@ function main() {
   }
 
   if (args[0] === '--all') {
-    // Convert all .yaml files in poems/ directory (except special files)
-    const poemsDir = path.join(process.cwd(), 'src', 'poems');
-    const files = fs.readdirSync(poemsDir);
-
-    const skipFiles = ['_shared.yaml', '_example.yaml'];
-    let converted = 0;
-
-    for (const file of files) {
-      if (file.endsWith('.yaml') && !skipFiles.includes(file)) {
-        const yamlPath = path.join(poemsDir, file);
-        const poemPath = path.join(poemsDir, file.replace('.yaml', '.poem'));
-
-        try {
-          console.log(`Converting ${file}...`);
-          const poemContent = convertYamlToPoem(yamlPath);
-          fs.writeFileSync(poemPath, poemContent, 'utf8');
-          console.log(`  → ${path.basename(poemPath)}`);
-          converted++;
-        } catch (error) {
-          console.error(`Error converting ${file}:`, error.message);
-        }
-      }
-    }
-
-    console.log(`\nConverted ${converted} YAML files to .poem format`);
+    convertAllYamlToPoem();
   } else {
     // Convert single file
     const inputFile = args[0];
@@ -903,5 +924,5 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { YamlToPoemConverter, convertYamlToPoem };
+module.exports = { YamlToPoemConverter, convertYamlToPoem, convertAllYamlToPoem };
 
