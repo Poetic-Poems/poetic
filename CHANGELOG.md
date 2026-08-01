@@ -9,6 +9,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [6.3.0] — 2026-08-01
+
 ### Added
 
 - **Dependency licences are now checked in CI.** `build-poems.yml`'s `build`
@@ -99,6 +101,25 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   thrown off by indentation or formatting differences: it retags an existing
   header `div` to `<header>` and wraps the remaining content in `<main>`, both
   only when missing. Resolves TD26072902.
+- **`poetic.css`'s muted greys now meet WCAG AA on the page background, not
+  just inside a card.** `.no-content`, `.poem-info`, `.song-segment`,
+  `.song-link` and `.postscript` were `#767676`, which clears the 4.5:1 AA
+  minimum only against the white `.poem-section` card that the standalone
+  page template emits (4.54:1). A consumer rendering the bare `renderPoem()`
+  fragment — as poetic-fiddle's preview and share views do — puts that text
+  straight onto `poetic.css`'s own `body { background: #f5f5f5 }`, where
+  `#767676` is 4.17:1. They are now `#707070`: 4.54:1 on `#f5f5f5` and 4.95:1
+  on white, so this text passes in both contexts. `.song-segment` has also
+  lost its `opacity: 70%`, which composited the text towards whatever it sat
+  on and held it at 2.65:1 on `#f5f5f5` and 3.79:1 against the dark-mode
+  palette whatever colour was chosen; it is now de-emphasised by colour and
+  size alone. Two roles left out of both dark-mode palettes join them:
+  `.no-content`, which had kept the light-mode grey on the dark page
+  background (3.07:1, now 6.14:1), and the analysis headings `.analysis h2`,
+  `h3` and `h4`, whose dark navy sat on the dark analysis panel at 1.67:1 and
+  1.97:1 — near-invisible — and now take the dark palette's text colour at
+  15.62:1. Requested by Poetic-Poems/poetic-fiddle#151, the escalation for
+  that repo's `TD-PPpfid-26072401`.
 
 ## [6.2.0] — 2026-07-28
 

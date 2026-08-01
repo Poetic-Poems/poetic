@@ -25,7 +25,7 @@
 }
 
 .no-content {
-  color: #767676;
+  color: #707070;
   font-style: italic;
 }
 
@@ -67,7 +67,7 @@ h1 {
 }
 
 .poem-info {
-  color: #767676;
+  color: #707070;
   font-size: 90%;
   padding-bottom: 3ex;
 }
@@ -512,15 +512,19 @@ h2.poem-title {
   display: flex;
 }
 
+/* Keep this text fully opaque. Fading it composites the colour towards the
+   page background, which costs more contrast than the value below can afford:
+   at 70% opacity even a much darker grey lands under the 4.5:1 WCAG AA
+   minimum, and the dark-mode palette below fails the same way. De-emphasise
+   it with the colour and the smaller size instead. */
 .song-segment {
-  color: #767676;
+  color: #707070;
   display: block;
   height: 1ex;
   font-family: monospace;
   font-size: 70%;
   font-style: italic;
   letter-spacing: 5%;
-  opacity: 70%;
   overflow: visible;
   position: relative;
   text-transform: lowercase;
@@ -532,7 +536,7 @@ h2.poem-title {
 }
 
 .song-link {
-  color: #767676;
+  color: #707070;
   font-style: italic;
   padding-top: 4ex;
 }
@@ -544,7 +548,7 @@ h2.poem-title {
   border-right-style:   none;
   border-top-style:     solid;
   border-width:         1px;
-  color:                #767676;
+  color:                #707070;
   font-size:            80%;
   margin:               4ex 0;
   padding:              2ex 0;
@@ -842,6 +846,7 @@ html.dark-mode a {
   color: #7fb3ff;
 }
 
+html.dark-mode .no-content,
 html.dark-mode .poem-info,
 html.dark-mode .song-segment,
 html.dark-mode .song-link,
@@ -852,6 +857,12 @@ html.dark-mode .postscript {
 html.dark-mode .analysis {
   background-color: #0e1619;
   border-color: #23303a;
+  color: #e6eef6;
+}
+
+html.dark-mode .analysis h2,
+html.dark-mode .analysis h3,
+html.dark-mode .analysis h4 {
   color: #e6eef6;
 }
 
@@ -1012,6 +1023,7 @@ html.dark-mode .poetic-footer {
 
   a { color: var(--accent); }
 
+  .no-content,
   .poem-info,
   .song-segment,
   .song-link,
@@ -1022,6 +1034,12 @@ html.dark-mode .poetic-footer {
   .analysis {
     background-color: #0e1619;
     border-color: var(--border);
+    color: var(--text);
+  }
+
+  .analysis h2,
+  .analysis h3,
+  .analysis h4 {
     color: var(--text);
   }
 
