@@ -130,3 +130,15 @@ register and runs on every pull request via
 (no `tech-debt/` file may be deleted or renamed once on `main`) and the
 regression guard (no `### TD` item sections may reappear in `TECH-DEBT.md`
 once the per-item register exists).
+
+This gate only checks the register's own internal consistency — it has no
+access to live GitHub state, so an item describing an external fact (a
+branch ruleset, a repo setting, anything outside this repository's tracked
+files) can go stale silently if that fact changes out-of-band, e.g. a
+maintainer changing a setting in the GitHub UI without updating the item
+that described it. There is no automated check for this drift; catch it
+with a periodic manual review instead: for every open or in-progress item
+whose subject is a live GitHub setting, re-verify it against the API (for a
+branch ruleset, `gh api repos/<org>/<repo>/rulesets/<id> --jq '...'`) and
+correct the item's `status:` if reality has moved on. A recurring
+project review is a natural point to run this check.
