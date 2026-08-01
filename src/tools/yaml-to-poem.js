@@ -72,14 +72,49 @@ class YamlToPoemConverter {
    * Main conversion method
    */
   convert() {
+    const hasAudio = this.hasAudioContent();
+    const hasPostscript = this.hasPostscriptContent();
+    const hasAnalysis = this.hasAnalysisContent();
+    const hasMetadata = this.hasMetadataContent();
+
     this.writeHeader();
-    this.writeVersions();
-    this.writeAudio();
-    this.writePostscript();
-    this.writeAnalysis();
+    this.writeVersions(hasAudio || hasPostscript || hasAnalysis || hasMetadata);
+    this.writeAudio(hasPostscript || hasAnalysis || hasMetadata);
+    this.writePostscript(hasAnalysis || hasMetadata);
+    this.writeAnalysis(hasMetadata);
     this.writeMetadata();
 
-    return this.lines.join('\n');
+    // A .poem file conventionally ends with a single trailing newline (see
+    // .editorconfig's insert_final_newline), which the section writers above
+    // no longer supply as a side effect now that a trailing blank line is
+    // only ever written ahead of content that actually follows.
+    return this.lines.join('\n') + '\n';
+  }
+
+  /**
+   * Whether the Audio/Postscript/Analysis/Metadata section has content to
+   * write, matching each writeX() method's own content guard below. convert()
+   * uses these to work out, for each earlier section, whether *any* later
+   * section has content -- POEM-SYNTAX.md: a section's `====` end marker "is
+   * only required if there is subsequent non-empty content" -- so an empty
+   * section between two sections that do have content still gets its own
+   * bare marker line, while a poem with nothing after Versions gets none of
+   * the three at all.
+   */
+  hasAudioContent() {
+    return !!this.data.audio;
+  }
+
+  hasPostscriptContent() {
+    return !!(this.data.postscript && this.data.postscript.length > 0);
+  }
+
+  hasAnalysisContent() {
+    return !!this.data.analysis;
+  }
+
+  hasMetadataContent() {
+    return !!(this.data.directives || this.data.labels);
   }
 
   /**
@@ -134,8 +169,12 @@ class YamlToPoemConverter {
 
   /**
    * Write versions section
+   *
+   * @param {boolean} needsEndMarker - whether Audio, Postscript, Analysis, or
+   *   Metadata has content following, so the section's `====` end marker
+   *   must be written (see hasAudioContent() etc. above).
    */
-  writeVersions() {
+  writeVersions(needsEndMarker) {
     if (!this.data.versions || this.data.versions.length === 0) {
       throw new Error('No versions found in YAML data');
     }
@@ -189,10 +228,12 @@ class YamlToPoemConverter {
       }
     }
 
-    // End of versions marker
-    this.addBlankLines();
-    this.addLine('====');
-    this.addBlankLines();
+    // End of versions marker -- Versions always has content (checked above),
+    // so a needed marker is always preceded by a separating blank line.
+    if (needsEndMarker) {
+      this.addBlankLines();
+      this.addLine('====');
+    }
   }
 
   /**
@@ -231,9 +272,16 @@ class YamlToPoemConverter {
 
   /**
    * Write audio section
+   *
+   * @param {boolean} needsEndMarker - whether Postscript, Analysis, or
+   *   Metadata has content following (see writeVersions() above).
    */
-  writeAudio() {
-    if (this.data.audio) {
+  writeAudio(needsEndMarker) {
+    const hasAudio = this.hasAudioContent();
+
+    if (hasAudio) {
+      this.addBlankLines();
+
       // Service names are data-driven (see song-handlers.js /
       // song-handlers.yaml) -- write back whatever the YAML has, in order,
       // rather than a fixed Audiomack/Suno pair. A bare `true` value becomes
@@ -256,12 +304,17 @@ class YamlToPoemConverter {
           );
         }
       }
-      this.addBlankLines();
     }
 
-    // End of audio marker
-    this.addLine('====');
-    this.addBlankLines();
+    // End of audio marker -- only when something with content follows; an
+    // empty section still gets a bare marker line (no leading blank line) so
+    // it doesn't swallow the one separating the previous marker from it.
+    if (needsEndMarker) {
+      if (hasAudio) {
+        this.addBlankLines();
+      }
+      this.addLine('====');
+    }
   }
 
   /**
@@ -294,9 +347,16 @@ class YamlToPoemConverter {
 
   /**
    * Write postscript section
+   *
+   * @param {boolean} needsEndMarker - whether Analysis or Metadata has
+   *   content following (see writeVersions() above).
    */
-  writePostscript() {
-    if (this.data.postscript && this.data.postscript.length > 0) {
+  writePostscript(needsEndMarker) {
+    const hasPostscript = this.hasPostscriptContent();
+
+    if (hasPostscript) {
+      this.addBlankLines();
+
       for (let i = 0; i < this.data.postscript.length; i++) {
         const note = this.data.postscript[i];
 
@@ -330,20 +390,29 @@ class YamlToPoemConverter {
           this.addBlankLines();
         }
       }
-
-      this.addBlankLines();
     }
 
-    // End of postscript marker
-    this.addLine('====');
-    this.addBlankLines();
+    // End of postscript marker -- see writeAudio() above for the pattern.
+    if (needsEndMarker) {
+      if (hasPostscript) {
+        this.addBlankLines();
+      }
+      this.addLine('====');
+    }
   }
 
   /**
    * Write analysis section
+   *
+   * @param {boolean} needsEndMarker - whether Metadata has content following
+   *   (see writeVersions() above).
    */
-  writeAnalysis() {
-    if (this.data.analysis) {
+  writeAnalysis(needsEndMarker) {
+    const hasAnalysis = this.hasAnalysisContent();
+
+    if (hasAnalysis) {
+      this.addBlankLines();
+
       // Write synopsis if present
       if (this.data.analysis.synopsis) {
         this.addLine('{Synopsis}');
@@ -359,10 +428,14 @@ class YamlToPoemConverter {
         this.addBlankLines();
         const full = this.convertHtmlToPlainText(this.data.analysis.full);
         this.addLine(full);
+      }
+    }
+
+    // End of analysis marker -- see writeAudio() above for the pattern.
+    if (needsEndMarker) {
+      if (hasAnalysis) {
         this.addBlankLines();
       }
-
-      // End of file marker (optional, but include it)
       this.addLine('====');
     }
   }
@@ -378,9 +451,11 @@ class YamlToPoemConverter {
    * empty (or absent) Metadata section.
    */
   writeMetadata() {
-    if (!this.data.directives && !this.data.labels) {
+    if (!this.hasMetadataContent()) {
       return;
     }
+
+    this.addBlankLines();
 
     if (this.data.directives) {
       for (const directive of this.data.directives) {
