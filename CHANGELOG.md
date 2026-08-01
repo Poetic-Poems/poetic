@@ -9,6 +9,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [6.3.0] — 2026-08-01
+
 ### Added
 
 - **Dependency licences are now checked in CI.** `build-poems.yml`'s `build`
