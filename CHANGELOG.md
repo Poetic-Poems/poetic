@@ -11,6 +11,17 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`yaml-to-poem.js` no longer writes trailing `====` markers for empty
+  sections.** `writeVersions()`, `writeAudio()`, and `writePostscript()` each
+  emitted their `====` section terminator unconditionally, even when nothing
+  with content followed, so `yaml-to-poem.js --all` could never be a clean
+  no-op — every run appended more markers to a poem with no
+  audio/postscript/analysis/metadata of its own. A section's end marker is
+  now written only when a later section actually has content, matching
+  `docs/POEM-SYNTAX.md`'s rule ("only required if there is subsequent
+  non-empty content"); an empty section between two non-empty ones still gets
+  its own bare marker line, exactly as the Metadata section's worked example
+  in the spec describes. Resolves TD-PPpoet-26080102.
 - **`yaml-to-poem.js --all` converts files again.** It looked for `.yaml`
   files directly under `src/poems/`, but they live in `src/poems/yaml/`, so
   it always matched zero files and silently reported "Converted 0 YAML
