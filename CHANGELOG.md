@@ -113,8 +113,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   lost its `opacity: 70%`, which composited the text towards whatever it sat
   on and held it at 2.65:1 on `#f5f5f5` and 3.79:1 against the dark-mode
   palette whatever colour was chosen; it is now de-emphasised by colour and
-  size alone. Requested by Poetic-Poems/poetic-fiddle#151, the escalation for
-  that repo's `TD-PPpfid-26072401`.
+  size alone. `.no-content` joins its siblings in both dark-mode palettes,
+  where it had been left on the light-mode grey — 3.07:1 on the dark page
+  background, against 6.14:1 for the `--muted` value it now takes. Requested
+  by Poetic-Poems/poetic-fiddle#151, the escalation for that repo's
+  `TD-PPpfid-26072401`.
 
 ## [6.2.0] — 2026-07-28
 

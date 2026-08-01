@@ -846,6 +846,7 @@ html.dark-mode a {
   color: #7fb3ff;
 }
 
+html.dark-mode .no-content,
 html.dark-mode .poem-info,
 html.dark-mode .song-segment,
 html.dark-mode .song-link,
@@ -1016,6 +1017,7 @@ html.dark-mode .poetic-footer {
 
   a { color: var(--accent); }
 
+  .no-content,
   .poem-info,
   .song-segment,
   .song-link,
