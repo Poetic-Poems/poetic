@@ -11,6 +11,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`yaml-to-poem.js` no longer writes version/segment/postscript labels as
+  raw HTML.** A label is stored as rendered HTML, exactly like a segment's
+  lines (`poem-parser.js` runs both through the same `convertMarkup()`), but
+  `formatLabelLine()` wrote that HTML straight into the `.poem` output
+  instead of un-rendering it back to `.poem` markup syntax first, the one
+  writer method that skipped this step. A label using span/emphasis/strong/
+  strikethrough/link markup or smart quotes therefore wrote a literal
+  `<span class="...">` tag or entity into the regenerated file; on the next
+  parse, the tag's own `"` attribute delimiters could be mistaken for the
+  author's prose and smart-quoted, corrupting the label further. Labels now
+  go through the same HTML-to-plain-text conversion as segment lines before
+  being written. Resolves TD-PPpoet-26080202.
 - **`yaml-to-poem.js` no longer corrupts real-world poems on round-trip.**
   Three distinct fidelity gaps meant `.poem` → YAML → `.poem` was not a fixed
   point: (1) `convertHtmlToPlainText()` stripped only the outermost
