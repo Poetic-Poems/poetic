@@ -214,6 +214,52 @@ test('version, segment, and postscript label params round-trip, including values
   assert.deepStrictEqual(reparsed.postscript, data.postscript);
 });
 
+// ── Version/segment/postscript label HTML (TD-PPpoet-26080202) ──────────────
+//
+// A label is stored as rendered HTML, exactly like segment.lines (see
+// poem-parser.js's parseVersion() etc.: `version.label =
+// convertMarkup(...)`), so it must go through the same HTML-to-markup
+// conversion before being written back, or a `<span class="...">` tag and a
+// smart-quote entity survive into the `.poem` output and get mangled on the
+// next parse (a `"` inside the surviving `class="..."` re-pairs into a
+// smart quote convertMarkup() has no way to know isn't the author's prose).
+
+test('a version label carrying a span and smart quotes round-trips back to markup syntax, not raw HTML', () => {
+  const data = baseData({
+    versions: [
+      {
+        label: 'A <span class="highlight">highlighted</span> label with &#8220;quoted&#8221; text',
+        segments: [{ lines: 'a line\n' }],
+      },
+    ],
+  });
+  assert.deepStrictEqual(roundTrip(data).versions, data.versions);
+});
+
+test('segment and postscript labels carrying inline markup (em/strong/link) round-trip back to markup syntax', () => {
+  const data = baseData({
+    versions: [
+      {
+        segments: [
+          {
+            label: 'Verse with <em>emphasis</em> and <strong>strong</strong>',
+            lines: 'a line\n',
+          },
+        ],
+      },
+    ],
+    postscript: [
+      {
+        label: 'Note with a <a href="https://example.com">link</a>',
+        content: '<p>Text.</p>\n',
+      },
+    ],
+  });
+  const reparsed = roundTrip(data);
+  assert.deepStrictEqual(reparsed.versions, data.versions);
+  assert.deepStrictEqual(reparsed.postscript, data.postscript);
+});
+
 // ── Absence: nothing is written when a poem has no Metadata content ─────────
 
 test('no Metadata section is written when labels and directives are both absent', () => {

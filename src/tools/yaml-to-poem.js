@@ -538,9 +538,18 @@ class YamlToPoemConverter {
    * parameter list. `open`/`close` are '{{'/'}}' for a version label or
    * '{'/'}' for a segment/postscript label, matching the spacing each
    * already uses (`{{ Label }}` vs `{Label}`).
+   *
+   * `label` is stored as rendered HTML (poem-parser.js's parseVersion() etc.
+   * run it through the same convertMarkup() as segment.lines), so it must be
+   * un-rendered back to `.poem` markup syntax before writing it, exactly like
+   * every other HTML-bearing field -- TD-PPpoet-26080202: writing it raw let
+   * a `<span class="...">` or a smart-quote entity survive into the `.poem`
+   * output, where the next parse's convertMarkup() saw it as ordinary label
+   * text and mangled it further.
    */
   formatLabelLine(open, close, label, params) {
-    const inner = open === '{{' ? ` ${label} ` : label;
+    const plainLabel = this.convertSegmentHtmlToPlainText(label);
+    const inner = open === '{{' ? ` ${plainLabel} ` : plainLabel;
     const base = `${open}${inner}${close}`;
     return params ? base + this.formatParamList(params) : base;
   }
