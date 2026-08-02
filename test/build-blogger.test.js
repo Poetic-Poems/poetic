@@ -6,7 +6,7 @@ const fs     = require('node:fs');
 const os     = require('node:os');
 const path   = require('node:path');
 
-const { resolveTemplatePath, injectBetween, findSkinUnsafeTags } = require('../src/tools/build-blogger.js');
+const { resolveTemplatePath, injectBetween, findSkinUnsafeTags, injectCSSIntoTemplate } = require('../src/tools/build-blogger.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -220,5 +220,100 @@ describe('findSkinUnsafeTags', () => {
       { line: 1, tag: '</b:skin>' },
       { line: 1, tag: '<br/>' },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// injectCSSIntoTemplate
+// ---------------------------------------------------------------------------
+
+describe('injectCSSIntoTemplate', () => {
+  const FIXTURE_TEMPLATE = [
+    '<html><head>',
+    '/* ~~ CUSTOM CSS START ~~ */',
+    '/* ~~ CUSTOM CSS END ~~ */',
+    '</head><body>',
+    '<!-- ~~ CUSTOM JS START ~~ -->',
+    '<!-- ~~ CUSTOM JS END ~~ -->',
+    '</body></html>',
+  ].join('\n');
+
+  it('injects CSS and JS from public/ into the template and writes the result', () => {
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    const templatePath = path.join(publicDir, 'blogger-template.html');
+    touch(templatePath, FIXTURE_TEMPLATE);
+    touch(path.join(publicDir, 'poetic.css'), 'body { color: red; }');
+    touch(path.join(publicDir, 'custom.css'), '.custom { color: blue; }');
+    touch(path.join(publicDir, 'poetic.js'), "console.log('hi');");
+
+    injectCSSIntoTemplate({ repoRoot, publicDir });
+
+    const result = fs.readFileSync(templatePath, 'utf8');
+    assert.match(result, /body \{ color: red; \}/, 'poetic.css injected');
+    assert.match(result, /\.custom \{ color: blue; \}/, 'custom.css injected');
+    assert.match(result, /\.poem-labels \{ display: none !important; \}/, 'poem-labels rule appended');
+    assert.match(result, /console\.log\('hi'\);/, 'poetic.js injected');
+    assert.match(result, /<!\[CDATA\[/, 'JS wrapped in a CDATA block');
+    fs.rmSync(repoRoot, { recursive: true });
+  });
+
+  it('skips CSS/JS injection and leaves the template unchanged when public/ has no CSS or JS files', () => {
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    const templatePath = path.join(publicDir, 'blogger-template.html');
+    touch(templatePath, FIXTURE_TEMPLATE);
+
+    injectCSSIntoTemplate({ repoRoot, publicDir });
+
+    assert.equal(fs.readFileSync(templatePath, 'utf8'), FIXTURE_TEMPLATE);
+    fs.rmSync(repoRoot, { recursive: true });
+  });
+
+  it('rejects CSS containing tag-shaped text and leaves the template untouched (process exits non-zero)', () => {
+    // Runs the real function as a subprocess (rather than calling it
+    // in-process) because the unsafe-tag rejection path calls
+    // process.exit(1), which would otherwise tear down the whole test worker.
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    const templatePath = path.join(publicDir, 'blogger-template.html');
+    touch(templatePath, FIXTURE_TEMPLATE);
+    touch(path.join(publicDir, 'poetic.css'), '/* the sort <button> fills the row */');
+
+    const script = `
+      const { injectCSSIntoTemplate } = require(${JSON.stringify(path.join(__dirname, '..', 'src', 'tools', 'build-blogger.js'))});
+      injectCSSIntoTemplate({
+        repoRoot: ${JSON.stringify(repoRoot)},
+        publicDir: ${JSON.stringify(publicDir)},
+      });
+    `;
+    const { spawnSync } = require('child_process');
+    const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
+
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /CSS contains tag-shaped text/);
+    assert.match(result.stderr, /public\/poetic\.css:1: <button>/);
+    assert.equal(fs.readFileSync(templatePath, 'utf8'), FIXTURE_TEMPLATE, 'template left untouched');
+    fs.rmSync(repoRoot, { recursive: true });
+  });
+
+  it('reports an error and exits non-zero when the template file is missing', () => {
+    const repoRoot = makeTempDir();
+    const publicDir = path.join(repoRoot, 'public');
+    fs.mkdirSync(publicDir, { recursive: true });
+
+    const script = `
+      const { injectCSSIntoTemplate } = require(${JSON.stringify(path.join(__dirname, '..', 'src', 'tools', 'build-blogger.js'))});
+      injectCSSIntoTemplate({
+        repoRoot: ${JSON.stringify(repoRoot)},
+        publicDir: ${JSON.stringify(publicDir)},
+      });
+    `;
+    const { spawnSync } = require('child_process');
+    const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
+
+    assert.strictEqual(result.status, 1);
+    assert.match(result.stderr, /Template file not found/);
+    fs.rmSync(repoRoot, { recursive: true });
   });
 });

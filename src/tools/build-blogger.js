@@ -19,6 +19,7 @@ const fs   = require('fs');
 const path = require('path');
 const { readPoeticConfig } = require('./poetic-config');
 const { safeJoin, isWithinRoot } = require('./path-guard');
+const { REPO_ROOT } = require('./repo-root');
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)
@@ -142,10 +143,18 @@ function injectBetween(content, startMarker, endMarker, payload) {
 // Main function
 // ---------------------------------------------------------------------------
 
-function injectCSSIntoTemplate() {
+/**
+ * Inject CSS/JS into the Blogger theme template.
+ *
+ * @param {object} [options]
+ * @param {string} [options.repoRoot]  - Override REPO_ROOT (tests only; the
+ *   npm run build / CLI entry point below always uses the default).
+ * @param {string} [options.publicDir] - Override the derived
+ *   `<repoRoot>/public` (tests only).
+ */
+function injectCSSIntoTemplate({ repoRoot = REPO_ROOT, publicDir = path.join(repoRoot, 'public') } = {}) {
   try {
-    const publicDir    = path.join(process.cwd(), 'public');
-    const config       = readPoeticConfig();
+    const config       = readPoeticConfig(repoRoot);
     const templatePath = resolveTemplatePath(config, publicDir);
 
     // Check if template exists
