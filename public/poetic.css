@@ -463,7 +463,7 @@ h2.poem-title {
 }
 
 .audio-cell:empty::after {
-  color: #ccc;
+  color: #707070;
   content: "—";
 }
 
@@ -480,7 +480,7 @@ h2.poem-title {
 
 .back-to-top {
   align-items: center;
-  background: #007AFF;
+  background: #0062CC;
   border: none;
   border-radius: 50%;
   bottom: 30px;

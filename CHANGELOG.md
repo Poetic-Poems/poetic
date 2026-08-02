@@ -11,6 +11,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`.back-to-top` and `.audio-cell:empty::after` now meet WCAG AA
+  contrast.** `.back-to-top`'s white-on-`#007AFF` background reproduced the
+  exact 4.02:1 failure a prior fix (#85) darkened to `#0062CC` (≈5.80:1)
+  everywhere else in `poetic.css`, having been missed by that pass; it now
+  uses the same `#0062CC`. The all-poems table of contents' empty
+  audio-column placeholder (`—`) was `#ccc` on white, ≈1.6:1; it now uses
+  `#707070`, the muted grey already established elsewhere in the file,
+  which measures ≈4.95:1 on white.
 - **`yaml-to-poem.js` no longer writes version/segment/postscript labels as
   raw HTML.** A label is stored as rendered HTML, exactly like a segment's
   lines (`poem-parser.js` runs both through the same `convertMarkup()`), but
