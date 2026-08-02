@@ -11,6 +11,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The `====` end-marker tests no longer fail in consumer repos.** The
+  regression tests added with the fix below asserted against the framework's
+  own poem corpus — a fixture (`a-poem-kept.poem`) that `sync-framework.sh`
+  does not sync, and a `.shared.poem` that is user-owned by design — so
+  syncing them turned every consumer's build red on poems the consumer cannot
+  do anything about. The file-level cases now run against hermetic fixtures in
+  `test/fixtures/round-trip/`, which travel with the test suite; the
+  corpus-wide walk is kept but runs only in the framework itself. The
+  converter's own behaviour is unchanged. Consumer round-trip fidelity gaps
+  the walk had surfaced are recorded as TD-PPpoet-26080201.
 - **`yaml-to-poem.js` no longer writes trailing `====` markers for empty
   sections.** `writeVersions()`, `writeAudio()`, and `writePostscript()` each
   emitted their `====` section terminator unconditionally, even when nothing

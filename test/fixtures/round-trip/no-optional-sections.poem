@@ -1,0 +1,11 @@
+Nothing After the Verse
+A Named Author
+1970-01-01
+
+This poem has no audio, no postscript,
+no analysis and no metadata of its own,
+so nothing at all follows its last line.
+
+Converting it to YAML and back must return
+these bytes unchanged, with no `====` markers
+appended to the end that it never had.
