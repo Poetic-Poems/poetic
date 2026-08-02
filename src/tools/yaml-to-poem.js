@@ -590,6 +590,7 @@ class YamlToPoemConverter {
     for (const block of blocks) {
       const trimmed = block.trim();
       const peeled = blocks.length === 1 ? this.peelTrailingBlockElement(trimmed) : null;
+      const paragraphs = this.splitParagraphRun(trimmed);
 
       // Handle headings (now they're single-line after normalization)
       if (trimmed.match(/^<h5[^>]*>/) && trimmed.endsWith('</h5>')) {
@@ -604,7 +605,7 @@ class YamlToPoemConverter {
       } else if (trimmed.match(/^<h2[^>]*>/) && trimmed.endsWith('</h2>')) {
         const text = this.stripHtmlTags(trimmed.replace(/^<h2[^>]*>/, '').replace(/<\/h2>$/, ''));
         result.push(`# ${text}`);
-      } else if (/^(?:<p>[\s\S]*?<\/p>\n?)+$/.test(trimmed)) {
+      } else if (paragraphs) {
         // One or more paragraphs. markdown-it joins sibling block elements
         // with a single '\n', never a blank line (see peelTrailingBlockElement's
         // doc comment above), so a field with more than one paragraph is still
@@ -615,8 +616,8 @@ class YamlToPoemConverter {
         // trip (TD-PPpoet-26080201 cause 1). Splitting every paragraph out and
         // pushing each separately reproduces the blank-line separation via
         // `result.join('\n\n')` below.
-        for (const paragraph of trimmed.matchAll(/<p>([\s\S]*?)<\/p>/g)) {
-          result.push(this.convertEntitiesToMarkup(this.stripHtmlTags(paragraph[1])));
+        for (const paragraph of paragraphs) {
+          result.push(this.convertEntitiesToMarkup(this.stripHtmlTags(paragraph)));
         }
       } else if (trimmed === '') {
         // Skip empty blocks
@@ -675,6 +676,46 @@ class YamlToPoemConverter {
     }
 
     return result.join('\n\n');
+  }
+
+  /**
+   * Split `trimmed` into its paragraphs' inner HTML if it consists ENTIRELY
+   * of one or more `<p>...</p>` elements, each optionally followed by a
+   * single '\n' before the next -- the shape markdown-it renders sibling
+   * paragraphs into (see convertHtmlToPlainText()'s multi-paragraph branch
+   * above) -- or null if it doesn't (a heading, a list, plain text, or a
+   * malformed/partial run). Scans with one non-nested lazy `<p>...</p>` match
+   * per iteration, checking each starts exactly where the previous one (plus
+   * its separating '\n', if any) ended, rather than a single
+   * `/^(?:<p>[\s\S]*?<\/p>\n?)+$/` test: that pattern's outer `+` wrapping an
+   * inner variable-length `[\s\S]*?` is the classic catastrophic-backtracking
+   * shape (CodeQL js/polynomial-redos flagged it on a run of many `</p><p>`
+   * repetitions with no closing `</p>` at the end).
+   *
+   * @param {string} trimmed
+   * @returns {string[]|null}
+   */
+  splitParagraphRun(trimmed) {
+    if (!trimmed.startsWith('<p>') || !trimmed.endsWith('</p>')) {
+      return null;
+    }
+
+    const paragraphs = [];
+    const pattern = /<p>([\s\S]*?)<\/p>/g;
+    let expectedIndex = 0;
+    let match;
+    while ((match = pattern.exec(trimmed)) !== null) {
+      if (match.index !== expectedIndex) {
+        return null;
+      }
+      paragraphs.push(match[1]);
+      expectedIndex = pattern.lastIndex;
+      if (trimmed[expectedIndex] === '\n') {
+        expectedIndex++;
+      }
+    }
+
+    return expectedIndex === trimmed.length ? paragraphs : null;
   }
 
   /**
