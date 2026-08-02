@@ -1,0 +1,16 @@
+Metadata Only
+A Named Author
+1970-01-01
+
+Only the Metadata section follows this verse,
+so the three empty sections between them each
+contribute a bare `====` marker of their own.
+
+====
+====
+====
+====
+
+%some-directive key:value
+#nature
+#reflection
