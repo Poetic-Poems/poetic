@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 
-const { YamlToPoemConverter } = require('../src/tools/yaml-to-poem');
+const { YamlToPoemConverter, resolveDefaultAuthor } = require('../src/tools/yaml-to-poem');
 const { PoemParser } = require('../src/tools/poem-parser');
 const { parsePoemFile } = require('../src/tools/poem-to-yaml');
 
@@ -101,7 +101,12 @@ test('convertEntitiesToMarkup: an entity nested inside a paired smart quote stil
 // a readable worked example of where the markers do and do not belong.
 
 const FIXTURE_DIR = path.join(__dirname, 'fixtures', 'round-trip');
-const FIXTURES = fs.readdirSync(FIXTURE_DIR).filter((f) => f.endsWith('.poem'));
+// Partial/private files (leading '_' or '.', e.g. `.shared.poem`, or a fixture
+// that needs its own `.shared.poem` context rather than the generic loop's
+// hermetic `sharedPoemPath: null` -- see `_default-author.poem`'s own test
+// below) are excluded, mirroring poem-to-yaml.js's own convertAllPoemsToYaml().
+const FIXTURES = fs.readdirSync(FIXTURE_DIR)
+  .filter((f) => f.endsWith('.poem') && !f.startsWith('_') && !f.startsWith('.'));
 
 // Regenerate a .poem file's text by parsing it into a poem-data object and
 // writing it straight back out -- mirrors the real `poem-to-yaml.js --all` +
@@ -113,9 +118,15 @@ const FIXTURES = fs.readdirSync(FIXTURE_DIR).filter((f) => f.endsWith('.poem'));
 // the fixtures pass null (nothing to prepend, so they stay hermetic and do not
 // depend on whichever .shared.poem the repo they were synced into happens to
 // have), while the framework-corpus test below lets it default to the poem's
-// own directory, as the real pipeline does.
+// own directory, as the real pipeline does. The same sharedPoemPath resolves
+// YamlToPoemConverter's defaultAuthor sentinel (see resolveDefaultAuthor()),
+// mirroring convertYamlToPoem()'s own pairing of the two.
 function regenerate(poemPath, options = { sharedPoemPath: null }) {
-  return new YamlToPoemConverter(parsePoemFile(poemPath, options)).convert();
+  const sharedPoemPath = 'sharedPoemPath' in options
+    ? options.sharedPoemPath
+    : path.join(path.dirname(poemPath), '.shared.poem');
+  const data = parsePoemFile(poemPath, options);
+  return new YamlToPoemConverter(data, { defaultAuthor: resolveDefaultAuthor(sharedPoemPath) }).convert();
 }
 
 test('every round-trip fixture regenerates byte-for-byte through .poem -> YAML -> .poem', () => {
@@ -152,10 +163,10 @@ test('every round-trip fixture is stable under a second round-trip (yaml-to-poem
 });
 
 // The framework's own corpus is worth the same check, but only where "the
-// corpus" means the poems this repo ships. In a consumer, src/poems/poem/ holds
-// the user's collection alongside a user-owned .shared.poem, and the converter
-// has known fidelity gaps on real-world poems (TD-PPpoet-26080201) that would
-// fail this assertion for reasons a consumer cannot act on. `.poetic-version`
+// corpus" means the poems this repo ships. In a consumer, src/poems/poem/
+// holds the user's own collection alongside a user-owned .shared.poem --
+// content this framework's test suite doesn't control and shouldn't assert
+// properties of, however well the converter round-trips it. `.poetic-version`
 // is written by scripts/sync-framework.sh and is absent from the framework
 // itself, so it distinguishes the two.
 const IS_CONSUMER_REPO = fs.existsSync(path.join(__dirname, '..', '.poetic-version'));
@@ -166,6 +177,7 @@ test("the framework's own poem corpus is stable under a second round-trip", {
 }, () => {
   const sharedPoemPath = path.join(POEM_DIR, '.shared.poem');
   const sharedPrefix = fs.existsSync(sharedPoemPath) ? fs.readFileSync(sharedPoemPath, 'utf8') : '';
+  const defaultAuthor = resolveDefaultAuthor(sharedPoemPath);
   const files = fs.readdirSync(POEM_DIR).filter((f) => f.endsWith('.poem') && f !== '.shared.poem');
   assert.ok(files.length > 0, 'expected at least one .poem file');
 
@@ -174,7 +186,7 @@ test("the framework's own poem corpus is stable under a second round-trip", {
     // pipeline does; the second pass has no file of its own to look it up
     // beside, so prepend the same definitions by hand.
     const firstPass = regenerate(path.join(POEM_DIR, file), {});
-    const secondPass = new YamlToPoemConverter(new PoemParser(sharedPrefix + firstPass).parse()).convert();
+    const secondPass = new YamlToPoemConverter(new PoemParser(sharedPrefix + firstPass).parse(), { defaultAuthor }).convert();
 
     assert.strictEqual(
       secondPass,
@@ -183,6 +195,77 @@ test("the framework's own poem corpus is stable under a second round-trip", {
         '--all would keep rewriting it on every run instead of reaching a stable fixed point'
     );
   }
+});
+
+// ── TD-PPpoet-26080201: three round-trip fidelity gaps ──────────────────────
+//
+// multi-paragraph-analysis.poem and unpaired-quote.poem are already covered
+// by the generic FIXTURES loop above (both causes 1 and 2 reproduce with
+// `sharedPoemPath: null`); these tests name them explicitly so each cause has
+// its own regression case, and add a dedicated fixture pair for cause 3,
+// which needs a `.shared.poem` the generic loop deliberately does not use.
+
+test('cause 1 (unbalanced <p>): a {Full} analysis with more than one paragraph ' +
+  'round-trips byte-for-byte and is stable under a second round-trip', () => {
+  const poemPath = path.join(FIXTURE_DIR, 'multi-paragraph-analysis.poem');
+  const firstPass = regenerate(poemPath);
+  assert.strictEqual(
+    firstPass,
+    fs.readFileSync(poemPath, 'utf8'),
+    'expected the fixture to already be the converged .poem -> YAML -> .poem output'
+  );
+
+  const secondPass = new YamlToPoemConverter(new PoemParser(firstPass).parse()).convert();
+  assert.strictEqual(
+    secondPass,
+    firstPass,
+    'expected no further <p>...</p></p> wrapping on a second round-trip'
+  );
+});
+
+test('cause 2 (re-escaped quotes): a verse line opening with an unpaired `"` ' +
+  'round-trips byte-for-byte and is stable under a second round-trip', () => {
+  const poemPath = path.join(FIXTURE_DIR, 'unpaired-quote.poem');
+  const firstPass = regenerate(poemPath);
+  assert.strictEqual(
+    firstPass,
+    fs.readFileSync(poemPath, 'utf8'),
+    'expected the leading `"` to stay bare, not gain a `\\` it never had'
+  );
+
+  const secondPass = new YamlToPoemConverter(new PoemParser(firstPass).parse()).convert();
+  assert.strictEqual(
+    secondPass,
+    firstPass,
+    'expected no further backslash to accumulate on a second round-trip'
+  );
+});
+
+test('cause 3 (author sentinel): a poem with no author line, under a .shared.poem ' +
+  "whose default author isn't this repo's own \"A Poet\", round-trips byte-for-byte " +
+  'and is stable under a second round-trip', () => {
+  const sharedPoemPath = path.join(FIXTURE_DIR, '.shared.poem');
+  const defaultAuthor = resolveDefaultAuthor(sharedPoemPath);
+  assert.strictEqual(defaultAuthor, 'Consumer Default Author');
+
+  const poemPath = path.join(FIXTURE_DIR, '_default-author.poem');
+  const firstPass = regenerate(poemPath, { sharedPoemPath });
+  assert.strictEqual(
+    firstPass,
+    fs.readFileSync(poemPath, 'utf8'),
+    'expected the omitted author line to stay omitted, not written out as the literal default'
+  );
+
+  const sharedPrefix = fs.readFileSync(sharedPoemPath, 'utf8');
+  const secondPass = new YamlToPoemConverter(
+    new PoemParser(sharedPrefix + firstPass).parse(),
+    { defaultAuthor }
+  ).convert();
+  assert.strictEqual(
+    secondPass,
+    firstPass,
+    'expected no author line to appear on a second round-trip either'
+  );
 });
 
 test('a poem-data object exercising every optional section (audio, postscript, analysis, metadata) ' +

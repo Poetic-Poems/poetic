@@ -11,6 +11,22 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`yaml-to-poem.js` no longer corrupts real-world poems on round-trip.**
+  Three distinct fidelity gaps meant `.poem` → YAML → `.poem` was not a fixed
+  point: (1) `convertHtmlToPlainText()` stripped only the outermost
+  `<p>`/`</p>` of a field with more than one paragraph (markdown-it joins
+  sibling paragraphs with a single `\n`, not a blank line), leaving inner
+  `<p>`/`</p>` tags as literal text that grew an extra wrapper on every
+  subsequent pass; (2) a verse line opening with an unpaired `"` had that
+  quote escaped to `\"` even though it was never escaped in the source,
+  since a genuinely unpaired quote and a deliberately `\"`-escaped pair both
+  decode to a bare `"` and were treated identically; (3) `writeHeader()`
+  omitted the author line only when it equalled the literal `'A Poet'` —
+  this repo's own `.shared.poem` default — so a consumer whose
+  `.shared.poem` defines a different default author got a spurious explicit
+  author line on every poem that relied on it. The sentinel is now resolved
+  from the applicable `.shared.poem`'s own `${author}` instead of a literal.
+  Resolves TD-PPpoet-26080201.
 - **The `====` end-marker tests no longer fail in consumer repos.** The
   regression tests added with the fix below asserted against the framework's
   own poem corpus — a fixture (`a-poem-kept.poem`) that `sync-framework.sh`
