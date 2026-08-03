@@ -562,18 +562,22 @@ h2.poem-title {
 }
 
 /* Postscript "See more" preview toggle (a real <button aria-expanded>, wired
-   via addEventListener in poetic.js; poetic.js also suppresses the control
-   when truncation would hide <= 1 line). */
+   via addEventListener in poetic.js). The clamp is off by default, so a
+   postscript renders in full with no script; poetic.js measures rendered
+   content against --preview-lines and adds .postscript-clamped when
+   truncation would hide more than one line, applying the clamp rather than
+   lifting it. The toggle stays hidden unless the clamp is applied (the
+   adjacent-sibling selector below), so nothing is offered when there is
+   nothing to reveal. */
 
-.postscript-content {
+.postscript-content.postscript-clamped {
   max-height: calc(var(--preview-lines, 5) * 1lh);
   overflow: hidden;
   -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent);
   mask-image: linear-gradient(to bottom, #000 60%, transparent);
 }
 
-.postscript-content.postscript-expanded,
-.postscript-content.postscript-no-preview {
+.postscript-content.postscript-clamped.postscript-expanded {
   max-height: none;
   -webkit-mask-image: none;
   mask-image: none;
@@ -584,12 +588,16 @@ h2.poem-title {
   border: none;
   color: inherit;
   cursor: pointer;
-  display: inline-block;
+  display: none;
   font: inherit;
   font-weight: bold;
   margin-top: 0.5ex;
   padding: 0;
   text-decoration: underline;
+}
+
+.postscript-content.postscript-clamped + .postscript-toggle {
+  display: inline-block;
 }
 
 .postscript-toggle::after {

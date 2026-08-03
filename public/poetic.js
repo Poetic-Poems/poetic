@@ -76,15 +76,17 @@ document.addEventListener('click', function (e) {
   });
 });
 
-// Suppresses the toggle when truncation would hide <= 1 line, which depends on
-// rendered layout and so can only be decided at runtime.
+// Decides whether to apply the preview clamp — poetic.css leaves
+// .postscript-content unclamped by default so a postscript degrades to fully
+// expanded with no script, and this adds .postscript-clamped (which both
+// applies the clamp and, via poetic.css's adjacent-sibling selector, reveals
+// the toggle) once rendered layout is known.
 function evaluatePostscriptPreview(el) {
   const previewLines = parseFloat(el.dataset.previewLines) || 5;
   const style = getComputedStyle(el);
   let lineHeightPx = parseFloat(style.lineHeight);
   if (isNaN(lineHeightPx)) lineHeightPx = 1.2 * parseFloat(style.fontSize);
   const budgetPx = previewLines * lineHeightPx;
-  const toggle = el.parentElement && el.parentElement.querySelector('.postscript-toggle');
 
   // Measure the true bottom of rendered content, excluding the trailing margin of
   // the last child. scrollHeight includes that margin, which would count empty
@@ -96,14 +98,9 @@ function evaluatePostscriptPreview(el) {
     : el.scrollHeight;
   const hiddenPx = contentPx - budgetPx;
 
-  // Only offer the toggle when it would reveal at least a full line of real text.
-  if (hiddenPx <= lineHeightPx) {
-    el.classList.add('postscript-no-preview');
-    if (toggle) toggle.classList.add('hidden');
-  } else {
-    el.classList.remove('postscript-no-preview');
-    if (toggle) toggle.classList.remove('hidden');
-  }
+  // Only clamp — and so offer the toggle — when it would reveal at least a full
+  // line of real text.
+  el.classList.toggle('postscript-clamped', hiddenPx > lineHeightPx);
 }
 
 function evaluateAllPostscriptPreviews() {
