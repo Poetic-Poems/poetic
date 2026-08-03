@@ -9,6 +9,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [6.4.0] — 2026-08-04
+
 ### Changed
 
 - **Postscript previews are now applied by `poetic.js`, not lifted by it.**
