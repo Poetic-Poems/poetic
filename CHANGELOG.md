@@ -9,6 +9,22 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Postscript previews are now applied by `poetic.js`, not lifted by it.**
+  `.postscript-content` no longer carries the preview clamp by default —
+  `poetic.js` measures the rendered content against `--preview-lines` and adds
+  `.postscript-clamped` when there is more than a line to hide, applying the
+  clamp rather than removing it. A page viewed with JavaScript disabled now
+  shows a postscript in full instead of truncating it with no way to read the
+  rest, and the "See more" control only appears once script has decided the
+  clamp applies, so it is never offered with nothing behind it to reveal. The
+  one visible trade-off: on a script-enabled page, a long postscript now
+  renders briefly in full before the clamp is applied, where it previously
+  clamped immediately. The now-unreachable `.postscript-no-preview` class (the
+  old clamp-lifting escape hatch) has been removed from both files; nothing
+  else in either repository referenced it.
+
 ### Fixed
 
 - **`.back-to-top` and `.audio-cell:empty::after` now meet WCAG AA
