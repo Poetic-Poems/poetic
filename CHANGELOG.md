@@ -9,6 +9,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Security
+
+- **`brace-expansion` bumped to 5.0.9.** Fixes GHSA-rgw5-rvv9-x895 /
+  CVE-2026-69152, a DoS via unbounded intermediate arrays in `expand()` that
+  bypassed the earlier CVE-2026-14257 mitigation. `brace-expansion` is a
+  transitive dependency (via `minimatch`, pulled in by both `js-beautify` and
+  `eslint`), not a direct one, so only `package-lock.json` changes.
+
 ## [6.4.0] — 2026-08-04
 
 ### Changed
