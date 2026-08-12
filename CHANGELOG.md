@@ -9,6 +9,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **README's YAML round-trip example.** The single-file `poem-to-yaml.js`
+  command now passes an explicit output path, so it writes into
+  `src/poems/yaml/` where `yaml-to-poem.js` expects to find it, instead of
+  next to the source `.poem` file. Previously the example only worked
+  end-to-end because the `--all` step in between incidentally wrote the
+  expected file first; running the single-file and `yaml-to-poem.js` steps
+  without `--all` failed with `ENOENT`.
+
 ### Security
 
 - **`brace-expansion` bumped to 5.0.9.** Fixes GHSA-rgw5-rvv9-x895 /
