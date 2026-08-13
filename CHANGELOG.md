@@ -9,6 +9,27 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Tech-debt ID allocation is now a reservation, not a scan.**
+  `scripts/reserve-tech-debt-id.pl` fetches `origin/main` itself and pushes
+  the candidate id's `td/<id>` branch as an atomic, fleet-wide lock — the
+  same mechanism "Claiming an item" already uses to work an existing item —
+  retrying the next id itself whenever a push is rejected. Previously,
+  `scripts/next-tech-debt-id.pl` only computed the next free id by scanning
+  filenames, reserving nothing; two concurrent writers could be handed the
+  same id, and a writer whose clone already contained the taken id would
+  overwrite an already-merged item's body as an ordinary content
+  modification — invisible to both the deletion/rename guard and
+  `td-check.pl`, since neither sees an add/add conflict. `TECH-DEBT.md`'s
+  "Filing an item" now calls the new script instead of prescribing a manual
+  skim of open pull requests and `td/*` branches.
+  `.github/workflows/tech-debt-register.yml` gained a second guard,
+  `scripts/check-tech-debt-open-rewrites.pl`, that fails a pull request
+  rewriting an open item's body without moving its `status:` field — the
+  remaining failure mode no reservation can prevent, since it only ever
+  attempts to file a *new* id. Resolves TD-PPpoet-26080801.
+
 ### Fixed
 
 - **README's YAML round-trip example.** The single-file `poem-to-yaml.js`
