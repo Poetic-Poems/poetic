@@ -21,6 +21,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Security
 
+- **`blogger-auth.js`'s OAuth loopback server HTML-escapes the `error` query
+  parameter and CSRF-checks its `state` before rendering it.** The `error`
+  branch of `waitForCode()` previously wrote the raw `error` value straight
+  into its HTML response and skipped the `state` check the `code` branch
+  already had, so a local process could reflect arbitrary HTML into the page
+  shown in the user's browser during the short window this one-shot,
+  loopback-only server waits for the OAuth redirect. Both branches now share
+  the same CSRF guard, and the rendered error text is escaped.
 - **`brace-expansion` bumped to 5.0.9.** Fixes GHSA-rgw5-rvv9-x895 /
   CVE-2026-69152, a DoS via unbounded intermediate arrays in `expand()` that
   bypassed the earlier CVE-2026-14257 mitigation. `brace-expansion` is a

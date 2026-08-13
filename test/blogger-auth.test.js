@@ -18,6 +18,7 @@ const {
   describeBlogAccess,
   saveFileMode0600,
   promptHidden,
+  escapeHtml,
 } = require('../src/tools/blogger-auth');
 
 function getFreePort() {
@@ -40,6 +41,30 @@ function hitCallback(port, query) {
       const req = http.get(`http://127.0.0.1:${port}/${query}`, (res) => {
         res.resume();
         res.on('end', () => resolve(res.statusCode));
+      });
+      req.on('error', (err) => {
+        if (err.code === 'ECONNREFUSED' && attempts < 20) {
+          attempts += 1;
+          setTimeout(attempt, 25);
+        } else {
+          reject(err);
+        }
+      });
+    };
+    attempt();
+  });
+}
+
+// Like hitCallback, but resolves with both the status code and the response
+// body, for tests that need to inspect the rendered HTML.
+function hitCallbackWithBody(port, query) {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    const attempt = () => {
+      const req = http.get(`http://127.0.0.1:${port}/${query}`, (res) => {
+        let body = '';
+        res.on('data', (chunk) => { body += chunk; });
+        res.on('end', () => resolve({ status: res.statusCode, body }));
       });
       req.on('error', (err) => {
         if (err.code === 'ECONNREFUSED' && attempts < 20) {
@@ -92,6 +117,64 @@ test('waitForCode rejects a callback whose state does not match', async () => {
   const status = await hitCallback(port, '?code=auth-code&state=forged');
   assert.strictEqual(status, 400);
   await rejection;
+});
+
+// ── waitForCode: error branch ───────────────────────────────────────────────
+
+test('waitForCode rejects with the error message when state matches', async () => {
+  const port = await getFreePort();
+  const pending = waitForCode(port, 'expected-state');
+  const rejection = assert.rejects(pending, /OAuth error: access_denied/);
+  const { status, body } = await hitCallbackWithBody(port, '?error=access_denied&state=expected-state');
+  assert.strictEqual(status, 400);
+  assert.match(body, /access_denied/);
+  await rejection;
+});
+
+test('waitForCode treats an error callback with missing state as a CSRF mismatch', async () => {
+  const port = await getFreePort();
+  const pending = waitForCode(port, 'expected-state');
+  const rejection = assert.rejects(pending, /State parameter mismatch/);
+  const { status, body } = await hitCallbackWithBody(port, '?error=access_denied');
+  assert.strictEqual(status, 400);
+  assert.match(body, /State mismatch/);
+  // The unescaped error value must never reach the response when the state
+  // check itself is what rejected the request.
+  assert.doesNotMatch(body, /access_denied/);
+  await rejection;
+});
+
+test('waitForCode treats an error callback with mismatched state as a CSRF mismatch', async () => {
+  const port = await getFreePort();
+  const pending = waitForCode(port, 'expected-state');
+  const rejection = assert.rejects(pending, /State parameter mismatch/);
+  const status = await hitCallback(port, '?error=access_denied&state=forged');
+  assert.strictEqual(status, 400);
+  await rejection;
+});
+
+test('waitForCode HTML-escapes a malformed error value before rendering it', async () => {
+  const port = await getFreePort();
+  const pending = waitForCode(port, 'expected-state');
+  const rejection = assert.rejects(pending, /OAuth error:/);
+  const maliciousError = '<img src=x onerror=alert(1)>';
+  const { status, body } = await hitCallbackWithBody(
+    port,
+    `?${new URLSearchParams({ error: maliciousError, state: 'expected-state' }).toString()}`
+  );
+  assert.strictEqual(status, 400);
+  assert.doesNotMatch(body, /<img/);
+  assert.match(body, /&lt;img src=x onerror=alert\(1\)&gt;/);
+  await rejection;
+});
+
+// ── escapeHtml ───────────────────────────────────────────────────────────────
+
+test('escapeHtml escapes &, <, >, and "', () => {
+  assert.strictEqual(
+    escapeHtml('<img src=x onerror=alert(1)> & "quoted"'),
+    '&lt;img src=x onerror=alert(1)&gt; &amp; &quot;quoted&quot;'
+  );
 });
 
 // ── promptHidden ──────────────────────────────────────────────────────────────
