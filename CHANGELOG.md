@@ -26,7 +26,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   skim of open pull requests and `td/*` branches.
   `.github/workflows/tech-debt-register.yml` gained a second guard,
   `scripts/check-tech-debt-open-rewrites.pl`, that fails a pull request
-  rewriting an open item's body without moving its `status:` field — the
+  rewriting existing text in an open item's body without moving its
+  `status:` field — an open item's body is append-only, so a
+  `Referenced from:` note or other new text may still be appended — the
   remaining failure mode no reservation can prevent, since it only ever
   attempts to file a *new* id. Resolves TD-PPpoet-26080801.
 

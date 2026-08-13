@@ -136,13 +136,14 @@ format removes.
 register and runs on every pull request via
 `.github/workflows/tech-debt-register.yml`, alongside the deletion guard
 (no `tech-debt/` file may be deleted or renamed once on `main`), the
-open-item-rewrite guard (`scripts/check-tech-debt-open-rewrites.pl` —
-no PR may change an open item's body without moving its `status:` field,
-since lifecycle edits are frontmatter-only and a body change on an item
-that stays `open` is either a stale writer overwriting an already-merged
-record or a policy breach), and the regression guard (no `### TD` item
-sections may reappear in `TECH-DEBT.md` once the per-item register
-exists).
+open-item-rewrite guard (`scripts/check-tech-debt-open-rewrites.pl` — an
+open item's body is append-only: no PR may rewrite its existing text
+without moving its `status:` field, though appending new text — a
+`Referenced from:` note, a correction line, a newly-learned detail — is
+always allowed, since a rewrite of existing text on an item that stays
+`open` is either a stale writer overwriting an already-merged record or a
+policy breach), and the regression guard (no `### TD` item sections may
+reappear in `TECH-DEBT.md` once the per-item register exists).
 
 This gate only checks the register's own internal consistency — it has no
 access to live GitHub state, so an item describing an external fact (a

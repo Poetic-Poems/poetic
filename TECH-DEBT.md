@@ -15,10 +15,11 @@ format, ID grammar and scope-code registry are specified in
 register and runs on every pull request via
 `.github/workflows/tech-debt-register.yml`, alongside three guards: no file
 in `tech-debt/` may ever be deleted or renamed once on `main` (the
-append-only Ledger guarantee — IDs are never reused), no open item's body
-may be rewritten without its `status:` field moving (lifecycle edits are
-frontmatter-only — see "Resolution and history" below — so a body change on
-an item that stays `open` is either a stale writer silently overwriting an
+append-only Ledger guarantee — IDs are never reused), an open item's body is
+append-only — existing text may not change while `status:` stays `open`, new
+text may be appended, and rewriting existing text requires the status to
+move (see "Resolution and history" below — a rewrite of existing text on an
+item that stays `open` is either a stale writer silently overwriting an
 already-merged record or a policy breach, and either way CI should catch it
 rather than let a permanent record change quietly), and no old-format
 `### TD` item sections may reappear in this file.
@@ -83,6 +84,13 @@ delete or rename an item file, and never flip a resolved item back —
 re-opening debt means filing a new item that references the old one. An
 item that turns out not to be debt keeps its file too: `status: not-debt`,
 with `ref:` pointing at where the content moved.
+
+An open item's body is append-only: add a `Referenced from:` note, a
+second occurrence, or other newly-learned detail by appending text, never
+by editing what's already there. A correction to existing text — a typo, a
+broken link, a stale path — is likewise an appended line (e.g.
+`Correction: the path above moved to …`), not an in-place edit, so nothing
+that was ever on `main` silently changes.
 
 Aggregated views of the register (a Ledger-style table, a status tally)
 are generated on demand, never committed.

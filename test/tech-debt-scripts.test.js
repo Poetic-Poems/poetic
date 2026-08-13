@@ -574,6 +574,34 @@ test('open-rewrites: flags a body change on an item whose status stays open', { 
   assert.match(r.stdout, /BODY REWRITE\s+tech-debt\/TD-PPtest-26080101\.md/);
 });
 
+test('open-rewrites: allows a strict append to an open item\'s body', { skip: !HAVE_PERL }, (t) => {
+  const dir = makeRewriteRepo(t);
+  git(dir, 'checkout', '-q', '-b', 'append');
+  fs.writeFileSync(
+    path.join(dir, 'tech-debt', 'TD-PPtest-26080101.md'),
+    itemFile('TD-PPtest-26080101', {}, 'Original body.\nReferenced from: src/foo.js\n')
+  );
+  git(dir, 'commit', '-q', '-am', 'append');
+
+  const r = runOpenRewrites(dir, 'main', 'append');
+  assert.strictEqual(r.status, 0, r.stdout);
+  assert.match(r.stdout, /no open-item body rewrites/);
+});
+
+test('open-rewrites: flags a same-length rewrite even though it is not a whole-body swap', { skip: !HAVE_PERL }, (t) => {
+  const dir = makeRewriteRepo(t);
+  git(dir, 'checkout', '-q', '-b', 'samelength');
+  fs.writeFileSync(
+    path.join(dir, 'tech-debt', 'TD-PPtest-26080101.md'),
+    itemFile('TD-PPtest-26080101', {}, 'Original bodz.\n')
+  );
+  git(dir, 'commit', '-q', '-am', 'samelength');
+
+  const r = runOpenRewrites(dir, 'main', 'samelength');
+  assert.strictEqual(r.status, 1, r.stdout);
+  assert.match(r.stdout, /BODY REWRITE\s+tech-debt\/TD-PPtest-26080101\.md/);
+});
+
 test('open-rewrites: allows a claim (status changes, body unchanged)', { skip: !HAVE_PERL }, (t) => {
   const dir = makeRewriteRepo(t);
   git(dir, 'checkout', '-q', '-b', 'claim');
