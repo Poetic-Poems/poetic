@@ -1460,3 +1460,154 @@ test('processRemovals: propagates a Blogger API failure', async () => {
     /revertPost/
   );
 });
+
+// ── main() (integration: mocked global.fetch + temp poem YAML fixtures) ──────
+
+// A throwaway poem-YAML directory, cleaned up when the test ends.
+function tmpYamlDir(t) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-sync-blogger-yaml-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  return dir;
+}
+
+// Writes a fixture poem YAML file, using js-yaml's dump() rather than a
+// hand-written string (see build-all-poems.test.js's writeFixturePoem for why).
+function writeFixturePoem(yamlDir, filename, {
+  title = 'Test Poem',
+  author = 'Test Author',
+  date = '2020-05-04',
+  labels = ['fixture-label'],
+  lines = 'Hello world\n',
+} = {}) {
+  const content = yaml.dump({
+    title, author, date, labels,
+    versions: [{ segments: [{ lines }] }],
+  });
+  fs.writeFileSync(path.join(yamlDir, filename), content, 'utf8');
+}
+
+const BASE_CREDENTIALS_ENV = {
+  BLOGGER_CLIENT_ID: 'cid',
+  BLOGGER_CLIENT_SECRET: 'csec',
+  BLOGGER_REFRESH_TOKEN: 'rtok',
+};
+
+// Dispatches a mocked fetch across every call main() makes in one run: the
+// OAuth token exchange, listAllPosts, createPost (+ its rename via updatePost),
+// updatePost, revertPost, and deletePost — routed by URL shape and method,
+// mirroring the individual per-function tests above.
+function mockBloggerFetch({ posts = [] } = {}) {
+  const calls = [];
+  const fetchMock = async (url, init = {}) => {
+    const method = init.method || 'GET';
+    calls.push({ url, method });
+    if (url === 'https://oauth2.googleapis.com/token') return jsonResponse(200, { access_token: 'ACCESS-TOKEN' });
+    if (url.endsWith('/revert')) return jsonResponse(200, {});
+    if (method === 'PUT') return jsonResponse(200, {});
+    if (method === 'DELETE') return jsonResponse(200, {});
+    if (method === 'POST' && url.endsWith('/posts/')) return jsonResponse(200, { id: 'created-id' });
+    return jsonResponse(200, { items: posts }); // listAllPosts (GET)
+  };
+  return { fetchMock, calls };
+}
+
+async function withCapturedErrorsAsync(run) {
+  const originalError = console.error;
+  const errors = [];
+  console.error = (...args) => errors.push(args.join(' '));
+  try {
+    const result = await run();
+    return { result, errors };
+  } finally {
+    console.error = originalError;
+  }
+}
+
+test('main: sync disabled logs a message and makes no network calls', async () => {
+  let calls = 0;
+  const { logs } = await withCapturedLogsAsync(() => withMockFetch(
+    async () => { calls++; return jsonResponse(200, {}); },
+    () => main({ config: {}, env: {}, credentialsPath: null })
+  ));
+  assert.strictEqual(calls, 0);
+  assert.ok(logs.some(l => l.includes('Blogger sync disabled')));
+});
+
+test('main: missing blog_id logs a message and makes no network calls', async () => {
+  let calls = 0;
+  const { logs } = await withCapturedLogsAsync(() => withMockFetch(
+    async () => { calls++; return jsonResponse(200, {}); },
+    () => main({ config: { blogger: { sync: true } }, env: {}, credentialsPath: null })
+  ));
+  assert.strictEqual(calls, 0);
+  assert.ok(logs.some(l => l.includes('blogger.blog_id is required')));
+});
+
+test('main: missing credentials logs which env vars are missing', async () => {
+  let calls = 0;
+  const { logs } = await withCapturedLogsAsync(() => withMockFetch(
+    async () => { calls++; return jsonResponse(200, {}); },
+    () => main({ config: { blogger: { sync: true, blog_id: 'BLOG1' } }, env: {}, credentialsPath: null })
+  ));
+  assert.strictEqual(calls, 0);
+  assert.ok(logs.some(l =>
+    l.includes('BLOGGER_CLIENT_ID') && l.includes('BLOGGER_CLIENT_SECRET') && l.includes('BLOGGER_REFRESH_TOKEN')
+  ));
+});
+
+test('main: full sync creates a new poem and drafts a removed post', async (t) => {
+  const yamlDir = tmpYamlDir(t);
+  writeFixturePoem(yamlDir, 'test-poem.yaml');
+  const { fetchMock, calls } = mockBloggerFetch({ posts: [REMOVED_POST] });
+  const { logs } = await withCapturedLogsAsync(() => withMockFetch(
+    fetchMock,
+    () => main({
+      yamlDir,
+      config: { blogger: { sync: true, blog_id: 'BLOG1' } },
+      env: BASE_CREDENTIALS_ENV,
+      credentialsPath: null,
+    })
+  ));
+  assert.ok(calls.some(c => c.url === 'https://oauth2.googleapis.com/token'), 'expected a token exchange');
+  assert.ok(calls.some(c => c.method === 'POST' && c.url.endsWith('/posts/')), 'expected a createPost call');
+  assert.ok(calls.some(c => c.url.endsWith('/revert')), 'expected a revertPost call for the removed post');
+  assert.ok(logs.some(l => l.includes('Blogger sync: 1 created, 0 updated, 0 unchanged, 1 drafted.')));
+});
+
+test('main: --only skips the removal pass', async (t) => {
+  const yamlDir = tmpYamlDir(t);
+  writeFixturePoem(yamlDir, 'test-poem.yaml');
+  const { fetchMock, calls } = mockBloggerFetch({ posts: [REMOVED_POST] });
+  const { logs } = await withCapturedLogsAsync(() => withMockFetch(
+    fetchMock,
+    () => main({
+      argv: ['--only', 'test-poem'],
+      yamlDir,
+      config: { blogger: { sync: true, blog_id: 'BLOG1' } },
+      env: BASE_CREDENTIALS_ENV,
+      credentialsPath: null,
+    })
+  ));
+  assert.ok(!calls.some(c => c.url.endsWith('/revert')), 'removal pass should be skipped with --only');
+  assert.ok(logs.some(l => l.includes('Skipping removal pass (--only test-poem)')));
+});
+
+test('main: a Blogger API failure is caught, diagnosed, and sets process.exitCode', async (t) => {
+  t.after(() => { process.exitCode = 0; });
+  const failingFetch = async (url) => {
+    if (url === 'https://oauth2.googleapis.com/token') return jsonResponse(200, { access_token: 'ACCESS-TOKEN' });
+    return jsonResponse(403, 'forbidden');
+  };
+  const { errors } = await withCapturedErrorsAsync(() => withMockFetch(
+    failingFetch,
+    () => main({
+      yamlDir: tmpYamlDir(t),
+      config: { blogger: { sync: true, blog_id: 'BLOG1' } },
+      env: BASE_CREDENTIALS_ENV,
+      credentialsPath: null,
+    })
+  ));
+  assert.strictEqual(process.exitCode, 1);
+  assert.ok(errors.some(l => l.includes('Blogger sync error')));
+  assert.ok(errors.some(l => l.includes('cannot manage this blog')));
+});
