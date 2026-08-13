@@ -9,6 +9,7 @@ const path = require('path');
 const yaml = require('js-yaml');
 const { REPO_ROOT } = require('./repo-root');
 const { PoemParser } = require('./poem-parser');
+const { isHelpRequested } = require('./cli-help');
 
 /**
  * Every entity convertEntitiesToMarkup understands, keyed by its exact
@@ -1133,6 +1134,12 @@ function convertAllYamlToPoem({
  */
 function main() {
   const args = process.argv.slice(2);
+
+  if (isHelpRequested(args)) {
+    console.log('Usage: yaml-to-poem.js <file.yaml> [output.poem]');
+    console.log('   or: yaml-to-poem.js --all');
+    return;
+  }
 
   if (args.length === 0) {
     console.error('Usage: yaml-to-poem.js <file.yaml> [output.poem]');

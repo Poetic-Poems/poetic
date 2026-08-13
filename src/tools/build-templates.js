@@ -23,6 +23,7 @@ const fs = require('fs');
 const path = require('path');
 const pug = require('pug');
 const { REPO_ROOT } = require('./repo-root');
+const { isHelpRequested } = require('./cli-help');
 
 const TEMPLATES_DIR = path.join(REPO_ROOT, 'src', 'templates');
 const FRAGMENT_TEMPLATE = path.join(TEMPLATES_DIR, 'poem.pug');
@@ -81,8 +82,18 @@ function generate() {
 }
 
 if (require.main === module) {
-  fs.writeFileSync(OUT_PATH, generate(), 'utf8');
-  console.log('Wrote', path.relative(REPO_ROOT, OUT_PATH));
+  if (isHelpRequested(process.argv.slice(2))) {
+    console.log('Usage: node src/tools/build-templates.js');
+    console.log('');
+    console.log('Regenerate src/tools/poem-templates.js from the Pug templates in');
+    console.log('src/templates/.');
+    console.log('');
+    console.log('Options:');
+    console.log('  --help, -h   Show this help');
+  } else {
+    fs.writeFileSync(OUT_PATH, generate(), 'utf8');
+    console.log('Wrote', path.relative(REPO_ROOT, OUT_PATH));
+  }
 }
 
 module.exports = { generate, OUT_PATH, FRAGMENT_TEMPLATE, PAGE_TEMPLATE };

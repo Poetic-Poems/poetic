@@ -42,6 +42,7 @@ const path = require('path');
 const { readPoeticConfig } = require('./poetic-config');
 const { readPoemFile, loadPoemData, renderFragment, listPoemYamlFiles } = require('./poem-render');
 const { REPO_ROOT } = require('./repo-root');
+const { isHelpRequested } = require('./cli-help');
 
 const YAML_DIR = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
 const BLOGGER_API = 'https://www.googleapis.com/blogger/v3';
@@ -883,6 +884,19 @@ async function processRemovals({ posts, currentSlugs, label, removedMode, blogId
  * Main entry point: sync poems to Blogger.
  */
 async function main() {
+  if (isHelpRequested(process.argv.slice(2))) {
+    console.log('Usage: node src/tools/sync-blogger.js [--dry-run] [--only <slug>]');
+    console.log('');
+    console.log('Sync poems to Blogger (create/update posts, handle removed poems),');
+    console.log('per the blogger.* settings in .poetic-config.yaml.');
+    console.log('');
+    console.log('Options:');
+    console.log('  --dry-run       Report what would change without calling the Blogger API');
+    console.log('  --only <slug>   Sync a single poem by slug (skips the removal pass)');
+    console.log('  --help, -h      Show this help');
+    return;
+  }
+
   // Declared out here so the catch can hand them to the diagnosis.
   let opts = null;
   let token = null;

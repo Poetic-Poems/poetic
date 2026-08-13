@@ -17,6 +17,7 @@ const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
 const { REPO_ROOT } = require('./repo-root');
+const { isHelpRequested } = require('./cli-help');
 
 const YAML_PATH = path.join(REPO_ROOT, 'src', 'song-handlers.yaml');
 const OUT_PATH = path.join(REPO_ROOT, 'src', 'tools', 'song-handlers-data.js');
@@ -46,8 +47,17 @@ function generate() {
 }
 
 if (require.main === module) {
-  fs.writeFileSync(OUT_PATH, generate(), 'utf8');
-  console.log('Wrote', path.relative(REPO_ROOT, OUT_PATH));
+  if (isHelpRequested(process.argv.slice(2))) {
+    console.log('Usage: node src/tools/build-song-handlers-data.js');
+    console.log('');
+    console.log('Regenerate src/tools/song-handlers-data.js from src/song-handlers.yaml.');
+    console.log('');
+    console.log('Options:');
+    console.log('  --help, -h   Show this help');
+  } else {
+    fs.writeFileSync(OUT_PATH, generate(), 'utf8');
+    console.log('Wrote', path.relative(REPO_ROOT, OUT_PATH));
+  }
 }
 
 module.exports = { generate, YAML_PATH, OUT_PATH };
