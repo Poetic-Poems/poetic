@@ -66,6 +66,13 @@ workflow in `TECH-DEBT.md`); resolving flips it to `resolved` and fills
 `resolved:` and `ref:`. Re-opening debt means filing a new item that
 references the old one, never flipping a resolved item back.
 
+An open item's **body is append-only**: newly-learned detail — a
+`Referenced from:` note, a second occurrence, a `Correction:` line
+superseding a stale path — is added by appending text, never by editing
+what is already there, so nothing that was ever on `main` silently
+changes. Rewriting existing text requires the `status:` field to move in
+the same change; the "Consistency gate" below enforces this.
+
 ## IDs
 
 ```

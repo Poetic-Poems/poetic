@@ -52,7 +52,7 @@ jobs:
             echo "$removed"
             exit 1
           fi
-      - name: Open items keep their body while status is unchanged
+      - name: Open item bodies are append-only while status is unchanged
         if: github.event_name == 'pull_request'
         run: perl scripts/check-tech-debt-open-rewrites.pl "origin/${GITHUB_BASE_REF}" HEAD
       - name: Old format must not regrow
