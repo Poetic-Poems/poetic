@@ -9,6 +9,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **README's YAML round-trip example.** The single-file `poem-to-yaml.js`
+  command now passes an explicit output path, so it writes into
+  `src/poems/yaml/` where `yaml-to-poem.js` expects to find it, instead of
+  next to the source `.poem` file. Previously the example only worked
+  end-to-end because the `--all` step in between incidentally wrote the
+  expected file first; running the single-file and `yaml-to-poem.js` steps
+  without `--all` failed with `ENOENT`.
+
 ### Security
 
 - **`blogger-auth.js`'s OAuth loopback server HTML-escapes the `error` query

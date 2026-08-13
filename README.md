@@ -206,7 +206,7 @@ npm run build
 
 ```bash
 # .poem → YAML
-node src/tools/poem-to-yaml.js src/poems/poem/my-poem.poem
+node src/tools/poem-to-yaml.js src/poems/poem/my-poem.poem src/poems/yaml/my-poem.yaml
 
 # Convert all .poem files at once
 node src/tools/poem-to-yaml.js --all
