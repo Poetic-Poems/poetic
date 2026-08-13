@@ -333,6 +333,14 @@ function describeBlogAccess(access, configuredBlogId) {
 
 // ── Loopback server ───────────────────────────────────────────────────────────
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function waitForCode(port, expectedState) {
   return new Promise((resolve, reject) => {
     const server = http.createServer((req, res) => {
@@ -343,8 +351,18 @@ function waitForCode(port, expectedState) {
         const returnedState = requestUrl.searchParams.get('state');
 
         if (error) {
+          // CSRF guard: reject a callback whose state does not match the value
+          // we generated for this request, same as the code branch below.
+          if (expectedState && returnedState !== expectedState) {
+            res.writeHead(400, { 'Content-Type': 'text/html' });
+            res.end('<html><body><h1>Authorization failed</h1><p>State mismatch — possible CSRF. You may close this window.</p></body></html>');
+            server.close();
+            reject(new Error('State parameter mismatch — aborting (possible CSRF).'));
+            return;
+          }
+
           res.writeHead(400, { 'Content-Type': 'text/html' });
-          res.end(`<html><body><h1>Authorization failed</h1><p>${error}</p><p>You may close this window.</p></body></html>`);
+          res.end(`<html><body><h1>Authorization failed</h1><p>${escapeHtml(error)}</p><p>You may close this window.</p></body></html>`);
           server.close();
           reject(new Error(`OAuth error: ${error}`));
           return;
@@ -599,4 +617,5 @@ module.exports = {
   generatePkce,
   saveFileMode0600,
   promptHidden,
+  escapeHtml,
 };
