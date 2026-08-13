@@ -32,6 +32,21 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   remaining failure mode no reservation can prevent, since it only ever
   attempts to file a *new* id. Resolves TD-PPpoet-26080801.
 
+- **Regression tests for `sync-blogger.js`'s `main()` and its network
+  helpers.** `getAccessToken`, `listAllPosts`, `listAccessibleBlogs`, and
+  `diagnoseBloggerFailure` — reachable from no site except `main()`, so
+  untested even indirectly — now have direct unit tests with mocked
+  `fetch`, matching the existing `createPost` pattern. `main()` itself now
+  accepts an injectable-dependencies options object (mirroring
+  `build-poems.js`'s `{ poemsDir, publicDir }` pattern), all defaulting to
+  today's CLI behaviour exactly, and is exported and covered end-to-end
+  against a temp poem-YAML fixture dir with mocked `fetch` — the
+  disabled/missing-blog-id/missing-credentials early returns, the full
+  create/removal loop, `--only`'s removal-pass skip, and the top-level
+  catch → `diagnoseBloggerFailure` path. `sync-blogger.js` coverage rises
+  from 80.96% to 99.25% lines. No behaviour change. Resolves
+  TD-PPpoet-26080807.
+
 ### Fixed
 
 - **Every CLI in `src/tools/` now recognises `--help`/`-h`.** Previously
