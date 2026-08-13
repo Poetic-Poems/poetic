@@ -34,6 +34,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **The tech-debt register's two new scripts now reach consumer repos.**
+  `scripts/check-tech-debt-open-rewrites.pl` and
+  `scripts/reserve-tech-debt-id.pl` were absent from `FRAMEWORK_PATHS` in
+  `scripts/sync-framework.sh`, so a sync carried down the
+  `tech-debt-register.yml` step that invokes the first and the tests
+  covering both, but neither script — breaking the consumer's `register`
+  and `build` checks on the sync pull request itself. The reservation
+  commit's Conventional Commits test now also skips where
+  `.githooks/check-commit-format.sh` is absent, since `test/` is synced
+  verbatim but `.githooks/` is this repository's own contribution policy,
+  enforced here by `commit-format.yml` and carried by no consumer.
+
 - **README's YAML round-trip example.** The single-file `poem-to-yaml.js`
   command now passes an explicit output path, so it writes into
   `src/poems/yaml/` where `yaml-to-poem.js` expects to find it, instead of

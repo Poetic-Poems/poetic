@@ -35,6 +35,11 @@ const COMMIT_FORMAT_SCRIPT = path.join(REPO_ROOT, '.githooks', 'check-commit-for
 // ubuntu runners always have it.
 const HAVE_PERL = spawnSync('perl', ['-e', '1']).status === 0;
 const HAVE_BASH = spawnSync('bash', ['-c', 'true']).status === 0;
+// `test/` is synced verbatim into consumer repos, but `.githooks/` is not:
+// the Conventional Commits rule it encodes is this repository's own
+// contribution policy, enforced here by commit-format.yml, and consumers
+// carry neither the hooks nor that workflow.
+const HAVE_COMMIT_FORMAT = fs.existsSync(COMMIT_FORMAT_SCRIPT);
 
 // Isolate git from the developer's global/system config so runs are
 // deterministic everywhere.
@@ -424,7 +429,10 @@ test('reserve: allocates the next free id and pushes its td/<id> branch', { skip
   ]);
 });
 
-test('reserve: the reservation commit passes the Conventional Commits check', { skip: !HAVE_PERL || !HAVE_BASH }, (t) => {
+test('reserve: the reservation commit passes the Conventional Commits check', {
+  skip: !HAVE_PERL || !HAVE_BASH
+    || (!HAVE_COMMIT_FORMAT && 'consumer repo: .githooks/ is this repository\'s own contribution policy'),
+}, (t) => {
   // The reservation commit is the base of the filing branch and survives
   // until the filing pull request is squash-merged, so commit-format.yml
   // sees it alongside the filer's own commits: a non-conforming subject
