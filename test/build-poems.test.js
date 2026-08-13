@@ -107,6 +107,12 @@ test('buildAllPoems regenerates a poem\'s output files once the source YAML chan
   buildAllPoems({ poemsDir, publicDir });
 
   const pagePath = path.join(publicDir, 'test-poem', 'index.html');
+
+  // Rewind the output's mtime into the past, then read it back as the
+  // baseline, so a regenerated file's fresh mtime is unambiguously newer,
+  // regardless of filesystem mtime-resolution granularity.
+  const past = (Date.now() - 60_000) / 1000;
+  fs.utimesSync(pagePath, past, past);
   const pageMtimeBefore = fs.statSync(pagePath).mtimeMs;
 
   // Bump the source's mtime into the future so it's unambiguously newer,
@@ -151,6 +157,12 @@ postscript:
   assert.ok(fs.existsSync(pagePath), `${pagePath} should have been generated`);
   assert.match(fs.readFileSync(pagePath, 'utf8'), /original note/,
     'the built page should render the referenced content');
+
+  // Rewind the output's mtime into the past, then read it back as the
+  // baseline, so a regenerated file's fresh mtime is unambiguously newer,
+  // regardless of filesystem mtime-resolution granularity.
+  const past = (Date.now() - 60_000) / 1000;
+  fs.utimesSync(pagePath, past, past);
   const pageMtimeBefore = fs.statSync(pagePath).mtimeMs;
 
   // Edit ONLY the $ref target (the poem's own YAML is untouched) and bump its
