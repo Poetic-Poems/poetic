@@ -357,6 +357,20 @@ Enable the commit-message check once per clone:
 git config core.hooksPath .githooks
 ```
 
+### Local development
+
+Before pushing, run these commands locally to catch problems CI will gate on:
+
+```bash
+npm test                 # run the test suite
+npm run lint             # lint source code
+npm run coverage         # check test coverage thresholds
+npm run check            # verify no trailing whitespace
+npm run check:licenses   # verify dependency licenses
+```
+
+These are the same checks your pull request will run against in CI — running them before you push saves a round trip and keeps iteration fast. See [`CLAUDE.md`](CLAUDE.md) for the full list of build commands.
+
 ## Further information
 
 ### Getting help
