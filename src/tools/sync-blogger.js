@@ -33,6 +33,8 @@
  *                                                     - create/update/skip decision for one poem
  *   processRemovals({ posts, currentSlugs, label, removedMode, blogId, token, dryRun })
  *                                                     - the removal-pass loop (draft/delete/keep)
+ *   main(options)                                     - CLI entry point; accepts injectable
+ *                                                       dependencies (tests only, see its doc comment)
  */
 
 'use strict';
@@ -882,9 +884,25 @@ async function processRemovals({ posts, currentSlugs, label, removedMode, blogId
 
 /**
  * Main entry point: sync poems to Blogger.
+ *
+ * @param {object} [options]
+ * @param {string[]} [options.argv] - Override process.argv.slice(2) (tests only;
+ *   the npm run sync:blogger / CLI entry point below always uses the default).
+ * @param {string} [options.yamlDir] - Override YAML_DIR (tests only).
+ * @param {object} [options.config] - Override the config normally read via
+ *   readPoeticConfig(REPO_ROOT) (tests only).
+ * @param {object} [options.env] - Override process.env (tests only).
+ * @param {string|null} [options.credentialsPath] - Passed through to resolveConfig();
+ *   omit to use its own default (tests only).
  */
-async function main() {
-  if (isHelpRequested(process.argv.slice(2))) {
+async function main({
+  argv = process.argv.slice(2),
+  yamlDir = YAML_DIR,
+  config = null,
+  env = process.env,
+  credentialsPath,
+} = {}) {
+  if (isHelpRequested(argv)) {
     console.log('Usage: node src/tools/sync-blogger.js [--dry-run] [--only <slug>]');
     console.log('');
     console.log('Sync poems to Blogger (create/update posts, handle removed poems),');
@@ -901,9 +919,9 @@ async function main() {
   let opts = null;
   let token = null;
   try {
-    const args = parseArgs(process.argv.slice(2));
-    const rawConfig = readPoeticConfig(REPO_ROOT);
-    opts = resolveConfig(rawConfig, process.env);
+    const args = parseArgs(argv);
+    const rawConfig = config || readPoeticConfig(REPO_ROOT);
+    opts = resolveConfig(rawConfig, env, credentialsPath);
 
     if (!opts.enabled) {
       console.log('Blogger sync disabled (set blogger: { sync: true } in .poetic-config.yaml).');
@@ -939,7 +957,7 @@ async function main() {
     const currentSlugs = new Set();
 
     // Read all poem YAML files (see poem-render.js's listPoemYamlFiles for the filter rules)
-    const yamlFiles = listPoemYamlFiles(YAML_DIR).map(f => path.join(YAML_DIR, f));
+    const yamlFiles = listPoemYamlFiles(yamlDir).map(f => path.join(yamlDir, f));
 
     for (const yamlPath of yamlFiles) {
       // Read raw file for ISO date (before loadPoemData mutates it)
@@ -1051,4 +1069,5 @@ module.exports = {
   deletePost,
   syncPoem,
   processRemovals,
+  main,
 };
