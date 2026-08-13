@@ -16,6 +16,7 @@ const assert = require('node:assert');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const yaml = require('js-yaml');
 
 const {
   parseArgs,
@@ -33,6 +34,12 @@ const {
   createPost,
   syncPoem,
   processRemovals,
+  getAccessToken,
+  listAccessibleBlogs,
+  listAllPosts,
+  diagnoseBloggerFailure,
+  BloggerApiError,
+  main,
 } = require('../src/tools/sync-blogger');
 
 // ── parseArgs ─────────────────────────────────────────────────────────────────
@@ -936,8 +943,6 @@ test('createPost: a rejected create is not retried', async () => {
   assert.strictEqual(calls, 1);
 });
 
-// ── syncPoem / processRemovals (integration: mocked global.fetch) ────────────
-
 function jsonResponse(status, body = {}) {
   return {
     ok: status >= 200 && status < 300,
@@ -946,6 +951,192 @@ function jsonResponse(status, body = {}) {
     text: async () => JSON.stringify(body),
   };
 }
+
+// ── getAccessToken ────────────────────────────────────────────────────────────
+
+test('getAccessToken: resolves with the access token on success', async () => {
+  let capturedUrl, capturedInit;
+  const token = await withMockFetch(
+    async (url, init) => { capturedUrl = url; capturedInit = init; return jsonResponse(200, { access_token: 'ACCESS-TOKEN' }); },
+    () => getAccessToken({ clientId: 'cid', clientSecret: 'csec', refreshToken: 'rtok' })
+  );
+  assert.strictEqual(token, 'ACCESS-TOKEN');
+  assert.strictEqual(capturedUrl, 'https://oauth2.googleapis.com/token');
+  assert.strictEqual(capturedInit.method, 'POST');
+  assert.strictEqual(capturedInit.headers['Content-Type'], 'application/x-www-form-urlencoded');
+  const body = new URLSearchParams(capturedInit.body);
+  assert.strictEqual(body.get('client_id'), 'cid');
+  assert.strictEqual(body.get('client_secret'), 'csec');
+  assert.strictEqual(body.get('refresh_token'), 'rtok');
+  assert.strictEqual(body.get('grant_type'), 'refresh_token');
+});
+
+test('getAccessToken: throws BloggerApiError on a non-2xx response', async () => {
+  await assert.rejects(
+    () => withMockFetch(
+      async () => jsonResponse(400, { error: 'invalid_grant' }),
+      () => getAccessToken({ clientId: 'cid', clientSecret: 'csec', refreshToken: 'rtok' })
+    ),
+    (err) => {
+      assert.ok(err instanceof BloggerApiError);
+      assert.strictEqual(err.operation, 'getAccessToken');
+      assert.strictEqual(err.status, 400);
+      return true;
+    }
+  );
+});
+
+// ── listAccessibleBlogs ───────────────────────────────────────────────────────
+
+test('listAccessibleBlogs: returns recognised=true with mapped blogs on success', async () => {
+  const result = await withMockFetch(
+    async () => jsonResponse(200, { items: [{ id: 123, name: 'My Blog', url: 'https://my.blogspot.com/' }] }),
+    () => listAccessibleBlogs('TOKEN1')
+  );
+  assert.deepStrictEqual(result, {
+    recognised: true,
+    blogs: [{ id: '123', name: 'My Blog', url: 'https://my.blogspot.com/' }],
+  });
+});
+
+test('listAccessibleBlogs: returns recognised=true with no blogs when there are none', async () => {
+  const result = await withMockFetch(
+    async () => jsonResponse(200, { items: [] }),
+    () => listAccessibleBlogs('TOKEN1')
+  );
+  assert.deepStrictEqual(result, { recognised: true, blogs: [] });
+});
+
+test('listAccessibleBlogs: returns recognised=false on a 403', async () => {
+  const result = await withMockFetch(
+    async () => jsonResponse(403, {}),
+    () => listAccessibleBlogs('TOKEN1')
+  );
+  assert.deepStrictEqual(result, { recognised: false, blogs: [] });
+});
+
+test('listAccessibleBlogs: returns recognised=true with no blogs on any other non-ok status', async () => {
+  const result = await withMockFetch(
+    async () => jsonResponse(500, {}),
+    () => listAccessibleBlogs('TOKEN1')
+  );
+  assert.deepStrictEqual(result, { recognised: true, blogs: [] });
+});
+
+test('listAccessibleBlogs: never throws — swallows a network-level rejection', async () => {
+  let result;
+  await assert.doesNotReject(async () => {
+    result = await withMockFetch(
+      async () => { throw new TypeError('fetch failed'); },
+      () => listAccessibleBlogs('TOKEN1')
+    );
+  });
+  assert.deepStrictEqual(result, { recognised: true, blogs: [] });
+});
+
+test('listAccessibleBlogs: sends the token as a Bearer header', async () => {
+  let capturedInit;
+  await withMockFetch(
+    async (url, init) => { capturedInit = init; return jsonResponse(200, { items: [] }); },
+    () => listAccessibleBlogs('MY-TOKEN')
+  );
+  assert.strictEqual(capturedInit.headers.Authorization, 'Bearer MY-TOKEN');
+});
+
+// ── listAllPosts ──────────────────────────────────────────────────────────────
+
+test('listAllPosts: fetches with ADMIN view and both live/draft statuses', async () => {
+  let capturedUrl;
+  await withMockFetch(
+    async (url) => { capturedUrl = new URL(url); return jsonResponse(200, { items: [] }); },
+    () => listAllPosts('BLOG1', 'TOKEN1')
+  );
+  assert.strictEqual(capturedUrl.pathname, '/blogger/v3/blogs/BLOG1/posts');
+  assert.strictEqual(capturedUrl.searchParams.get('view'), 'ADMIN');
+  assert.deepStrictEqual(capturedUrl.searchParams.getAll('status'), ['live', 'draft']);
+});
+
+test('listAllPosts: returns a flat array of posts from a single page', async () => {
+  const posts = await withMockFetch(
+    async () => jsonResponse(200, { items: [{ id: '1' }, { id: '2' }] }),
+    () => listAllPosts('BLOG1', 'TOKEN1')
+  );
+  assert.deepStrictEqual(posts, [{ id: '1' }, { id: '2' }]);
+});
+
+test('listAllPosts: returns an empty array when there are no items', async () => {
+  const posts = await withMockFetch(
+    async () => jsonResponse(200, {}),
+    () => listAllPosts('BLOG1', 'TOKEN1')
+  );
+  assert.deepStrictEqual(posts, []);
+});
+
+test('listAllPosts: follows pagination via nextPageToken', async () => {
+  let calls = 0;
+  const posts = await withMockFetch(
+    async (url) => {
+      calls++;
+      const pageToken = new URL(url).searchParams.get('pageToken');
+      if (!pageToken) return jsonResponse(200, { items: [{ id: '1' }], nextPageToken: 'PAGE2' });
+      assert.strictEqual(pageToken, 'PAGE2');
+      return jsonResponse(200, { items: [{ id: '2' }] });
+    },
+    () => listAllPosts('BLOG1', 'TOKEN1')
+  );
+  assert.strictEqual(calls, 2);
+  assert.deepStrictEqual(posts, [{ id: '1' }, { id: '2' }]);
+});
+
+test('listAllPosts: throws BloggerApiError on a non-2xx response', async () => {
+  await assert.rejects(
+    () => withMockFetch(
+      async () => jsonResponse(500, {}),
+      () => listAllPosts('BLOG1', 'TOKEN1')
+    ),
+    /listAllPosts/
+  );
+});
+
+// ── diagnoseBloggerFailure ────────────────────────────────────────────────────
+
+test('diagnoseBloggerFailure: returns null for a non-BloggerApiError', async () => {
+  const advice = await diagnoseBloggerFailure(new Error('boom'), { blogId: 'B1', token: 'T1' });
+  assert.strictEqual(advice, null);
+});
+
+test('diagnoseBloggerFailure: does not probe access for a non-403 status', async () => {
+  let calls = 0;
+  const err = new BloggerApiError('listAllPosts', 500, 'boom');
+  const advice = await withMockFetch(
+    async () => { calls++; return jsonResponse(200, { items: [] }); },
+    () => diagnoseBloggerFailure(err, { blogId: 'B1', token: 'T1' })
+  );
+  assert.strictEqual(calls, 0, 'listAccessibleBlogs should not be called for a non-403');
+  assert.strictEqual(advice, null); // explainBloggerFailure has no advice for a bare 500
+});
+
+test('diagnoseBloggerFailure: probes access and folds it into the advice for a 403 with a token', async () => {
+  const err = new BloggerApiError('listAllPosts', 403, 'forbidden');
+  const advice = await withMockFetch(
+    async () => jsonResponse(403, {}),
+    () => diagnoseBloggerFailure(err, { blogId: 'B1', token: 'T1' })
+  );
+  assert.match(advice, /cannot manage this blog/);
+});
+
+test('diagnoseBloggerFailure: passes access=null (no probe) for a 403 with no token', async () => {
+  let calls = 0;
+  const err = new BloggerApiError('listAllPosts', 403, 'forbidden');
+  const advice = await withMockFetch(
+    async () => { calls++; return jsonResponse(200, { items: [] }); },
+    () => diagnoseBloggerFailure(err, { blogId: 'B1' })
+  );
+  assert.strictEqual(calls, 0, 'listAccessibleBlogs should not be called without a token');
+  assert.match(advice, /not an admin of this/);
+});
+
+// ── syncPoem / processRemovals (integration: mocked global.fetch) ────────────
 
 async function withCapturedLogsAsync(run) {
   const originalLog = console.log;
