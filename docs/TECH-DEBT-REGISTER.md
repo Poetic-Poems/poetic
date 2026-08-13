@@ -4,7 +4,9 @@ The tech-debt register is per-item: one file per item under `tech-debt/`,
 with the root `TECH-DEBT.md` holding only policy — the format pointer, the
 "Claiming an item" workflow, and the repository's declared scope. The
 tooling (`scripts/get-tech-debt-record.pl`, `scripts/next-tech-debt-id.pl`,
-`scripts/td-check.pl`) recognises a register by the `tech-debt/` directory
+`scripts/reserve-tech-debt-id.pl`, `scripts/td-check.pl`,
+`scripts/check-tech-debt-open-rewrites.pl`) recognises a register by the
+`tech-debt/` directory
 — or, for a register that has not yet filed its first item (git cannot
 commit an empty directory), by the `scope:` declaration in `TECH-DEBT.md`'s
 frontmatter, so allocation is scoped from the very first item.
@@ -80,11 +82,17 @@ regex:  TD-[A-Z0-9]{2}[a-z0-9]{4}-[0-9]{6}[0-9a-z][0-9]
   `00`. ASCII digits sort before lowercase letters, so alphanumeric order
   equals allocation order. Past `z9` the allocator refuses: 360 items in one
   day means something else has gone seriously wrong.
-- Allocate with `scripts/next-tech-debt-id.pl --ref origin/main` (after a
-  `git fetch origin`). It cannot see IDs allocated on unmerged branches, so
-  also skim open pull requests and `td/*` branches when filing. If two PRs
-  do allocate the same ID, they collide on the filename and git surfaces it;
-  the later PR renames to the next `NN`.
+- Allocate with `scripts/reserve-tech-debt-id.pl`, which reserves the ID
+  atomically: it fetches `origin/main` itself, computes a candidate `NN` from
+  the register committed there plus any `td/*` branches already on `origin`,
+  and pushes a `td/<id>` branch from `origin/main` to claim it — the same
+  race-safe lock "Claiming an item" (`TECH-DEBT.md`) uses to work an existing
+  item. A rejected push means another writer got that `NN`; the script
+  retries the next one itself until one succeeds, so — unlike scanning
+  filenames alone — there is no separate collision to check for by hand.
+  `scripts/next-tech-debt-id.pl --ref origin/main` remains available as a
+  read-only preview of the next `NN` (e.g. for tooling that only wants to
+  display it), but does not reserve anything itself.
 - Scope codes are **allocation-time namespaces, not live pointers**: a
   renamed or split repository keeps its code on existing items; a new
   repository registers a new code.
@@ -127,9 +135,14 @@ format removes.
 `perl scripts/td-check.pl` (also `npm run check:td-register`) validates the
 register and runs on every pull request via
 `.github/workflows/tech-debt-register.yml`, alongside the deletion guard
-(no `tech-debt/` file may be deleted or renamed once on `main`) and the
-regression guard (no `### TD` item sections may reappear in `TECH-DEBT.md`
-once the per-item register exists).
+(no `tech-debt/` file may be deleted or renamed once on `main`), the
+open-item-rewrite guard (`scripts/check-tech-debt-open-rewrites.pl` —
+no PR may change an open item's body without moving its `status:` field,
+since lifecycle edits are frontmatter-only and a body change on an item
+that stays `open` is either a stale writer overwriting an already-merged
+record or a policy breach), and the regression guard (no `### TD` item
+sections may reappear in `TECH-DEBT.md` once the per-item register
+exists).
 
 This gate only checks the register's own internal consistency — it has no
 access to live GitHub state, so an item describing an external fact (a

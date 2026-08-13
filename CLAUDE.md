@@ -220,9 +220,12 @@ reference in the entry's body, so whoever resolves it knows to also remove
 the references.
 
 The register is an append-only set — item files are never deleted or
-renamed once on `main`, so an ID is never reused (CI enforces this). Get a
-new entry's ID from `scripts/next-tech-debt-id.pl --ref origin/main`
-(after a fetch) rather than counting by hand, and create
+renamed once on `main`, so an ID is never reused (CI enforces this).
+Reserve a new entry's ID with `scripts/reserve-tech-debt-id.pl` rather than
+counting by hand or scanning filenames yourself — it fetches `origin/main`
+itself and pushes the reserved id's `td/<id>` branch as an atomic,
+fleet-wide lock, retrying the next id itself if another writer wins the
+race for one. Fetch and check out that branch, then create
 `tech-debt/<id>.md` with `status: open`. When picking up an existing open
 item, follow the "Claiming an item" workflow in `TECH-DEBT.md`: verify
 state against `origin/main`, take the claim by pushing a branch named
