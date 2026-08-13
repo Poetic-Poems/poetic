@@ -15,6 +15,7 @@ const { renderFooter, upsertFooter } = require('./footer');
 const { concatenateAllHtmlFiles } = require('./build-all-poems');
 const { REPO_ROOT } = require('./repo-root');
 const { safeJoin, isWithinRoot } = require('./path-guard');
+const { isHelpRequested } = require('./cli-help');
 
 function parseArgs(argv) {
   const args = { port: undefined, dir: undefined, host: undefined };
@@ -38,6 +39,19 @@ function parseArgs(argv) {
     }
   }
   return args;
+}
+
+if (isHelpRequested(process.argv.slice(2))) {
+  console.log('Usage: node src/tools/serve-static.js [--port <n>] [--dir <path>] [--host <addr>]');
+  console.log('');
+  console.log('Serve public/ (or --dir) over HTTP for local development.');
+  console.log('');
+  console.log('Options:');
+  console.log('  --port, -p <n>     Port to listen on (default: 8080, or $PORT)');
+  console.log('  --dir, -d <path>   Directory to serve (default: public, or $DIR)');
+  console.log('  --host, -H <addr>  Address to bind (default: 127.0.0.1, or $HOST)');
+  console.log('  --help, -h         Show this help');
+  process.exit(0);
 }
 
 const { port: cliPort, dir: cliDir, host: cliHost } = parseArgs(process.argv);

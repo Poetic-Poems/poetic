@@ -24,6 +24,7 @@ const {
   escapeAmpersand, buildPoemDataIsland, renderFreshIndexHtml, renderAllPoemsHtml,
 } = require('./aggregate-render-core');
 const beautify = require('js-beautify');
+const { isHelpRequested } = require('./cli-help');
 
 // The builtin song handlers are a global build input (their YAML source, still
 // the human-authored form even though song-handlers.js now loads the generated
@@ -405,6 +406,18 @@ function generateIndexHtml(
 
 // Main execution
 function main() {
+  if (isHelpRequested(process.argv.slice(2))) {
+    console.log('Usage: node src/tools/build-all-poems.js [--force]');
+    console.log('');
+    console.log('Build public/all-poems.html (every poem concatenated) and update');
+    console.log('public/index.html from src/poems/yaml/ sources.');
+    console.log('');
+    console.log('Options:');
+    console.log('  --force      Rebuild, ignoring mtime-based staleness checks');
+    console.log('  --help, -h   Show this help');
+    return;
+  }
+
   const publicDir = path.join(REPO_ROOT, 'public');
 
   if (!fs.existsSync(publicDir)) {

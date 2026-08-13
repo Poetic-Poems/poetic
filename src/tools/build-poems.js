@@ -17,6 +17,7 @@ const { renderFooter, upsertFooter, resolveFooterSourcePath } = require('./foote
 const { BEAUTIFY_OPTIONS } = require('./render-core');
 const { REPO_ROOT } = require('./repo-root');
 const { needsRebuild, forceRebuildRequested } = require('./needs-rebuild');
+const { isHelpRequested } = require('./cli-help');
 const POEMS_DIR = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
 const PUBLIC_DIR = path.join(REPO_ROOT, 'public');
 // The builtin song handlers are a global build input (their YAML source, still
@@ -222,8 +223,19 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
 
 // Main execution
 if (require.main === module) {
-  console.log('Building individual poem HTML files from YAML sources...\n');
-  buildAllPoems();
+  if (isHelpRequested(process.argv.slice(2))) {
+    console.log('Usage: node src/tools/build-poems.js [--force]');
+    console.log('');
+    console.log('Build individual poem HTML files (public/<slug>/index.html plus a');
+    console.log('public/<slug>.html redirect stub) from src/poems/yaml/ sources.');
+    console.log('');
+    console.log('Options:');
+    console.log('  --force      Rebuild every poem, ignoring mtime-based staleness checks');
+    console.log('  --help, -h   Show this help');
+  } else {
+    console.log('Building individual poem HTML files from YAML sources...\n');
+    buildAllPoems();
+  }
 }
 
 module.exports = { buildAllPoems, resolveRefs, readPoemFile };

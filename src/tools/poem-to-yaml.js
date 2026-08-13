@@ -10,6 +10,7 @@ const yaml = require('js-yaml');
 const { REPO_ROOT } = require('./repo-root');
 const { needsRebuild, forceRebuildRequested } = require('./needs-rebuild');
 const { PoemParser } = require('./poem-parser');
+const { isHelpRequested } = require('./cli-help');
 
 
 /**
@@ -138,6 +139,12 @@ function convertAllPoemsToYaml({
  */
 function main() {
   const args = process.argv.slice(2);
+
+  if (isHelpRequested(args)) {
+    console.log('Usage: poem-to-yaml.js <file.poem> [output.yaml]');
+    console.log('   or: poem-to-yaml.js --all');
+    return;
+  }
 
   if (args.length === 0) {
     console.error('Usage: poem-to-yaml.js <file.poem> [output.yaml]');

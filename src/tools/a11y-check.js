@@ -21,6 +21,7 @@
 const fs = require('fs');
 const path = require('path');
 const { REPO_ROOT } = require('./repo-root');
+const { isHelpRequested } = require('./cli-help');
 
 const PUBLIC_DIR = path.join(REPO_ROOT, 'public');
 
@@ -98,6 +99,17 @@ function findChromeExecutable(candidates = [
 }
 
 async function main() {
+  if (isHelpRequested(process.argv.slice(2))) {
+    console.log('Usage: node src/tools/a11y-check.js');
+    console.log('');
+    console.log('Run axe-core accessibility checks against public/index.html and one built');
+    console.log('poem page (requires a local Chrome/Chromium and a prior "npm run build").');
+    console.log('');
+    console.log('Options:');
+    console.log('  --help, -h   Show this help');
+    return;
+  }
+
   const executablePath = findChromeExecutable();
   if (!executablePath) {
     console.log(

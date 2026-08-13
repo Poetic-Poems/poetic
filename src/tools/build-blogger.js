@@ -20,6 +20,7 @@ const path = require('path');
 const { readPoeticConfig } = require('./poetic-config');
 const { safeJoin, isWithinRoot } = require('./path-guard');
 const { REPO_ROOT } = require('./repo-root');
+const { isHelpRequested } = require('./cli-help');
 
 // ---------------------------------------------------------------------------
 // Pure helpers (exported for testing)
@@ -253,7 +254,17 @@ function injectCSSIntoTemplate({ repoRoot = REPO_ROOT, publicDir = path.join(rep
 }
 
 if (require.main === module) {
-  injectCSSIntoTemplate();
+  if (isHelpRequested(process.argv.slice(2))) {
+    console.log('Usage: node src/tools/build-blogger.js');
+    console.log('');
+    console.log('Inject public/poetic.css, public/custom.css and public/poetic.js into');
+    console.log('the Blogger theme template (see .poetic-config.yaml\'s blogger.template).');
+    console.log('');
+    console.log('Options:');
+    console.log('  --help, -h   Show this help');
+  } else {
+    injectCSSIntoTemplate();
+  }
 }
 
 module.exports = {
