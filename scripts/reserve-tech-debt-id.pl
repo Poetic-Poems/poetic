@@ -29,13 +29,19 @@
 #
 # The pushed commit is never origin/main's own commit verbatim -- it is a
 # throwaway commit on top of origin/main's tree, carrying a nonce in its
-# message. Two racers contending for the same id would otherwise push the
-# exact same origin/main commit, and the loser's push would find the ref
+# message body. Two racers contending for the same id would otherwise push
+# the exact same origin/main commit, and the loser's push would find the ref
 # already at the very value it was about to push: a no-op ("Everything
 # up-to-date") that git treats as success and --force-with-lease never
 # even evaluates, since no update is happening. The nonce guarantees every
 # attempt's commit is unique, so a loser's push is always a genuine
 # (and thus rejected) conflicting update instead.
+#
+# That commit stays in the filing branch's history until the pull request is
+# squash-merged, so its subject line is written in Conventional Commits form
+# ("chore(tech-debt): reserve <id>"): .github/workflows/commit-format.yml
+# checks every commit on a pull request, not just the title, and would fail
+# an otherwise perfectly good filing over it.
 #
 # Requires a git remote named `origin`; fetches origin/main itself, so no
 # prior `git fetch` is needed (unlike --ref origin/main elsewhere in this
@@ -179,9 +185,11 @@ while (1) {
   # on top of origin/main's tree sidesteps that: every attempt's commit
   # object differs, so only the first push can ever be a no-op, and every
   # later one is a genuine (and therefore rejected) conflicting update.
+  # The subject stays Conventional Commits-shaped because this commit sits
+  # in the filing pull request's history, where commit-format.yml sees it.
   my $nonce = join '-', time(), $$, int(rand(1_000_000));
   my $commit_lines = git_lines('commit-tree', $tree, '-p', 'origin/main',
-    '-m', "Reserve $id\n\n$nonce");
+    '-m', "chore(tech-debt): reserve $id\n\nReservation nonce: $nonce");
   $commit_lines and @$commit_lines
     or die "Cannot create a reservation commit for $id\n";
   chomp(my $commit = $commit_lines->[0]);

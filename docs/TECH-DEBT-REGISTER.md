@@ -6,10 +6,10 @@ with the root `TECH-DEBT.md` holding only policy — the format pointer, the
 tooling (`scripts/get-tech-debt-record.pl`, `scripts/next-tech-debt-id.pl`,
 `scripts/reserve-tech-debt-id.pl`, `scripts/td-check.pl`,
 `scripts/check-tech-debt-open-rewrites.pl`) recognises a register by the
-`tech-debt/` directory
-— or, for a register that has not yet filed its first item (git cannot
-commit an empty directory), by the `scope:` declaration in `TECH-DEBT.md`'s
-frontmatter, so allocation is scoped from the very first item.
+`tech-debt/` directory — or, for a register that has not yet filed its first
+item (git cannot commit an empty directory), by the `scope:` declaration in
+`TECH-DEBT.md`'s frontmatter, so allocation is scoped from the very first
+item.
 
 The per-item format exists because a single shared register file makes
 concurrent work on *adjacent* items collide: resolving an item edited both a

@@ -29,9 +29,12 @@ const OPEN_REWRITES_SCRIPT = path.join(
   'check-tech-debt-open-rewrites.pl'
 );
 
+const COMMIT_FORMAT_SCRIPT = path.join(REPO_ROOT, '.githooks', 'check-commit-format.sh');
+
 // Skip everywhere perl isn't installed (e.g. a bare Windows dev box); CI's
 // ubuntu runners always have it.
 const HAVE_PERL = spawnSync('perl', ['-e', '1']).status === 0;
+const HAVE_BASH = spawnSync('bash', ['-c', 'true']).status === 0;
 
 // Isolate git from the developer's global/system config so runs are
 // deterministic everywhere.
@@ -419,6 +422,27 @@ test('reserve: allocates the next free id and pushes its td/<id> branch', { skip
   assert.deepStrictEqual(remoteBranches(remoteDir, `refs/heads/td/${id}`), [
     `refs/heads/td/${id}`,
   ]);
+});
+
+test('reserve: the reservation commit passes the Conventional Commits check', { skip: !HAVE_PERL || !HAVE_BASH }, (t) => {
+  // The reservation commit is the base of the filing branch and survives
+  // until the filing pull request is squash-merged, so commit-format.yml
+  // sees it alongside the filer's own commits: a non-conforming subject
+  // would fail every filing made by the documented workflow. Checked
+  // through .githooks/check-commit-format.sh, the single place the
+  // Conventional Commits pattern is defined.
+  const { remoteDir } = makeRemoteRepo(t);
+  const clone = cloneRemote(t, remoteDir, 'w1');
+  const r = runReserve(clone, '260720');
+  assert.strictEqual(r.status, 0, r.stderr);
+  const id = r.stdout.trim();
+
+  const subject = git(remoteDir, 'log', '-1', '--format=%s', `refs/heads/td/${id}`).trim();
+  const checked = spawnSync('bash', [COMMIT_FORMAT_SCRIPT, subject], {
+    env: GIT_ENV,
+    encoding: 'utf8',
+  });
+  assert.strictEqual(checked.status, 0, `${subject}\n${checked.stderr}`);
 });
 
 test('reserve: skips ids already reserved by an unmerged td/* branch', { skip: !HAVE_PERL }, (t) => {
