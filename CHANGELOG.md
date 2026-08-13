@@ -34,6 +34,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Every CLI in `src/tools/` now recognises `--help`/`-h`.** Previously
+  `blogger-auth.js` was the only tool with a real `--help`; `poem-to-yaml.js`
+  and `yaml-to-poem.js` misread the flag as a positional filename and failed
+  with a raw `ENOENT`, and the rest (`build-poems.js`, `poem-to-raw.js`,
+  `sync-blogger.js`, and others) silently ignored it and ran their normal
+  default action instead — including a real build or filesystem write. Every
+  tool now checks a shared `isHelpRequested()` helper
+  (`src/tools/cli-help.js`) ahead of its own argument parsing and prints its
+  usage string with no side effects. Resolves TD-PPpoet-26080804.
+
 - **The tech-debt register's two new scripts now reach consumer repos.**
   `scripts/check-tech-debt-open-rewrites.pl` and
   `scripts/reserve-tech-debt-id.pl` were absent from `FRAMEWORK_PATHS` in
