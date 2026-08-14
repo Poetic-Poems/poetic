@@ -413,6 +413,10 @@ function buildConsentUrl(clientId, redirectUri, state, codeChallenge) {
   consentUrl.searchParams.set('response_type', 'code');
   consentUrl.searchParams.set('scope', BLOGGER_SCOPE);
   consentUrl.searchParams.set('access_type', 'offline');
+  // select_account forces the account chooser even when the browser has exactly
+  // one Google account signed in. Without it Google silently uses that account,
+  // which is how people authorise as the wrong one — a mistake that surfaces
+  // much later as an unexplained 403 from the sync.
   consentUrl.searchParams.set('prompt', 'select_account consent');
   consentUrl.searchParams.set('state', state);
   consentUrl.searchParams.set('code_challenge', codeChallenge);
