@@ -67,6 +67,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`sync-blogger.js` no longer risks a `RangeError` coercing an invalid poem
+  date.** Its inline `raw.date instanceof Date ? raw.date.toISOString()...`
+  branch reimplemented `date-utils.js`'s `toISODate()` without that helper's
+  `isNaN` guard, so a malformed `date` that survived YAML parsing as an
+  invalid `Date` object would throw instead of degrading gracefully.
+  `sync-blogger.js` now calls `toISODate(raw.date) || ''` directly. Separately,
+  `footer.js:resolveFooterSourcePath` and `build-blogger.js:resolveTemplatePath`
+  each reimplemented the same "resolve via `safeJoin`, check `isWithinRoot`,
+  warn, fall back" containment logic by hand; both now share a new
+  `resolveContainedConfigPath()` helper in `path-guard.js`, with no behaviour
+  change to either call site. Resolves TD-PPpoet-26080809.
+
 - **Every CLI in `src/tools/` now recognises `--help`/`-h`.** Previously
   `blogger-auth.js` was the only tool with a real `--help`; `poem-to-yaml.js`
   and `yaml-to-poem.js` misread the flag as a positional filename and failed

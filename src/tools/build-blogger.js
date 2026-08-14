@@ -18,7 +18,7 @@
 const fs   = require('fs');
 const path = require('path');
 const { readPoeticConfig } = require('./poetic-config');
-const { safeJoin, isWithinRoot } = require('./path-guard');
+const { resolveContainedConfigPath } = require('./path-guard');
 const { REPO_ROOT } = require('./repo-root');
 const { isHelpRequested } = require('./cli-help');
 
@@ -52,15 +52,15 @@ function resolveTemplatePath(config, publicDir) {
   if (config.blogger && config.blogger.template) {
     const repoRoot = path.dirname(publicDir);
     const template = config.blogger.template;
-    const resolved = path.isAbsolute(template)
-      ? path.resolve(template)
-      : safeJoin(repoRoot, template);
-    if (isWithinRoot(repoRoot, resolved)) {
+    const resolved = resolveContainedConfigPath(repoRoot, template, {
+      fallback: null,
+      onOutsideRoot: () => console.warn(
+        `Warning: blogger.template resolves outside the repository root (${template}); falling back to the default template`
+      ),
+    });
+    if (resolved !== null) {
       return resolved;
     }
-    console.warn(
-      `Warning: blogger.template resolves outside the repository root (${template}); falling back to the default template`
-    );
   }
 
   // 2. Canonical name

@@ -69,4 +69,38 @@ function isWithinRoot(root, candidate) {
   return lexicallyWithin(resolvedRoot, resolvedCandidate);
 }
 
-module.exports = { safeJoin, isWithinRoot };
+/**
+ * Resolve a user-configured path against `repoRoot` and contain it there,
+ * falling back to `fallback` if it escapes — the "resolve via `safeJoin`,
+ * check `isWithinRoot`, warn, fall back" composition shared by every config
+ * key that names a file the build then reads (a footer source, a Blogger
+ * template, ...). An absolute `configuredPath` is taken as given; a relative
+ * one is joined onto `repoRoot`.
+ *
+ * `onOutsideRoot`, if given, is called with the resolved (but rejected) path
+ * before falling back — callers use it to log a warning naming their own
+ * config key, since the message differs per call site.
+ *
+ * `fallback` is returned verbatim, so a caller with more candidates still to
+ * try (`build-blogger.js`'s template cascade) can pass `null` and treat that
+ * as "not this tier, keep looking".
+ *
+ * @param {string} repoRoot
+ * @param {string} configuredPath
+ * @param {{ fallback: string|null, onOutsideRoot?: (resolved: string) => void }} opts
+ * @returns {string|null} the contained path, or `fallback` if it escapes
+ */
+function resolveContainedConfigPath(repoRoot, configuredPath, { fallback, onOutsideRoot } = {}) {
+  const resolved = path.isAbsolute(configuredPath)
+    ? path.resolve(configuredPath)
+    : safeJoin(repoRoot, configuredPath);
+
+  if (isWithinRoot(repoRoot, resolved)) {
+    return resolved;
+  }
+
+  if (onOutsideRoot) onOutsideRoot(resolved);
+  return fallback;
+}
+
+module.exports = { safeJoin, isWithinRoot, resolveContainedConfigPath };
