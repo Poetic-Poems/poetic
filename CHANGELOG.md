@@ -67,6 +67,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`blogger-auth.js`'s outbound `fetch()` calls now carry a 30s timeout.**
+  `exchangeCodeForTokens()`, `lookupBlogId()`, and `listMyBlogs()` each call
+  the same Google OAuth token and Blogger API endpoints `sync-blogger.js`'s
+  `fetchWithRetry()` already times out at 30s, but called plain `fetch()`
+  with no `signal`, so a hung DNS resolution or an endpoint that accepts the
+  connection but never responds left the interactive `npm run blogger:auth`
+  flow hanging indefinitely with no indication anything was wrong. No retry
+  is added — this is a one-shot interactive tool a maintainer can Ctrl-C, so
+  the timeout alone is enough to bound the hang. Resolves TD-PPpoet-26080812.
+
 - **`build-poems.yml`'s shared concurrency group no longer cancels unrelated
   runs.** The workflow previously used a single, static `"pages"` concurrency
   group (with a merge-group carve-out added by #176) shared across every
