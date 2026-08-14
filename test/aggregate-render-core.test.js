@@ -19,7 +19,7 @@ test('escapeAmpersand: escapes only "&"', () => {
   assert.strictEqual(escapeAmpersand('Fish & Chips <b>'), 'Fish &#38; Chips <b>');
 });
 
-test('escapeHtml: escapes "&", "<", ">" and \'"\' (matching Pug\'s default escaping)', () => {
+test('escapeHtml: escapes "&", "<", ">" and \'"\' (re-exported from html-escape.js)', () => {
   assert.strictEqual(escapeHtml('Fish & Chips <b>"tasty"</b>'), 'Fish &amp; Chips &lt;b&gt;&quot;tasty&quot;&lt;/b&gt;');
 });
 

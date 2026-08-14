@@ -208,7 +208,7 @@ disk. Three couplings are broken for the browser graph:
    object, so the browser entry just accepts it as `opts.config` — no file read.
 
 The whole graph reachable from the entry (`poem-parser`, `render-core`,
-`aggregate-render-core`, `song-handlers` + `song-handlers-data`,
+`aggregate-render-core`, `html-escape`, `song-handlers` + `song-handlers-data`,
 `poem-templates`, `slugify`, `date-utils`, plus the npm deps `markdown-it` and
 `js-yaml`) is filesystem-free. `test/browser-render.test.js` asserts it loads
 **zero Node built-ins** and references no `__dirname`/`__filename`.
