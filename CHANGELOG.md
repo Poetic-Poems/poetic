@@ -86,8 +86,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   succession queue rather than cancelling an in-progress deploy; the `deploy`
   job also gained its own job-level `"pages"` lock
   (`cancel-in-progress: false`) so only one deployment ever runs at a time
-  regardless of which ref triggered it. Synced to `fragments-and-unity`.
-  Resolves #178.
+  regardless of which ref triggered it. `build-poems.yml` is synced to
+  consumer repositories, which pick this up on their next
+  `scripts/sync-framework.sh` run. Resolves #178.
 
 - **`sync-blogger.js` no longer risks a `RangeError` coercing an invalid poem
   date.** Its inline `raw.date instanceof Date ? raw.date.toISOString()...`
