@@ -665,3 +665,71 @@ test('open-rewrites: a clean diff exits 0', { skip: !HAVE_PERL }, (t) => {
   const r = runOpenRewrites(dir, 'main', 'noop');
   assert.strictEqual(r.status, 0, r.stdout);
 });
+
+test('td-check: rejects an open item with an empty body', { skip: !HAVE_PERL }, (t) => {
+  const repo = makeItemRepo(t, {
+    ...ITEMS,
+    'TD-PPtest-26072601.md': itemFile('TD-PPtest-26072601', {}, ''),
+  });
+  const r = runCheck(repo, 'tech-debt');
+  assert.strictEqual(r.status, 1, r.stdout);
+  assert.match(r.stdout, /MISSING FIELD.*TD-PPtest-26072601\.md \(body/);
+});
+
+test('td-check: rejects an open item with a whitespace-only body', { skip: !HAVE_PERL }, (t) => {
+  const repo = makeItemRepo(t, {
+    ...ITEMS,
+    'TD-PPtest-26072701.md': itemFile('TD-PPtest-26072701', {}, '   \n\n  \t  \n'),
+  });
+  const r = runCheck(repo, 'tech-debt');
+  assert.strictEqual(r.status, 1, r.stdout);
+  assert.match(r.stdout, /MISSING FIELD.*TD-PPtest-26072701\.md \(body/);
+});
+
+test('td-check: allows a resolved item with an empty body (legacy)', { skip: !HAVE_PERL }, (t) => {
+  const repo = makeItemRepo(t, {
+    ...ITEMS,
+    'TD-PPtest-26072801.md': itemFile(
+      'TD-PPtest-26072801',
+      { status: 'resolved', resolved: '2026-07-28', ref: '#99' },
+      ''
+    ),
+  });
+  const r = runCheck(repo, 'tech-debt');
+  assert.strictEqual(r.status, 0, r.stdout);
+  assert.match(r.stdout, /consistent/);
+});
+
+test('td-check: allows a not-debt item with an empty body (legacy)', { skip: !HAVE_PERL }, (t) => {
+  const repo = makeItemRepo(t, {
+    ...ITEMS,
+    'TD-PPtest-26072901.md': itemFile('TD-PPtest-26072901', { status: 'not-debt', ref: '#98' }, ''),
+  });
+  const r = runCheck(repo, 'tech-debt');
+  assert.strictEqual(r.status, 0, r.stdout);
+  assert.match(r.stdout, /consistent/);
+});
+
+test('open-rewrites: rejects an append when the base body is empty', { skip: !HAVE_PERL }, (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-rewrite-empty-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  git(dir, 'init', '-q', '-b', 'main');
+  fs.mkdirSync(path.join(dir, 'tech-debt'));
+  fs.writeFileSync(
+    path.join(dir, 'tech-debt', 'TD-PPtest-26080201.md'),
+    itemFile('TD-PPtest-26080201', {}, '')
+  );
+  git(dir, 'add', '-A');
+  git(dir, 'commit', '-q', '-m', 'base-empty');
+
+  git(dir, 'checkout', '-q', '-b', 'append-to-empty');
+  fs.writeFileSync(
+    path.join(dir, 'tech-debt', 'TD-PPtest-26080201.md'),
+    itemFile('TD-PPtest-26080201', {}, 'New body text.\n')
+  );
+  git(dir, 'commit', '-q', '-am', 'append');
+
+  const r = runOpenRewrites(dir, 'main', 'append-to-empty');
+  assert.strictEqual(r.status, 1, r.stdout);
+  assert.match(r.stdout, /BODY REWRITE\s+tech-debt\/TD-PPtest-26080201\.md/);
+});
