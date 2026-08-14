@@ -21,8 +21,8 @@ name: Release
 # usable as a required status check, and a trigger-level `paths:` filter would
 # make it silently never report — stuck as "Expected" forever, blocking merge
 # — on any PR that happens not to touch the filtered paths. See GitHub's
-# "Handling skipped but required checks":
-# https://docs.github.com/en/actions/using-workflows/using-conditions-to-control-job-execution#handling-skipped-but-required-checks
+# "Choose when workflows run" guide:
+# https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions
 # The job runs on every PR instead and costs a few seconds: the version
 # comparison below is a no-op unless package.json's version actually changed.
 on:

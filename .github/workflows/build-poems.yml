@@ -5,8 +5,8 @@ name: Build and Deploy Poems to GitHub Pages
 # filter on the trigger itself would make the check silently disappear
 # (stuck as "Expected" forever, blocking merge) for a PR that only touches
 # paths outside the filter, e.g. a doc-only PR editing CLAUDE.md or
-# SECURITY.md. See GitHub's "Handling skipped but required checks":
-# https://docs.github.com/en/actions/using-workflows/using-conditions-to-control-job-execution#handling-skipped-but-required-checks
+# SECURITY.md. See GitHub's "Choose when workflows run" guide:
+# https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-jobs-with-conditions
 #
 # Instead, the `build` job always triggers and always reports a real "build"
 # status, but its actual steps (install/test/lint/build/deploy) are skipped
@@ -37,19 +37,31 @@ permissions:
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# Cancel in-progress runs to ensure the latest commit is always deployed.
+# Workflow-level concurrency is keyed per ref, so an unrelated run — a
+# different pull request, a push to `main` while a PR is building, an
+# unrelated merge-group attempt — never cancels this one; only a newer run on
+# the *same* ref supersedes an older one, e.g. a PR gaining a follow-up
+# commit. Each merge-group attempt already gets its own unique
+# `gh-readonly-queue/...` ref, so this alone gives `build` — a required
+# status check on the merge queue's candidate ref — the same guarantee the
+# previous merge-group-only carve-out gave it: a run of this workflow started
+# by any unrelated push or pull request cannot cancel it, since a cancelled
+# conclusion is not a pass and the queue would drop the queued pull request
+# rather than merge it.
 #
-# A merge-group run is deliberately excluded from that shared group and keyed
-# to its own `gh-readonly-queue/...` ref instead. `build` is a required status
-# check on the merge queue's candidate ref, so a run of this workflow started
-# by any unrelated push or pull request must not be able to cancel it: a
-# cancelled conclusion is not a pass, and the queue would drop the queued pull
-# request rather than merge it. Every other event keeps the literal "pages"
-# group, so push/pull_request/workflow_dispatch behaviour is unchanged.
+# `refs/heads/main` is the one ref where cancelling would mean killing an
+# in-progress deploy: two pushes to `main` in quick succession share the same
+# per-ref group, so `cancel-in-progress: true` there would cancel the first
+# push's run — including a `deploy` already underway — the moment the second
+# starts (GitHub's own Pages starter workflow disables cancellation for this
+# reason). Cancellation is therefore disabled specifically for `main`; runs
+# there queue instead of cancelling. The job-level lock on `deploy` below is
+# what then guarantees only one deployment executes at a time even when some
+# other ref races it in (e.g. a `workflow_dispatch` run on a non-`main` ref,
+# which `deploy`'s own `if:` also allows to deploy).
 concurrency:
-  group: ${{ github.event_name == 'merge_group' && format('pages-{0}', github.ref) || 'pages' }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   build:
@@ -241,6 +253,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch') && needs.build.outputs.pages == 'true' && needs.build.outputs.relevant == 'true'
+    # Serialises actual deployments globally, independent of the workflow-level
+    # per-ref group above: a `workflow_dispatch` run on some other ref can also
+    # reach `deploy` (see the `if:` above), so the per-ref group alone would not
+    # stop it racing a `main` push's deploy. `cancel-in-progress: false` queues
+    # a second deploy behind the first rather than cancelling it mid-flight.
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
     # Longer than the other light jobs: this job's single step polls the Pages
     # service for up to 10 minutes (actions/deploy-pages' own `timeout` input
     # defaults to 600000 ms), so a shorter job timeout would kill a slow but
