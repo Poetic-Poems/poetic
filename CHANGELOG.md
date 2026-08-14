@@ -67,6 +67,29 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`build-poems.yml`'s shared concurrency group no longer cancels unrelated
+  runs.** The workflow previously used a single, static `"pages"` concurrency
+  group (with a merge-group carve-out added by #176) shared across every
+  event and ref, so any new run cancelled whatever run was already in flight,
+  related or not — 23 runs cancelled between 2026-07-11 and 2026-08-14, 17 of
+  them pull-request builds killed by an unrelated push or PR (a failed
+  required check blocking merge) and 6 of them pushes to `main` whose
+  cancelled run skipped `deploy` entirely, inverting the workflow's own
+  stated intent that the latest commit is always deployed. The workflow-level
+  `concurrency.group` is now keyed per ref
+  (`${{ github.workflow }}-${{ github.ref }}`), so unrelated refs run
+  independently and a merge-group attempt's already-unique
+  `gh-readonly-queue/...` ref keeps `build`'s existing guarantee that no
+  unrelated run can cancel a required check on the merge queue's candidate
+  ref, subsuming #176's merge-group carve-out. `cancel-in-progress` is `false`
+  specifically for `refs/heads/main`, so two pushes to `main` in quick
+  succession queue rather than cancelling an in-progress deploy; the `deploy`
+  job also gained its own job-level `"pages"` lock
+  (`cancel-in-progress: false`) so only one deployment ever runs at a time
+  regardless of which ref triggered it. `build-poems.yml` is synced to
+  consumer repositories, which pick this up on their next
+  `scripts/sync-framework.sh` run. Resolves #178.
+
 - **`sync-blogger.js` no longer risks a `RangeError` coercing an invalid poem
   date.** Its inline `raw.date instanceof Date ? raw.date.toISOString()...`
   branch reimplemented `date-utils.js`'s `toISODate()` without that helper's
