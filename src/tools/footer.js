@@ -22,7 +22,7 @@
 const fs = require('fs');
 const path = require('path');
 const { substituteContextVars } = require('./poem-render');
-const { safeJoin, isWithinRoot } = require('./path-guard');
+const { resolveContainedConfigPath } = require('./path-guard');
 
 const DEFAULT_FOOTER_SOURCE = 'public/poetic-footer.html';
 
@@ -47,16 +47,12 @@ const FOOTER_END = '<!-- /poetic:footer -->';
  */
 function resolveFooterSourcePath(config, repoRoot) {
   const footerSource = (config.footer && config.footer.source) || DEFAULT_FOOTER_SOURCE;
-  const resolved = path.isAbsolute(footerSource)
-    ? path.resolve(footerSource)
-    : safeJoin(repoRoot, footerSource);
-  if (!isWithinRoot(repoRoot, resolved)) {
-    console.warn(
+  return resolveContainedConfigPath(repoRoot, footerSource, {
+    fallback: path.join(repoRoot, DEFAULT_FOOTER_SOURCE),
+    onOutsideRoot: () => console.warn(
       `Warning: footer.source resolves outside the repository root (${footerSource}); using the default footer instead`
-    );
-    return path.join(repoRoot, DEFAULT_FOOTER_SOURCE);
-  }
-  return resolved;
+    ),
+  });
 }
 
 /**
