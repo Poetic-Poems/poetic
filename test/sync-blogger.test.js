@@ -1523,6 +1523,18 @@ async function withCapturedErrorsAsync(run) {
   }
 }
 
+async function withCapturedWarningsAsync(run) {
+  const originalWarn = console.warn;
+  const warnings = [];
+  console.warn = (...args) => warnings.push(args.join(' '));
+  try {
+    const result = await run();
+    return { result, warnings };
+  } finally {
+    console.warn = originalWarn;
+  }
+}
+
 test('main: sync disabled logs a message and makes no network calls', async () => {
   let calls = 0;
   const { logs } = await withCapturedLogsAsync(() => withMockFetch(
@@ -1571,7 +1583,7 @@ test('main: full sync creates a new poem and drafts a removed post', async (t) =
   assert.ok(calls.some(c => c.url === 'https://oauth2.googleapis.com/token'), 'expected a token exchange');
   assert.ok(calls.some(c => c.method === 'POST' && c.url.endsWith('/posts/')), 'expected a createPost call');
   assert.ok(calls.some(c => c.url.endsWith('/revert')), 'expected a revertPost call for the removed post');
-  assert.ok(logs.some(l => l.includes('Blogger sync: 1 created, 0 updated, 0 unchanged, 1 drafted.')));
+  assert.ok(logs.some(l => l.includes('Blogger sync: 1 created, 0 updated, 0 unchanged, 1 drafted, 0 skipped.')));
 });
 
 test('main: --only skips the removal pass', async (t) => {
@@ -1610,4 +1622,105 @@ test('main: a Blogger API failure is caught, diagnosed, and sets process.exitCod
   assert.strictEqual(process.exitCode, 1);
   assert.ok(errors.some(l => l.includes('Blogger sync error')));
   assert.ok(errors.some(l => l.includes('cannot manage this blog')));
+});
+
+// ── main(): un-normalisable poem dates (TD-PPpoet-26081401) ──────────────────
+
+const BAD_DATE_EXISTING_POST = {
+  id: 'bad-date-id',
+  title: ' Bad Date Poem',
+  content: '<div id="poem--bad-date">x</div>',
+  labels: ['fixture-label'],
+  status: 'LIVE',
+};
+
+test('main: a missing poem date is warned, skipped, and kept out of the removal pass', async (t) => {
+  t.after(() => { process.exitCode = 0; });
+  const yamlDir = tmpYamlDir(t);
+  writeFixturePoem(yamlDir, 'bad-date.yaml', { date: null, labels: ['fixture-label'] });
+  const { fetchMock, calls } = mockBloggerFetch({ posts: [BAD_DATE_EXISTING_POST] });
+  const { result: _, warnings } = await withCapturedWarningsAsync(() => withCapturedLogsAsync(() => withMockFetch(
+    fetchMock,
+    () => main({
+      yamlDir,
+      config: { blogger: { sync: true, blog_id: 'BLOG1' } },
+      env: BASE_CREDENTIALS_ENV,
+      credentialsPath: null,
+    })
+  )));
+  const { logs } = _;
+  assert.ok(warnings.some(w => w.includes('bad-date.yaml') && w.includes('(missing)')), warnings.join('\n'));
+  assert.ok(logs.some(l => l.includes('Blogger sync: 0 created, 0 updated, 0 unchanged, 0 drafted, 1 skipped.')));
+  assert.strictEqual(process.exitCode, 1);
+  assert.ok(!calls.some(c => c.method === 'POST' && c.url.endsWith('/posts/')), 'the skipped poem must not be created');
+  assert.ok(!calls.some(c => c.url.endsWith('/revert')), 'the skipped poem\'s existing post must not be drafted as removed');
+  assert.ok(!calls.some(c => c.method === 'DELETE'), 'the skipped poem\'s existing post must not be deleted as removed');
+});
+
+test('main: a display-format poem date is warned, skipped, and kept out of the removal pass', async (t) => {
+  t.after(() => { process.exitCode = 0; });
+  const yamlDir = tmpYamlDir(t);
+  writeFixturePoem(yamlDir, 'bad-date.yaml', { date: 'Friday, 15 March 2024', labels: ['fixture-label'] });
+  const { fetchMock, calls } = mockBloggerFetch({ posts: [BAD_DATE_EXISTING_POST] });
+  const { warnings } = await withCapturedWarningsAsync(() => withMockFetch(
+    fetchMock,
+    () => main({
+      yamlDir,
+      config: { blogger: { sync: true, blog_id: 'BLOG1' } },
+      env: BASE_CREDENTIALS_ENV,
+      credentialsPath: null,
+    })
+  ));
+  assert.ok(
+    warnings.some(w => w.includes('bad-date.yaml') && w.includes('Friday, 15 March 2024')),
+    warnings.join('\n')
+  );
+  assert.strictEqual(process.exitCode, 1);
+  assert.ok(!calls.some(c => c.method === 'POST' && c.url.endsWith('/posts/')));
+  assert.ok(!calls.some(c => c.url.endsWith('/revert')));
+});
+
+test('main: an invalid (non-date-shaped) poem date is warned, skipped, and kept out of the removal pass', async (t) => {
+  t.after(() => { process.exitCode = 0; });
+  const yamlDir = tmpYamlDir(t);
+  writeFixturePoem(yamlDir, 'bad-date.yaml', { date: '2024/03/15', labels: ['fixture-label'] });
+  const { fetchMock, calls } = mockBloggerFetch({ posts: [BAD_DATE_EXISTING_POST] });
+  const { warnings } = await withCapturedWarningsAsync(() => withMockFetch(
+    fetchMock,
+    () => main({
+      yamlDir,
+      config: { blogger: { sync: true, blog_id: 'BLOG1' } },
+      env: BASE_CREDENTIALS_ENV,
+      credentialsPath: null,
+    })
+  ));
+  assert.ok(warnings.some(w => w.includes('bad-date.yaml') && w.includes('2024/03/15')), warnings.join('\n'));
+  assert.strictEqual(process.exitCode, 1);
+  assert.ok(!calls.some(c => c.method === 'POST' && c.url.endsWith('/posts/')));
+  assert.ok(!calls.some(c => c.url.endsWith('/revert')));
+});
+
+test('main: --dry-run surfaces an un-normalisable poem date with no mutating calls', async (t) => {
+  t.after(() => { process.exitCode = 0; });
+  const yamlDir = tmpYamlDir(t);
+  writeFixturePoem(yamlDir, 'bad-date.yaml', { date: null, labels: ['fixture-label'] });
+  const { fetchMock, calls } = mockBloggerFetch({ posts: [BAD_DATE_EXISTING_POST] });
+  const { result: _, warnings } = await withCapturedWarningsAsync(() => withCapturedLogsAsync(() => withMockFetch(
+    fetchMock,
+    () => main({
+      argv: ['--dry-run'],
+      yamlDir,
+      config: { blogger: { sync: true, blog_id: 'BLOG1' } },
+      env: BASE_CREDENTIALS_ENV,
+      credentialsPath: null,
+    })
+  )));
+  const { logs } = _;
+  assert.ok(warnings.some(w => w.includes('bad-date.yaml') && w.includes('(missing)')), warnings.join('\n'));
+  assert.ok(logs.some(l => l.includes('Blogger sync: 0 created, 0 updated, 0 unchanged, 0 drafted, 1 skipped (dry-run).')));
+  assert.strictEqual(process.exitCode, 1);
+  assert.ok(!calls.some(c => c.method === 'POST' && c.url.endsWith('/posts/')));
+  assert.ok(!calls.some(c => c.method === 'PUT'));
+  assert.ok(!calls.some(c => c.url.endsWith('/revert')));
+  assert.ok(!calls.some(c => c.method === 'DELETE'));
 });
