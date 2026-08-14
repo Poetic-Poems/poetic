@@ -81,10 +81,14 @@ function isWithinRoot(root, candidate) {
  * before falling back — callers use it to log a warning naming their own
  * config key, since the message differs per call site.
  *
+ * `fallback` is returned verbatim, so a caller with more candidates still to
+ * try (`build-blogger.js`'s template cascade) can pass `null` and treat that
+ * as "not this tier, keep looking".
+ *
  * @param {string} repoRoot
  * @param {string} configuredPath
- * @param {{ fallback: string, onOutsideRoot?: (resolved: string) => void }} opts
- * @returns {string}
+ * @param {{ fallback: string|null, onOutsideRoot?: (resolved: string) => void }} opts
+ * @returns {string|null} the contained path, or `fallback` if it escapes
  */
 function resolveContainedConfigPath(repoRoot, configuredPath, { fallback, onOutsideRoot } = {}) {
   const resolved = path.isAbsolute(configuredPath)
