@@ -954,6 +954,7 @@ async function main({
     let updated = 0;
     let unchanged = 0;
     let handled = 0; // drafted or deleted
+    let skipped = 0; // un-normalisable date
 
     const currentSlugs = new Set();
 
@@ -961,16 +962,29 @@ async function main({
     const yamlFiles = listPoemYamlFiles(yamlDir).map(f => path.join(yamlDir, f));
 
     for (const yamlPath of yamlFiles) {
-      // Read raw file for ISO date (before loadPoemData mutates it)
+      // Read raw file for ISO date (loadPoemData() re-parses the file separately
+      // and overwrites its own copy's `date` with a display-formatted string).
       const raw = readPoemFile(yamlPath);
       if (!raw) continue;
-
-      const isoDate = toISODate(raw.date) || '';
 
       const data = loadPoemData(yamlPath);
       if (!data) continue;
 
       if (args.only && data.slug !== args.only) continue;
+
+      const isoDate = toISODate(raw.date);
+      if (isoDate === null) {
+        const shownValue = raw.date ? JSON.stringify(String(raw.date)) : '(missing)';
+        console.warn(
+          `Blogger sync: skipping "${yamlPath}" — un-normalisable date ${shownValue}; poem not synced.`
+        );
+        skipped++;
+        // Keep the slug in currentSlugs even though the poem is skipped, so the
+        // removal pass does not mistake "un-synced" for "removed" and draft or
+        // delete the poem's existing live post.
+        currentSlugs.add(data.slug);
+        continue;
+      }
 
       const bodyHtml = extractContent(
         renderFragment(data, { config: rawConfig }),
@@ -1022,8 +1036,12 @@ async function main({
     const dryRunSuffix = args.dryRun ? ' (dry-run)' : '';
     const removedLabel = opts.removed === 'delete' ? 'deleted' : 'drafted';
     console.log(
-      `Blogger sync: ${created} created, ${updated} updated, ${unchanged} unchanged, ${handled} ${removedLabel}${dryRunSuffix}.`
+      `Blogger sync: ${created} created, ${updated} updated, ${unchanged} unchanged, ${handled} ${removedLabel}, ${skipped} skipped${dryRunSuffix}.`
     );
+    if (skipped > 0) {
+      // An unattended run must not exit 0 having silently left a poem un-synced.
+      process.exitCode = 1;
+    }
   } catch (err) {
     console.error(`Blogger sync error: ${err.message}`);
     const advice = await diagnoseBloggerFailure(err, {
