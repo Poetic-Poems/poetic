@@ -72,6 +72,13 @@ const ENTITY_PATTERN = new RegExp(
 const UNPAIRED_QUOTE_SENTINEL = '\x00UNPAIREDQUOTE\x00';
 
 /**
+ * Markdown heading markup for each HTML heading tag digit that
+ * convertHtmlToPlainText() recognises. h2 and h3 both collapse to a single
+ * '#' -- there's no h1 in poem HTML, so '#' is the top level available.
+ */
+const HEADING_MARKUP = { 2: '#', 3: '#', 4: '##', 5: '###' };
+
+/**
  * Convert YAML data structure to .poem format
  *
  * @param {object} data - the parsed YAML poem data
@@ -602,19 +609,14 @@ class YamlToPoemConverter {
       const peeled = blocks.length === 1 ? this.peelTrailingBlockElement(trimmed) : null;
       const paragraphs = this.splitParagraphRun(trimmed);
 
-      // Handle headings (now they're single-line after normalization)
-      if (trimmed.match(/^<h5[^>]*>/) && trimmed.endsWith('</h5>')) {
-        const text = this.stripHtmlTags(trimmed.replace(/^<h5[^>]*>/, '').replace(/<\/h5>$/, ''));
-        result.push(`### ${text}`);
-      } else if (trimmed.match(/^<h4[^>]*>/) && trimmed.endsWith('</h4>')) {
-        const text = this.stripHtmlTags(trimmed.replace(/^<h4[^>]*>/, '').replace(/<\/h4>$/, ''));
-        result.push(`## ${text}`);
-      } else if (trimmed.match(/^<h3[^>]*>/) && trimmed.endsWith('</h3>')) {
-        const text = this.stripHtmlTags(trimmed.replace(/^<h3[^>]*>/, '').replace(/<\/h3>$/, ''));
-        result.push(`# ${text}`);
-      } else if (trimmed.match(/^<h2[^>]*>/) && trimmed.endsWith('</h2>')) {
-        const text = this.stripHtmlTags(trimmed.replace(/^<h2[^>]*>/, '').replace(/<\/h2>$/, ''));
-        result.push(`# ${text}`);
+      // Handle headings (now they're single-line after normalization). h2
+      // and h3 both collapse to a single '#' -- there's no h1 in poem HTML,
+      // so '#' is the top markdown heading level available.
+      const headingMatch = trimmed.match(/^<h([2-5])[^>]*>([\s\S]*)<\/h\1>$/);
+      if (headingMatch) {
+        const level = HEADING_MARKUP[headingMatch[1]];
+        const text = this.stripHtmlTags(headingMatch[2]);
+        result.push(`${level} ${text}`);
       } else if (paragraphs) {
         // One or more paragraphs. markdown-it joins sibling block elements
         // with a single '\n', never a blank line (see peelTrailingBlockElement's
