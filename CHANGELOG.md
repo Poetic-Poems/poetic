@@ -90,6 +90,20 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   consumer repositories, which pick this up on their next
   `scripts/sync-framework.sh` run. Resolves #178.
 
+- **`sync-blogger.js` no longer silently composes an empty publish date.**
+  A poem date `toISODate()` could not parse — missing, an invalid `Date`
+  object, or a display-format string — previously fell through to `''`,
+  which corrupted `composePost()`'s `published` timestamp and, on
+  creation, baked a leading space into the post's title via the
+  dated-title trick that seeds Blogger's sticky permalink; the poem was
+  also reported as changed and re-`PUT` on every run, forever. The sync
+  now warns (naming the file and the offending value), skips the poem —
+  in both live and `--dry-run` mode — and still adds its slug to
+  `currentSlugs` so the removal pass does not draft or delete its
+  existing live post. The closing summary line reports the skipped count,
+  and the run exits non-zero when any poem was skipped. Resolves
+  TD-PPpoet-26081401.
+
 - **`sync-blogger.js` no longer risks a `RangeError` coercing an invalid poem
   date.** Its inline `raw.date instanceof Date ? raw.date.toISOString()...`
   branch reimplemented `date-utils.js`'s `toISODate()` without that helper's
