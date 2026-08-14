@@ -125,11 +125,11 @@ sub check_dir {
     }
 
     my $st = $meta{status};
+    my $live = defined $st && ($st eq 'open' || $st eq 'in-progress');
     if (defined $st and length $st) {
       if ($st =~ /^(open|in-progress|resolved|not-debt)$/) {
         $status{$name} = $st;
         push @order, $name;
-        my $live = $st eq 'open' || $st eq 'in-progress';
         if ($live) {
           for my $key (qw(resolved ref)) {
             push @problems, problem_line('STALE FIELD',
@@ -163,7 +163,6 @@ sub check_dir {
     push @problems, problem_line('BAD FIELD', "$name (legacy-id: $legacy)")
       if defined $legacy and length $legacy and $legacy !~ /^TD\d{8}$/;
 
-    my $live = $st eq 'open' || $st eq 'in-progress';
     if ($live) {
       my $body = join '', @lines[$end + 1 .. $#lines];
       push @problems, problem_line('MISSING FIELD', "$name (body must contain non-whitespace)")
