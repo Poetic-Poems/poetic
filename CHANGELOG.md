@@ -109,6 +109,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   expected file first; running the single-file and `yaml-to-poem.js` steps
   without `--all` failed with `ENOENT`.
 
+- **The open-item rewrite guard no longer exempts wholesale replacement of
+  an empty body.** `check-tech-debt-open-rewrites.pl`'s strict-append
+  exemption checked only that the head body starts with the base body —
+  but every string has the empty string as a prefix, so an open item whose
+  body was empty at the merge base could be replaced with entirely
+  different prose and the guard would pass it as an append. `td-check.pl`
+  now requires a non-blank body (containing `\S`) for every open or
+  in-progress item — exempting `resolved`/`not-debt` items to grandfather
+  legacy data — and the append exemption additionally requires the base
+  body to already contain non-whitespace text before accepting a strict
+  append. Resolves TD-PPpoet-26081303.
+
 ### Security
 
 - **`blogger-auth.js`'s OAuth loopback server HTML-escapes the `error` query
