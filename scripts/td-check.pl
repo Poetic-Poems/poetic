@@ -162,6 +162,13 @@ sub check_dir {
     my $legacy = $meta{'legacy-id'};
     push @problems, problem_line('BAD FIELD', "$name (legacy-id: $legacy)")
       if defined $legacy and length $legacy and $legacy !~ /^TD\d{8}$/;
+
+    my $live = $st eq 'open' || $st eq 'in-progress';
+    if ($live) {
+      my $body = join '', @lines[$end + 1 .. $#lines];
+      push @problems, problem_line('MISSING FIELD', "$name (body must contain non-whitespace)")
+        unless $body =~ /\S/;
+    }
   }
 
   printf "%s: %d items\n", $dir, scalar @order;

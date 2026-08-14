@@ -107,7 +107,8 @@ for my $path (@paths) {
   next unless ($base_meta->{status} // '') eq 'open';
   next unless ($head_meta->{status} // '') eq 'open';
   next if $base_body eq $head_body;
-  next if length($head_body) > length($base_body)
+  next if $base_body =~ /\S/
+    and length($head_body) > length($base_body)
     and substr($head_body, 0, length $base_body) eq $base_body;
 
   push @problems,
