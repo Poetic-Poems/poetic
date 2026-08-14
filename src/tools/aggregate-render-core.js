@@ -5,13 +5,15 @@
  * render-core.js's single-poem sharing.
  *
  * Keep this module browser-safe: its only dependencies are date-utils.js,
- * song-handlers.js and render-core.js (all themselves fs-free), so do NOT add
- * `fs`/`path`/`__dirname` or any other Node-only dependency here.
+ * song-handlers.js, render-core.js and html-escape.js (all themselves
+ * fs-free), so do NOT add `fs`/`path`/`__dirname` or any other Node-only
+ * dependency here.
  */
 
 const { formatDateForDisplay, toISODate } = require('./date-utils');
 const { hasResolvableSongs } = require('./song-handlers');
 const { renderTitleMarkup } = require('./render-core');
+const { escapeHtml } = require('./html-escape');
 
 /**
  * HTML-entity-escape "&" only (matching the em-dash-style entities already
@@ -21,21 +23,6 @@ const { renderTitleMarkup } = require('./render-core');
  */
 function escapeAmpersand(str) {
   return str.replace(/&/g, '&#38;');
-}
-
-/**
- * General-purpose HTML escaping for text/attribute interpolation, matching
- * Pug's default `=`/`#{}` escaping (pug-runtime's `escape`: "&", "<", ">",
- * '"') — used for per-poem titles, which (unlike the site title above) are
- * attacker-controllable (poem authors) and are interpolated outside Pug's
- * own escaping on the all-poems page.
- */
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 /**

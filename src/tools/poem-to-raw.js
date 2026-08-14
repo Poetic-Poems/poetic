@@ -31,6 +31,7 @@ const { readPoeticConfig, CONFIG_FILENAME } = require('./poetic-config');
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require('./footer');
 const { needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested } = require('./needs-rebuild');
 const { isHelpRequested } = require('./cli-help');
+const { escapeHtml } = require('./html-escape');
 
 // Named HTML entities the engine (and Markdown) can emit, mapped to Unicode.
 const NAMED_ENTITIES = {
@@ -146,14 +147,6 @@ function renderPoemText(data, slug) {
   const underline = '-'.repeat([...title].length);
   const heading = `${title}\n${underline}`;
   return (body ? `${heading}\n\n${body}` : heading).replace(/\n*$/, '\n');
-}
-
-// Minimal HTML escaping for text placed in the index page.
-function escapeHtml(text) {
-  return String(text)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
 }
 
 // Derive the "owner/name" GitHub slug from the origin remote, or null if there

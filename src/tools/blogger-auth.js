@@ -39,6 +39,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { URL, URLSearchParams } = require('url');
 const { readPoeticConfig } = require('./poetic-config');
+const { escapeHtml } = require('./html-escape');
 
 const BLOGGER_SCOPE = 'https://www.googleapis.com/auth/blogger';
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -332,14 +333,6 @@ function describeBlogAccess(access, configuredBlogId) {
 }
 
 // ── Loopback server ───────────────────────────────────────────────────────────
-
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 function waitForCode(port, expectedState) {
   return new Promise((resolve, reject) => {
