@@ -703,7 +703,7 @@ test('td-check: allows a resolved item with an empty body (legacy)', { skip: !HA
 test('td-check: allows a not-debt item with an empty body (legacy)', { skip: !HAVE_PERL }, (t) => {
   const repo = makeItemRepo(t, {
     ...ITEMS,
-    'TD-PPtest-26072901.md': itemFile('TD-PPtest-26072901', { status: 'not-debt' }, ''),
+    'TD-PPtest-26072901.md': itemFile('TD-PPtest-26072901', { status: 'not-debt', ref: '#98' }, ''),
   });
   const r = runCheck(repo, 'tech-debt');
   assert.strictEqual(r.status, 0, r.stdout);
