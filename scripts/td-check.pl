@@ -13,7 +13,10 @@
 # frontmatter parses and carries id/title/status/filed, with id equal to
 # the filename stem and scoped to the `scope:` declared in the frontmatter
 # of the TECH-DEBT.md beside the directory, a recognised status, resolution
-# fields consistent with that status, and a filed date matching the ID's.
+# fields consistent with that status, a filed date matching the ID's, and,
+# while status is open or in-progress, a body containing non-whitespace
+# text (resolved/not-debt items are exempt, to grandfather legacy items
+# migrated with an empty body).
 # Problem labels:
 #   BAD NAME, BAD FRONTMATTER, MISSING FIELD, BAD FIELD, BAD STATUS,
 #   BAD SCOPE, NO SCOPE, ID MISMATCH, DATE MISMATCH, STALE FIELD,
