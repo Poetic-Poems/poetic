@@ -28,6 +28,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
   workflow_dispatch:
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
@@ -37,9 +38,17 @@ permissions:
   id-token: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# Cancel in-progress runs to ensure the latest commit is always deployed
+# Cancel in-progress runs to ensure the latest commit is always deployed.
+#
+# A merge-group run is deliberately excluded from that shared group and keyed
+# to its own `gh-readonly-queue/...` ref instead. `build` is a required status
+# check on the merge queue's candidate ref, so a run of this workflow started
+# by any unrelated push or pull request must not be able to cancel it: a
+# cancelled conclusion is not a pass, and the queue would drop the queued pull
+# request rather than merge it. Every other event keeps the literal "pages"
+# group, so push/pull_request/workflow_dispatch behaviour is unchanged.
 concurrency:
-  group: "pages"
+  group: ${{ github.event_name == 'merge_group' && format('pages-{0}', github.ref) || 'pages' }}
   cancel-in-progress: true
 
 jobs:
@@ -67,6 +76,11 @@ jobs:
           elif [ "${{ github.event_name }}" = "push" ]; then
             base="${{ github.event.before }}"
             head="${{ github.sha }}"
+          elif [ "${{ github.event_name }}" = "merge_group" ]; then
+            # merge_group has no pull_request payload — the merge group's own
+            # base/head shas play the same role.
+            base="${{ github.event.merge_group.base_sha }}"
+            head="${{ github.event.merge_group.head_sha }}"
           else
             # workflow_dispatch (or any other event): no meaningful diff to
             # compute, so always run the real build.

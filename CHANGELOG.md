@@ -47,6 +47,24 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   from 80.96% to 99.25% lines. No behaviour change. Resolves
   TD-PPpoet-26080807.
 
+- **Every required CI check now reports on `merge_group` events, so a GitHub
+  merge queue can be enabled on `main`.** A queue builds each candidate merge
+  on a `gh-readonly-queue/main/*` ref and waits for every required status
+  check to report there, but an Actions workflow only runs for a merge group
+  if it carries an `on: merge_group` trigger. `build-poems.yml`,
+  `codeql.yml`, `tech-debt-register.yml`, `release.yml` and
+  `commit-format.yml` gained one. The checks that re-validate the tree run
+  for real against `github.event.merge_group.base_sha`/`head_sha`, since a
+  merge group carries no `pull_request` payload; `commit-format` stays gated
+  to `pull_request` and reports `skipped`, having nothing PR-scoped to check.
+  `build-poems.yml`'s `deploy` and `release.yml`'s `release` still fire only
+  on their existing `push`/`workflow_dispatch` conditions, and a merge-group
+  build is keyed to its own concurrency group so an unrelated run cannot
+  cancel it out of the queue. Two of these workflows (`build-poems.yml`,
+  `tech-debt-register.yml`) are synced to consumer repositories, which pick
+  the triggers up on their next `scripts/sync-framework.sh` run; they stay
+  inert unless the consumer enables a merge queue of its own.
+
 ### Fixed
 
 - **`sync-blogger.js` no longer risks a `RangeError` coercing an invalid poem
