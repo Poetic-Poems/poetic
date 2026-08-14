@@ -404,6 +404,26 @@ function waitForCode(port, expectedState) {
   });
 }
 
+// ── Consent URL construction ──────────────────────────────────────────────────
+
+function buildConsentUrl(clientId, redirectUri, state, codeChallenge) {
+  const consentUrl = new URL(AUTH_URL);
+  consentUrl.searchParams.set('client_id', clientId);
+  consentUrl.searchParams.set('redirect_uri', redirectUri);
+  consentUrl.searchParams.set('response_type', 'code');
+  consentUrl.searchParams.set('scope', BLOGGER_SCOPE);
+  consentUrl.searchParams.set('access_type', 'offline');
+  // select_account forces the account chooser even when the browser has exactly
+  // one Google account signed in. Without it Google silently uses that account,
+  // which is how people authorise as the wrong one — a mistake that surfaces
+  // much later as an unexplained 403 from the sync.
+  consentUrl.searchParams.set('prompt', 'select_account consent');
+  consentUrl.searchParams.set('state', state);
+  consentUrl.searchParams.set('code_challenge', codeChallenge);
+  consentUrl.searchParams.set('code_challenge_method', 'S256');
+  return consentUrl;
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -468,20 +488,7 @@ After running:
   const { verifier: codeVerifier, challenge: codeChallenge } = generatePkce();
 
   // Build consent URL
-  const consentUrl = new URL(AUTH_URL);
-  consentUrl.searchParams.set('client_id', clientId);
-  consentUrl.searchParams.set('redirect_uri', redirectUri);
-  consentUrl.searchParams.set('response_type', 'code');
-  consentUrl.searchParams.set('scope', BLOGGER_SCOPE);
-  consentUrl.searchParams.set('access_type', 'offline');
-  // select_account forces the account chooser even when the browser has exactly
-  // one Google account signed in. Without it Google silently uses that account,
-  // which is how people authorise as the wrong one — a mistake that surfaces
-  // much later as an unexplained 403 from the sync.
-  consentUrl.searchParams.set('prompt', 'select_account consent');
-  consentUrl.searchParams.set('state', state);
-  consentUrl.searchParams.set('code_challenge', codeChallenge);
-  consentUrl.searchParams.set('code_challenge_method', 'S256');
+  const consentUrl = buildConsentUrl(clientId, redirectUri, state, codeChallenge);
 
   console.log('\n─────────────────────────────────────────────────────────');
   console.log('Step 1: Open the following URL in your browser and sign in:');
@@ -618,4 +625,5 @@ module.exports = {
   saveFileMode0600,
   promptHidden,
   escapeHtml,
+  buildConsentUrl,
 };

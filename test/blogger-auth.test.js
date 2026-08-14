@@ -19,6 +19,7 @@ const {
   saveFileMode0600,
   promptHidden,
   escapeHtml,
+  buildConsentUrl,
 } = require('../src/tools/blogger-auth');
 
 function getFreePort() {
@@ -291,6 +292,55 @@ test('describeBlogAccess: no configured blog_id lists blogs and says to set one'
   assert.match(text, /Copy the ID/);
   assert.match(text, /quoted/);
   assert.doesNotMatch(text, /←/);
+});
+
+// ── buildConsentUrl ──────────────────────────────────────────────────────────
+
+test('buildConsentUrl constructs a URL with all required OAuth parameters', () => {
+  const clientId = 'test-client-id.apps.googleusercontent.com';
+  const redirectUri = 'http://localhost:4753';
+  const state = 'test-state-value';
+  const codeChallenge = 'test-code-challenge';
+
+  const url = buildConsentUrl(clientId, redirectUri, state, codeChallenge);
+
+  assert.strictEqual(url.searchParams.get('client_id'), clientId);
+  assert.strictEqual(url.searchParams.get('redirect_uri'), redirectUri);
+  assert.strictEqual(url.searchParams.get('response_type'), 'code');
+  assert.strictEqual(url.searchParams.get('access_type'), 'offline');
+  assert.strictEqual(url.searchParams.get('prompt'), 'select_account consent');
+  assert.strictEqual(url.searchParams.get('state'), state);
+  assert.strictEqual(url.searchParams.get('code_challenge'), codeChallenge);
+  assert.strictEqual(url.searchParams.get('code_challenge_method'), 'S256');
+});
+
+test('buildConsentUrl includes the required Blogger scope', () => {
+  const url = buildConsentUrl('client-id', 'http://localhost:4753', 'state', 'challenge');
+  const scope = url.searchParams.get('scope');
+  assert.strictEqual(scope, 'https://www.googleapis.com/auth/blogger');
+});
+
+test('buildConsentUrl returns a URL pointing to Google OAuth endpoint', () => {
+  const url = buildConsentUrl('client-id', 'http://localhost:4753', 'state', 'challenge');
+  assert.match(url.href, /^https:\/\/accounts\.google\.com\/o\/oauth2\/v2\/auth/);
+});
+
+test('buildConsentUrl generates unique URLs for different states and PKCE challenges', () => {
+  const url1 = buildConsentUrl('client-id', 'http://localhost:4753', 'state1', 'challenge1');
+  const url2 = buildConsentUrl('client-id', 'http://localhost:4753', 'state2', 'challenge2');
+  assert.notStrictEqual(url1.toString(), url2.toString());
+  assert.strictEqual(url1.searchParams.get('state'), 'state1');
+  assert.strictEqual(url2.searchParams.get('state'), 'state2');
+  assert.strictEqual(url1.searchParams.get('code_challenge'), 'challenge1');
+  assert.strictEqual(url2.searchParams.get('code_challenge'), 'challenge2');
+});
+
+test('buildConsentUrl uses S256 (SHA256) as the PKCE challenge method', () => {
+  const { challenge } = generatePkce();
+  const url = buildConsentUrl('client-id', 'http://localhost:4753', 'state', challenge);
+  assert.strictEqual(url.searchParams.get('code_challenge_method'), 'S256');
+  // Ensure the challenge is passed through correctly
+  assert.strictEqual(url.searchParams.get('code_challenge'), challenge);
 });
 
 // ── saveFileMode0600 ──────────────────────────────────────────────────────────
