@@ -43,6 +43,7 @@ const fs = require('fs');
 const path = require('path');
 const { readPoeticConfig } = require('./poetic-config');
 const { readPoemFile, loadPoemData, renderFragment, listPoemYamlFiles } = require('./poem-render');
+const { toISODate } = require('./date-utils');
 const { REPO_ROOT } = require('./repo-root');
 const { isHelpRequested } = require('./cli-help');
 
@@ -964,12 +965,7 @@ async function main({
       const raw = readPoemFile(yamlPath);
       if (!raw) continue;
 
-      let isoDate;
-      if (raw.date instanceof Date) {
-        isoDate = raw.date.toISOString().slice(0, 10);
-      } else {
-        isoDate = String(raw.date || '');
-      }
+      const isoDate = toISODate(raw.date) || '';
 
       const data = loadPoemData(yamlPath);
       if (!data) continue;

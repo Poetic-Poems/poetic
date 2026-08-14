@@ -6,7 +6,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { safeJoin, isWithinRoot } = require('../src/tools/path-guard');
+const { safeJoin, isWithinRoot, resolveContainedConfigPath } = require('../src/tools/path-guard');
 
 const ROOT = path.resolve('/srv/site/public');
 
@@ -88,6 +88,46 @@ test('isWithinRoot accepts a symlink inside root that resolves inside it', () =>
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
+});
+
+test('resolveContainedConfigPath joins a relative path onto repoRoot and returns it when contained', () => {
+  const resolved = resolveContainedConfigPath(ROOT, 'poems/a.html', { fallback: 'FALLBACK' });
+  assert.strictEqual(resolved, path.join(ROOT, 'poems', 'a.html'));
+});
+
+test('resolveContainedConfigPath accepts an absolute path inside repoRoot as given', () => {
+  const absolute = path.join(ROOT, 'theme.html');
+  const resolved = resolveContainedConfigPath(ROOT, absolute, { fallback: 'FALLBACK' });
+  assert.strictEqual(resolved, absolute);
+});
+
+test('resolveContainedConfigPath falls back when a relative path escapes repoRoot via ../', () => {
+  const resolved = resolveContainedConfigPath(ROOT, '../../../etc/passwd', { fallback: 'FALLBACK' });
+  assert.strictEqual(resolved, 'FALLBACK');
+});
+
+test('resolveContainedConfigPath falls back when an absolute path lies outside repoRoot', () => {
+  const resolved = resolveContainedConfigPath(ROOT, '/etc/passwd', { fallback: 'FALLBACK' });
+  assert.strictEqual(resolved, 'FALLBACK');
+});
+
+test('resolveContainedConfigPath calls onOutsideRoot with the resolved (rejected) path before falling back', () => {
+  let calledWith;
+  const resolved = resolveContainedConfigPath(ROOT, '../../../etc/passwd', {
+    fallback: 'FALLBACK',
+    onOutsideRoot: (rejected) => { calledWith = rejected; },
+  });
+  assert.strictEqual(resolved, 'FALLBACK');
+  assert.strictEqual(calledWith, path.resolve(ROOT, '../../../etc/passwd'));
+});
+
+test('resolveContainedConfigPath does not call onOutsideRoot when the path is contained', () => {
+  let called = false;
+  resolveContainedConfigPath(ROOT, 'poems/a.html', {
+    fallback: 'FALLBACK',
+    onOutsideRoot: () => { called = true; },
+  });
+  assert.strictEqual(called, false);
 });
 
 test('isWithinRoot rejects a symlinked directory inside root whose target escapes', () => {
