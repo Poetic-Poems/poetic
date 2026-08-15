@@ -19,13 +19,13 @@ When using `.poem` source files, if the author line is omitted, the converter au
 versions:
   - label: "Original poem (2015)"  # Optional: omit for unlabelled versions
     segments:
-      - label: "[Verse 1]"  # Optional: omit for unlabelled segments
+      - label: "Verse 1"  # Optional: omit for unlabelled segments (brackets added at render time)
         lines: |
           Poem text with HTML markup where needed
           Line breaks preserved
       - lines: |
           Unlabelled segment text
-      - label: "[Chorus]"
+      - label: "Chorus"
         lines: |
           More text
   - segments:  # Version without label

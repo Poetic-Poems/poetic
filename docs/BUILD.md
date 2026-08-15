@@ -589,6 +589,28 @@ The workflow pushes its sync branch using `GITHUB_TOKEN` by default, which GitHu
 
 Without `SYNC_PAT`, the workflow still runs and opens PRs normally for every other framework-owned path — it only fails on syncs that touch `.github/workflows/*.yml`.
 
+### Release rollback and yank
+
+If a tagged release proves to be bad after publishing, the process to remedy it depends on whether consumer repos have already begun adopting it.
+
+**Rollback (before consumer adoption):**
+
+1. Delete the problematic tag locally: `git tag -d vX.Y.Z`
+2. Delete it from GitHub: `git push origin :vX.Y.Z`
+3. Delete the corresponding GitHub release from the [Releases](https://github.com/Poetic-Poems/poetic/releases) page
+4. Fix the issue in a new commit or PR
+5. Open and merge a new release PR bumping the version number, which will re-tag and re-publish
+
+**Yank (after consumer adoption):**
+
+If a release has already been pulled into consumer repos (via `.poetic-version` pinning or auto-sync), deletion is not safe — consumers may already depend on it and later pulls would fail. Instead, mark it as yanked in the GitHub release:
+
+1. Edit the release on the [Releases](https://github.com/Poetic-Poems/poetic/releases) page
+2. Check **This is a pre-release** to de-list it from the default release feed (consumers will see it as outdated/experimental, not as the latest stable version)
+3. Add a note in the release description explaining why it was yanked and which version consumers should upgrade to instead
+
+Consumers can still reference the yanked tag explicitly if they choose, but the pre-release marking signals that a newer, safer version is available.
+
 ### Publishing to Blogger
 
 Poetic supports optional automatic publishing of poems to a Blogger blog. The feature is off by default and is enabled per-consumer via `.poetic-config.yaml`. See [`docs/BLOGGER.md`](BLOGGER.md) for the full setup guide, including one-time Google OAuth authorisation, GitHub secrets, and theme parity steps.
