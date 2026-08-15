@@ -169,6 +169,24 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   body to already contain non-whitespace text before accepting a strict
   append. Resolves TD-PPpoet-26081303.
 
+### Changed
+
+- **`serve-static.js` exports a `createServer(rootDir, opts)` factory instead
+  of starting a server as a module-load side effect.** Requiring the module
+  used to run `directoryExists()`/`process.exit(1)` and bind a real HTTP
+  server immediately, so `test/serve-static.test.js` had to compile the
+  source into a throwaway `Module` object per test with `http.createServer`
+  stubbed out, and graceful-shutdown handlers were keyed off a
+  `Symbol.for('poetic.serveStatic.shutdownHandlers')` global purely so
+  reloading the module per test replaced rather than accumulated
+  `SIGINT`/`SIGTERM` listeners. `createServer()` now returns an unbound
+  `{ server, close }` with no directory check, port binding, or
+  process-level signal registration; the `require.main === module` CLI entry
+  point is the only eager caller, doing the directory check, `server.listen`,
+  and `SIGINT`/`SIGTERM` registration itself. The test suite now
+  `require()`s the module directly and the `Symbol.for` workaround is gone.
+  No behaviour change. Resolves TD-PPpoet-26080814.
+
 ### Security
 
 - **`blogger-auth.js`'s OAuth loopback server HTML-escapes the `error` query

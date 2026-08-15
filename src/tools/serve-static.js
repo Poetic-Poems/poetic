@@ -14,7 +14,7 @@ const { readPoeticConfig } = require('./poetic-config');
 const { renderFooter, upsertFooter } = require('./footer');
 const { concatenateAllHtmlFiles } = require('./build-all-poems');
 const { REPO_ROOT } = require('./repo-root');
-const { safeJoin, isWithinRoot } = require('./path-guard');
+const pathGuard = require('./path-guard');
 const { isHelpRequested } = require('./cli-help');
 const { escapeHtml } = require('./html-escape');
 
@@ -41,38 +41,6 @@ function parseArgs(argv) {
   }
   return args;
 }
-
-if (isHelpRequested(process.argv.slice(2))) {
-  console.log('Usage: node src/tools/serve-static.js [--port <n>] [--dir <path>] [--host <addr>]');
-  console.log('');
-  console.log('Serve public/ (or --dir) over HTTP for local development.');
-  console.log('');
-  console.log('Options:');
-  console.log('  --port, -p <n>     Port to listen on (default: 8080, or $PORT)');
-  console.log('  --dir, -d <path>   Directory to serve (default: public, or $DIR)');
-  console.log('  --host, -H <addr>  Address to bind (default: 127.0.0.1, or $HOST)');
-  console.log('  --help, -h         Show this help');
-  process.exit(0);
-}
-
-const { port: cliPort, dir: cliDir, host: cliHost } = parseArgs(process.argv);
-const PORT = Number(
-  cliPort || process.env.PORT || process.env.npm_config_port || 8080
-);
-// Bind to loopback by default so the dev server is not exposed to the LAN.
-// Pass --host 0.0.0.0 (or HOST=0.0.0.0) for the rare LAN-testing case.
-const HOST = cliHost || process.env.HOST || '127.0.0.1';
-// A wildcard CORS header is only safe once the server has been explicitly
-// opted into LAN exposure (--host 0.0.0.0); on the loopback default it's
-// scoped to this machine's own origin instead.
-const IS_LOOPBACK_HOST = HOST === '127.0.0.1' || HOST === '::1';
-const CORS_HEADERS = IS_LOOPBACK_HOST
-  ? {}
-  : { 'Access-Control-Allow-Origin': '*' };
-const ROOT_DIR = path.resolve(
-  process.cwd(),
-  cliDir || process.env.DIR || 'public'
-);
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -225,84 +193,53 @@ function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-if (!directoryExists(ROOT_DIR)) {
-  console.error(`Directory not found: ${ROOT_DIR}`);
-  process.exit(1);
-}
+/**
+ * Builds an unbound static-file HTTP server for `rootDir`.
+ *
+ * No port is bound and no process-level signal handlers are registered
+ * here — call `server.listen(...)` yourself, and wire up graceful shutdown
+ * in the caller (the CLI entry point below does both). This makes the
+ * server creatable and closeable any number of times in the same process,
+ * which is what lets tests `require()` this module directly instead of
+ * recompiling its source per test.
+ *
+ * @param {string} rootDir - directory to serve, resolved against process.cwd()
+ * @param {object} [opts]
+ * @param {string} [opts.host] - the address the caller intends to bind to;
+ *   used only to decide whether the wildcard CORS header is safe (a
+ *   loopback bind keeps the dev server same-origin; anything else is
+ *   assumed to be an intentional LAN exposure) — does not itself bind
+ *   anything.
+ * @returns {{ server: http.Server, close: (callback?: () => void) => void }}
+ */
+function createServer(rootDir, opts = {}) {
+  const ROOT_DIR = path.resolve(process.cwd(), rootDir || 'public');
+  if (!directoryExists(ROOT_DIR)) {
+    throw new Error(`Directory not found: ${ROOT_DIR}`);
+  }
 
-const server = http.createServer((req, res) => {
-  try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    let pathname = decodeURIComponent(url.pathname);
+  const host = opts.host || '127.0.0.1';
+  // A wildcard CORS header is only safe once the server has been explicitly
+  // opted into LAN exposure (--host 0.0.0.0); on the loopback default it's
+  // scoped to this machine's own origin instead.
+  const isLoopbackHost = host === '127.0.0.1' || host === '::1';
+  const CORS_HEADERS = isLoopbackHost
+    ? {}
+    : { 'Access-Control-Allow-Origin': '*' };
 
-    // Handle special concatenation endpoint
-    if (pathname === '/all-poems') {
-      const config = readPoeticConfig(REPO_ROOT);
-      const rawFavicon = config.favicon || 'poetic-logo.svg';
-      const favicon = rawFavicon.replace(/^public\//, '');
-      const footerBlock = renderFooter(config, REPO_ROOT, { base: '' });
-      const { html: allPoemsHtml } = concatenateAllHtmlFiles(ROOT_DIR, favicon, config);
-      const concatenatedContent = upsertFooter(allPoemsHtml, footerBlock);
+  const server = http.createServer((req, res) => {
+    try {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      let pathname = decodeURIComponent(url.pathname);
 
-      res.writeHead(200, {
-        ...CORS_HEADERS,
-        'Cache-Control':
-          'no-store, no-cache, must-revalidate, proxy-revalidate',
-        Pragma: 'no-cache',
-        Expires: '0',
-        'Content-Type': 'text/html; charset=utf-8',
-      });
-      res.end(concatenatedContent);
-      return;
-    }
-
-    // Handle directory listing requests
-    if (pathname.endsWith('/')) {
-      let dirPath = safeJoin(ROOT_DIR, pathname);
-
-      // Prevent path traversal
-      if (!isWithinRoot(ROOT_DIR, dirPath)) {
-        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-        res.end('Forbidden');
-        return;
-      }
-
-      // Check if it's a directory
-      if (directoryExists(dirPath)) {
-        // Serve index.html if it exists (production-correct behaviour).
-        // The guard above cleared `dirPath`, not this file: an `index.html`
-        // that is itself a symlink out of the root has to be re-checked, or
-        // it would be streamed on the strength of its directory's clearance.
-        // An uncontained one is simply not servable, so fall through to the
-        // generated listing rather than 403 an otherwise legitimate directory
-        // — the same discard-the-candidate fallback footer.js and
-        // build-blogger.js apply to an uncontained config path, warning
-        // included.
-        const indexFile = path.join(dirPath, 'index.html');
-        if (fileExists(indexFile)) {
-          if (isWithinRoot(ROOT_DIR, indexFile)) {
-            res.writeHead(200, {
-              ...CORS_HEADERS,
-              'Cache-Control':
-                'no-store, no-cache, must-revalidate, proxy-revalidate',
-              Pragma: 'no-cache',
-              Expires: '0',
-              'Content-Type': 'text/html; charset=utf-8',
-            });
-            fs.createReadStream(indexFile).pipe(res);
-            return;
-          }
-          console.warn(
-            `Warning: ${indexFile} resolves outside the served root; serving the directory listing instead`
-          );
-        }
-
-        // Fall back to generated directory listing when no index.html
-        const relativePath = pathname === '/' ? '/' : pathname.slice(0, -1);
-        const directoryListing = generateDirectoryListing(
-          dirPath,
-          relativePath
-        );
+      // Handle special concatenation endpoint
+      if (pathname === '/all-poems') {
+        const config = readPoeticConfig(REPO_ROOT);
+        const rawFavicon = config.favicon || 'poetic-logo.svg';
+        const favicon = rawFavicon.replace(/^public\//, '');
+        const footerBlock = renderFooter(config, REPO_ROOT, { base: '' });
+        const { html: allPoemsHtml } = concatenateAllHtmlFiles(ROOT_DIR, favicon, config);
+        const concatenatedContent = upsertFooter(allPoemsHtml, footerBlock);
 
         res.writeHead(200, {
           ...CORS_HEADERS,
@@ -312,104 +249,199 @@ const server = http.createServer((req, res) => {
           Expires: '0',
           'Content-Type': 'text/html; charset=utf-8',
         });
-        res.end(directoryListing);
+        res.end(concatenatedContent);
         return;
       }
 
-      // Try index.html for directory requests
-      pathname += 'index.html';
-    }
+      // Handle directory listing requests
+      if (pathname.endsWith('/')) {
+        let dirPath = pathGuard.safeJoin(ROOT_DIR, pathname);
 
-    let filePath = safeJoin(ROOT_DIR, pathname);
-
-    // Prevent path traversal
-    if (!isWithinRoot(ROOT_DIR, filePath)) {
-      res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-      res.end('Forbidden');
-      return;
-    }
-
-    const headers = {
-      ...CORS_HEADERS,
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      Pragma: 'no-cache',
-      Expires: '0',
-    };
-
-    if (fileExists(filePath)) {
-      res.writeHead(200, {
-        ...headers,
-        'Content-Type': getContentType(filePath),
-      });
-      fs.createReadStream(filePath).pipe(res);
-      return;
-    }
-
-    // SPA fallback to /index.html for non-asset routes (no dot in last segment)
-    const lastSegment = path.basename(pathname);
-    if (!lastSegment.includes('.')) {
-      // This path never went through the guard above — it's synthesised here
-      // from ROOT_DIR — so containment is checked on it directly; a root
-      // `index.html` symlinked out of the root falls through to the 404.
-      const indexPath = path.join(ROOT_DIR, 'index.html');
-      if (fileExists(indexPath)) {
-        if (isWithinRoot(ROOT_DIR, indexPath)) {
-          res.writeHead(200, {
-            ...headers,
-            'Content-Type': 'text/html; charset=utf-8',
-          });
-          fs.createReadStream(indexPath).pipe(res);
+        // Prevent path traversal
+        if (!pathGuard.isWithinRoot(ROOT_DIR, dirPath)) {
+          res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end('Forbidden');
           return;
         }
-        console.warn(
-          `Warning: ${indexPath} resolves outside the served root; skipping the SPA fallback`
-        );
+
+        // Check if it's a directory
+        if (directoryExists(dirPath)) {
+          // Serve index.html if it exists (production-correct behaviour).
+          // The guard above cleared `dirPath`, not this file: an `index.html`
+          // that is itself a symlink out of the root has to be re-checked, or
+          // it would be streamed on the strength of its directory's clearance.
+          // An uncontained one is simply not servable, so fall through to the
+          // generated listing rather than 403 an otherwise legitimate directory
+          // — the same discard-the-candidate fallback footer.js and
+          // build-blogger.js apply to an uncontained config path, warning
+          // included.
+          const indexFile = path.join(dirPath, 'index.html');
+          if (fileExists(indexFile)) {
+            if (pathGuard.isWithinRoot(ROOT_DIR, indexFile)) {
+              res.writeHead(200, {
+                ...CORS_HEADERS,
+                'Cache-Control':
+                  'no-store, no-cache, must-revalidate, proxy-revalidate',
+                Pragma: 'no-cache',
+                Expires: '0',
+                'Content-Type': 'text/html; charset=utf-8',
+              });
+              fs.createReadStream(indexFile).pipe(res);
+              return;
+            }
+            console.warn(
+              `Warning: ${indexFile} resolves outside the served root; serving the directory listing instead`
+            );
+          }
+
+          // Fall back to generated directory listing when no index.html
+          const relativePath = pathname === '/' ? '/' : pathname.slice(0, -1);
+          const directoryListing = generateDirectoryListing(
+            dirPath,
+            relativePath
+          );
+
+          res.writeHead(200, {
+            ...CORS_HEADERS,
+            'Cache-Control':
+              'no-store, no-cache, must-revalidate, proxy-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+            'Content-Type': 'text/html; charset=utf-8',
+          });
+          res.end(directoryListing);
+          return;
+        }
+
+        // Try index.html for directory requests
+        pathname += 'index.html';
       }
+
+      let filePath = pathGuard.safeJoin(ROOT_DIR, pathname);
+
+      // Prevent path traversal
+      if (!pathGuard.isWithinRoot(ROOT_DIR, filePath)) {
+        res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Forbidden');
+        return;
+      }
+
+      const headers = {
+        ...CORS_HEADERS,
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      };
+
+      if (fileExists(filePath)) {
+        res.writeHead(200, {
+          ...headers,
+          'Content-Type': getContentType(filePath),
+        });
+        fs.createReadStream(filePath).pipe(res);
+        return;
+      }
+
+      // SPA fallback to /index.html for non-asset routes (no dot in last segment)
+      const lastSegment = path.basename(pathname);
+      if (!lastSegment.includes('.')) {
+        // This path never went through the guard above — it's synthesised here
+        // from ROOT_DIR — so containment is checked on it directly; a root
+        // `index.html` symlinked out of the root falls through to the 404.
+        const indexPath = path.join(ROOT_DIR, 'index.html');
+        if (fileExists(indexPath)) {
+          if (pathGuard.isWithinRoot(ROOT_DIR, indexPath)) {
+            res.writeHead(200, {
+              ...headers,
+              'Content-Type': 'text/html; charset=utf-8',
+            });
+            fs.createReadStream(indexPath).pipe(res);
+            return;
+          }
+          console.warn(
+            `Warning: ${indexPath} resolves outside the served root; skipping the SPA fallback`
+          );
+        }
+      }
+
+      res.writeHead(404, {
+        ...headers,
+        'Content-Type': 'text/plain; charset=utf-8',
+      });
+      res.end('Not Found');
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Internal Server Error');
+      console.error(err);
     }
+  });
 
-    res.writeHead(404, {
-      ...headers,
-      'Content-Type': 'text/plain; charset=utf-8',
-    });
-    res.end('Not Found');
-  } catch (err) {
-    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-    res.end('Internal Server Error');
-    console.error(err);
-  }
-});
+  return {
+    server,
+    // Lets in-flight responses finish instead of dropping them, same as a
+    // bare server.close(callback) — exposed as its own method so a caller
+    // never needs to reach into `server` for shutdown.
+    close: (callback) => server.close(callback),
+  };
+}
 
-server.listen(PORT, HOST, () => {
-  const isLoopback = HOST === '127.0.0.1' || HOST === '::1';
-  const displayHost = isLoopback || HOST === '0.0.0.0' ? 'localhost' : HOST;
-  const url = `http://${displayHost}:${PORT}`;
-  console.log(`Serving ${ROOT_DIR} at ${url} (bound to ${HOST})`);
-  if (isLoopback) {
-    console.log('Loopback only; use --host 0.0.0.0 to expose on your LAN.');
+if (require.main === module) {
+  if (isHelpRequested(process.argv.slice(2))) {
+    console.log('Usage: node src/tools/serve-static.js [--port <n>] [--dir <path>] [--host <addr>]');
+    console.log('');
+    console.log('Serve public/ (or --dir) over HTTP for local development.');
+    console.log('');
+    console.log('Options:');
+    console.log('  --port, -p <n>     Port to listen on (default: 8080, or $PORT)');
+    console.log('  --dir, -d <path>   Directory to serve (default: public, or $DIR)');
+    console.log('  --host, -H <addr>  Address to bind (default: 127.0.0.1, or $HOST)');
+    console.log('  --help, -h         Show this help');
+    process.exit(0);
   }
-  console.log(
-    'Usage: node tools/serve-static.js --port 9000 --dir public --host 127.0.0.1'
+
+  const { port: cliPort, dir: cliDir, host: cliHost } = parseArgs(process.argv);
+  const PORT = Number(
+    cliPort || process.env.PORT || process.env.npm_config_port || 8080
   );
-});
+  // Bind to loopback by default so the dev server is not exposed to the LAN.
+  // Pass --host 0.0.0.0 (or HOST=0.0.0.0) for the rare LAN-testing case.
+  const HOST = cliHost || process.env.HOST || '127.0.0.1';
+  const DIR = cliDir || process.env.DIR || 'public';
 
-// Let in-flight responses finish instead of dropping them when `npm run
-// stop` (or an interactive Ctrl-C) sends SIGTERM/SIGINT.
-//
-// Keyed off a well-known symbol on `process` (rather than added
-// unconditionally) so that re-loading this module in the same process —
-// as test/serve-static.test.js does, compiling the source afresh per test
-// to reach its unexported helpers — replaces the previous pair of listeners
-// instead of piling up new ones each time.
-const SHUTDOWN_HANDLERS_KEY = Symbol.for('poetic.serveStatic.shutdownHandlers');
-const previousHandlers = process[SHUTDOWN_HANDLERS_KEY];
-if (previousHandlers) {
-  process.off('SIGINT', previousHandlers.SIGINT);
-  process.off('SIGTERM', previousHandlers.SIGTERM);
+  let server, close;
+  try {
+    ({ server, close } = createServer(DIR, { host: HOST }));
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
+
+  server.listen(PORT, HOST, () => {
+    const isLoopback = HOST === '127.0.0.1' || HOST === '::1';
+    const displayHost = isLoopback || HOST === '0.0.0.0' ? 'localhost' : HOST;
+    const url = `http://${displayHost}:${PORT}`;
+    console.log(`Serving ${path.resolve(process.cwd(), DIR)} at ${url} (bound to ${HOST})`);
+    if (isLoopback) {
+      console.log('Loopback only; use --host 0.0.0.0 to expose on your LAN.');
+    }
+    console.log(
+      'Usage: node tools/serve-static.js --port 9000 --dir public --host 127.0.0.1'
+    );
+  });
+
+  // Let in-flight responses finish instead of dropping them when `npm run
+  // stop` (or an interactive Ctrl-C) sends SIGTERM/SIGINT.
+  function shutdown(signal) {
+    console.log(`\nReceived ${signal}, shutting down gracefully...`);
+    close(() => process.exit(0));
+  }
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 }
-function shutdown(signal) {
-  console.log(`\nReceived ${signal}, shutting down gracefully...`);
-  server.close(() => process.exit(0));
-}
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-process[SHUTDOWN_HANDLERS_KEY] = { SIGINT: shutdown, SIGTERM: shutdown };
+
+module.exports = {
+  createServer,
+  escapeHtml,
+  encodeHref,
+  generateDirectoryListing,
+};
