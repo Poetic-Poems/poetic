@@ -351,17 +351,17 @@ function waitForCode(port, expectedState) {
         const error = requestUrl.searchParams.get('error');
         const returnedState = requestUrl.searchParams.get('state');
 
-        if (error) {
-          // CSRF guard: reject a callback whose state does not match the value
-          // we generated for this request, same as the code branch below.
-          if (expectedState && returnedState !== expectedState) {
-            res.writeHead(400, { 'Content-Type': 'text/html' });
-            res.end('<html><body><h1>Authorization failed</h1><p>State mismatch — possible CSRF. You may close this window.</p></body></html>');
-            server.close();
-            reject(new Error('State parameter mismatch — aborting (possible CSRF).'));
-            return;
-          }
+        // CSRF guard: reject a callback whose state does not match the value we
+        // generated for this request, before either branch below acts on it.
+        if ((code || error) && expectedState && returnedState !== expectedState) {
+          res.writeHead(400, { 'Content-Type': 'text/html' });
+          res.end('<html><body><h1>Authorization failed</h1><p>State mismatch — possible CSRF. You may close this window.</p></body></html>');
+          server.close();
+          reject(new Error('State parameter mismatch — aborting (possible CSRF).'));
+          return;
+        }
 
+        if (error) {
           res.writeHead(400, { 'Content-Type': 'text/html' });
           res.end(`<html><body><h1>Authorization failed</h1><p>${escapeHtml(error)}</p><p>You may close this window.</p></body></html>`);
           server.close();
@@ -370,16 +370,6 @@ function waitForCode(port, expectedState) {
         }
 
         if (code) {
-          // CSRF guard: reject a callback whose state does not match the value
-          // we generated for this request.
-          if (expectedState && returnedState !== expectedState) {
-            res.writeHead(400, { 'Content-Type': 'text/html' });
-            res.end('<html><body><h1>Authorization failed</h1><p>State mismatch — possible CSRF. You may close this window.</p></body></html>');
-            server.close();
-            reject(new Error('State parameter mismatch — aborting (possible CSRF).'));
-            return;
-          }
-
           res.writeHead(200, { 'Content-Type': 'text/html' });
           res.end('<html><body><h1>Authorization successful!</h1><p>You may close this window and return to the terminal.</p></body></html>');
           server.close();

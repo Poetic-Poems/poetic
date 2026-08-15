@@ -120,6 +120,18 @@ test('waitForCode rejects a callback whose state does not match', async () => {
   await rejection;
 });
 
+test('waitForCode ignores a callback carrying neither code nor error, whatever its state', async () => {
+  const port = await getFreePort();
+  const pending = waitForCode(port, 'expected-state');
+  // A request with no code and no error — a browser favicon fetch, say — is
+  // ignored rather than treated as a state mismatch, even though its absent
+  // state does not match the expected one.
+  assert.strictEqual(await hitCallback(port, 'favicon.ico'), 404);
+  // The server is still listening, so the genuine callback still completes.
+  assert.strictEqual(await hitCallback(port, '?code=auth-code&state=expected-state'), 200);
+  assert.strictEqual(await pending, 'auth-code');
+});
+
 // ── waitForCode: error branch ───────────────────────────────────────────────
 
 test('waitForCode rejects with the error message when state matches', async () => {
