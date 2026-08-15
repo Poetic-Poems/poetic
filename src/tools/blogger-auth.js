@@ -47,6 +47,11 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const BLOGGER_API = 'https://www.googleapis.com/blogger/v3';
 const CREDENTIALS_FILE = path.join(process.cwd(), '.blogger-credentials.json');
 
+// Matches sync-blogger.js's FETCH_TIMEOUT_MS for the same Google OAuth token
+// and Blogger API endpoints. No retry here — this is a one-shot interactive
+// flow, so the timeout alone is enough to bound a hang.
+const FETCH_TIMEOUT_MS = 30_000;
+
 // Write `contents` to `filePath` with mode 0600, tolerating a pre-existing
 // read-only file at that path. `fs.writeFileSync`'s `mode` option only takes
 // effect when a file is *created*; against an existing file it's ignored and
@@ -176,6 +181,7 @@ async function exchangeCodeForTokens({ clientId, clientSecret, code, redirectUri
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
 
   if (!response.ok) {
@@ -192,6 +198,7 @@ async function lookupBlogId(blogUrl, accessToken) {
   url.searchParams.set('url', blogUrl);
   const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (!response.ok) {
     const text = await response.text().catch(() => '');
@@ -217,6 +224,7 @@ async function lookupBlogId(blogUrl, accessToken) {
 async function listMyBlogs(accessToken) {
   const response = await fetch(`${BLOGGER_API}/users/self/blogs`, {
     headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   });
   if (response.status === 403) {
     return { recognised: false, blogs: [] };
