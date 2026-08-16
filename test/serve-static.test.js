@@ -26,6 +26,7 @@ const { spawn } = require('child_process');
 
 const { createServer, escapeHtml, encodeHref, generateDirectoryListing } = require('../src/tools/serve-static');
 const pathGuard = require('../src/tools/path-guard');
+const poemRender = require('../src/tools/poem-render');
 
 const SERVE_STATIC_PATH = path.join(__dirname, '..', 'src', 'tools', 'serve-static.js');
 
@@ -252,6 +253,30 @@ test('request handler: returns 404 for a missing path with a file extension (no 
     assert.strictEqual(res.statusCode, 404);
     assert.strictEqual(res.body, 'Not Found');
   });
+});
+
+// ── /all-poems: $ref cache invalidation (TD-PPpoet-26080815 gap 3) ─────────
+//
+// poem-render.js's $ref cache lives for the whole process — this dev server
+// never exits between requests the way build-poems.js's fresh-process-per-
+// build does, and every other route here already re-reads from disk per
+// request, so the /all-poems handler must too. serve-static.js requires
+// poem-render as a namespace object specifically so this test can spy on
+// poemRender.clearRefCache — see the comment at that require in
+// src/tools/serve-static.js.
+
+test('/all-poems clears poem-render\'s $ref cache on every request', async (t) => {
+  const clearRefCache = t.mock.method(poemRender, 'clearRefCache');
+  await withTempDirAsync(async (dir) => {
+    await withRunningServer(dir, {}, async (port) => {
+      await httpGet(port, '/all-poems');
+      await httpGet(port, '/all-poems');
+    });
+  });
+  assert.strictEqual(
+    clearRefCache.mock.callCount(), 2,
+    'clearRefCache must run once per /all-poems request, not just once at server start'
+  );
 });
 
 test('request handler: a ../ traversal attempt cannot escape the root directory', async () => {

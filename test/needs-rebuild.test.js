@@ -7,7 +7,7 @@ const path = require('path');
 const os = require('os');
 
 const {
-  needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested,
+  needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested, manifestSourcesUnchanged,
 } = require('../src/tools/needs-rebuild');
 
 // A throwaway temp directory, cleaned up when the test ends.
@@ -263,6 +263,109 @@ test('needsRebuild: force always reports stale, even when nothing changed', (t) 
 test('forceRebuildRequested: true when --force is in argv', () => {
   assert.strictEqual(forceRebuildRequested(['node', 'script.js', '--force']), true);
   assert.strictEqual(forceRebuildRequested(['node', 'script.js']), false);
+});
+
+// ── manifestSourcesUnchanged: cheap pre-check ahead of the full source-set
+// derivation (e.g. re-parsing every poem's $ref graph) ──
+
+test('manifestSourcesUnchanged: false when the manifest is missing', (t) => {
+  const dir = tmpDir(t);
+  const srcDir = path.join(dir, 'src');
+  fs.mkdirSync(srcDir);
+  const manifestPath = path.join(dir, '.manifest.json');
+  assert.strictEqual(manifestSourcesUnchanged(manifestPath, srcDir, []), false);
+});
+
+test('manifestSourcesUnchanged: true when every recorded file, including an external $ref target, is unchanged', (t) => {
+  const dir = tmpDir(t);
+  const srcDir = path.join(dir, 'src');
+  const externalDir = path.join(dir, 'external');
+  fs.mkdirSync(srcDir);
+  fs.mkdirSync(externalDir);
+  const manifestPath = path.join(dir, '.manifest.json');
+
+  const poemA = path.join(srcDir, 'a.yaml');
+  const refTarget = path.join(externalDir, 'shared.yaml');
+  writeAt(poemA, 'a', 1_000_000);
+  writeAt(refTarget, 'shared', 1_000_000);
+
+  // The manifest records the full derived source set: the poem itself plus
+  // its $ref target outside srcDir — exactly what a full computation would
+  // have produced.
+  recordManifest(manifestPath, [poemA, refTarget], srcDir);
+
+  assert.strictEqual(manifestSourcesUnchanged(manifestPath, srcDir, [poemA]), true);
+});
+
+test('manifestSourcesUnchanged: false when a poem in the directory is not yet known to the manifest', (t) => {
+  const dir = tmpDir(t);
+  const srcDir = path.join(dir, 'src');
+  fs.mkdirSync(srcDir);
+  const manifestPath = path.join(dir, '.manifest.json');
+
+  const poemA = path.join(srcDir, 'a.yaml');
+  writeAt(poemA, 'a', 1_000_000);
+  recordManifest(manifestPath, [poemA], srcDir);
+
+  // A new poem appears in the directory listing before the manifest ever
+  // recorded it — the fast path must not claim "unchanged".
+  const poemB = path.join(srcDir, 'b.yaml');
+  writeAt(poemB, 'b', 1_000_000);
+  assert.strictEqual(manifestSourcesUnchanged(manifestPath, srcDir, [poemA, poemB]), false);
+});
+
+test('manifestSourcesUnchanged: false when a poem\'s mtime/size has changed', (t) => {
+  const dir = tmpDir(t);
+  const srcDir = path.join(dir, 'src');
+  fs.mkdirSync(srcDir);
+  const manifestPath = path.join(dir, '.manifest.json');
+
+  const poemA = path.join(srcDir, 'a.yaml');
+  writeAt(poemA, 'a', 1_000_000);
+  recordManifest(manifestPath, [poemA], srcDir);
+  assert.strictEqual(manifestSourcesUnchanged(manifestPath, srcDir, [poemA]), true);
+
+  writeAt(poemA, 'a changed (different size)', 2_000_000);
+  assert.strictEqual(manifestSourcesUnchanged(manifestPath, srcDir, [poemA]), false);
+});
+
+test('manifestSourcesUnchanged: false when an external $ref target (outside the directory) has changed', (t) => {
+  const dir = tmpDir(t);
+  const srcDir = path.join(dir, 'src');
+  const externalDir = path.join(dir, 'external');
+  fs.mkdirSync(srcDir);
+  fs.mkdirSync(externalDir);
+  const manifestPath = path.join(dir, '.manifest.json');
+
+  const poemA = path.join(srcDir, 'a.yaml');
+  const refTarget = path.join(externalDir, 'shared.yaml');
+  writeAt(poemA, 'a', 1_000_000);
+  writeAt(refTarget, 'shared', 1_000_000);
+  recordManifest(manifestPath, [poemA, refTarget], srcDir);
+  assert.strictEqual(manifestSourcesUnchanged(manifestPath, srcDir, [poemA]), true);
+
+  // The poem itself is untouched — only its $ref target changed — which is
+  // exactly the case a directory-listing-only check would miss.
+  writeAt(refTarget, 'shared changed', 3_000_000);
+  assert.strictEqual(manifestSourcesUnchanged(manifestPath, srcDir, [poemA]), false);
+});
+
+test('manifestSourcesUnchanged: false when a previously-recorded file has been deleted', (t) => {
+  const dir = tmpDir(t);
+  const srcDir = path.join(dir, 'src');
+  const externalDir = path.join(dir, 'external');
+  fs.mkdirSync(srcDir);
+  fs.mkdirSync(externalDir);
+  const manifestPath = path.join(dir, '.manifest.json');
+
+  const poemA = path.join(srcDir, 'a.yaml');
+  const refTarget = path.join(externalDir, 'shared.yaml');
+  writeAt(poemA, 'a', 1_000_000);
+  writeAt(refTarget, 'shared', 1_000_000);
+  recordManifest(manifestPath, [poemA, refTarget], srcDir);
+
+  fs.rmSync(refTarget);
+  assert.strictEqual(manifestSourcesUnchanged(manifestPath, srcDir, [poemA]), false);
 });
 
 test('forceRebuildRequested: true when POETIC_FORCE_REBUILD is set', () => {

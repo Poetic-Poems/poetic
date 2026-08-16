@@ -16,6 +16,7 @@ const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const yaml = require('js-yaml');
 
 const { renderFragment, renderPage, loadPoemData, resolveRefs, readPoemFile, clearRefCache, listPoemYamlFiles, collectRefFiles, refFilesForPoem } = require('../src/tools/poem-render');
 const { readPoeticConfig } = require('../src/tools/poetic-config');
@@ -657,6 +658,39 @@ test('refFilesForPoem: reads a poem YAML and returns its transitive $ref target 
 test('refFilesForPoem: returns [] for an unparseable/missing poem file (caller re-reports the error)', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-ref-bad-'));
   assert.deepStrictEqual(refFilesForPoem(path.join(dir, 'nope.yaml')), []);
+});
+
+test('refFilesForPoem: with a shared cache, a $ref target used by two poems is parsed only once (TD-PPpoet-26080815 gap 2)', (t) => {
+  const { paths } = writeTempRefFiles({
+    'poem-a.yaml': 'title: A\nauthor: A\ndate: 2020-01-01\npostscript:\n  - $ref: shared.yaml#/note\n',
+    'poem-b.yaml': 'title: B\nauthor: A\ndate: 2020-01-02\npostscript:\n  - $ref: shared.yaml#/note\n',
+    'shared.yaml': 'note:\n  content: shared\n',
+  });
+  const loadCalls = t.mock.method(yaml, 'load');
+  const cache = new Map();
+
+  const foundA = refFilesForPoem(paths['poem-a.yaml'], cache);
+  const foundB = refFilesForPoem(paths['poem-b.yaml'], cache);
+
+  assert.deepStrictEqual(foundA, [paths['shared.yaml']]);
+  assert.deepStrictEqual(foundB, [paths['shared.yaml']]);
+  // 2 poems + 1 shared ref target, not 2 poems + 2 ref-target reads.
+  assert.strictEqual(loadCalls.mock.callCount(), 3, 'shared.yaml must be parsed once, reused via the shared cache for poem-b');
+  assert.ok(cache.has(paths['shared.yaml']), 'the shared cache must record the ref target under its own path');
+});
+
+test('refFilesForPoem: without a cache, a $ref target used by two separate calls is parsed once per call (no cross-call sharing)', (t) => {
+  const { paths } = writeTempRefFiles({
+    'poem-a.yaml': 'title: A\nauthor: A\ndate: 2020-01-01\npostscript:\n  - $ref: shared.yaml#/note\n',
+    'poem-b.yaml': 'title: B\nauthor: A\ndate: 2020-01-02\npostscript:\n  - $ref: shared.yaml#/note\n',
+    'shared.yaml': 'note:\n  content: shared\n',
+  });
+  const loadCalls = t.mock.method(yaml, 'load');
+
+  refFilesForPoem(paths['poem-a.yaml']);
+  refFilesForPoem(paths['poem-b.yaml']);
+
+  assert.strictEqual(loadCalls.mock.callCount(), 4, 'omitting the cache parameter parses uncached, as documented on readYamlCached()');
 });
 
 // ── listPoemYamlFiles ────────────────────────────────────────────────────────

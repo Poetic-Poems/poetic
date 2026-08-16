@@ -154,6 +154,64 @@ function recordManifest(manifestPath, sources, baseDir) {
 }
 
 /**
+ * Cheap pre-check for an aggregate build (see needsRebuildAggregate) that can
+ * often prove the source set is unchanged WITHOUT deriving it the expensive
+ * way — e.g. without re-parsing every poem's YAML and walking its `$ref`
+ * graph just to find out nothing changed. Returns `true` only when every
+ * file the manifest previously recorded (poems, local partials, and every
+ * `$ref` target from the last time the full set was computed) still has the
+ * exact `{mtimeMs, size}` it was recorded with, AND `dirEntries` — a cheap
+ * `fs.readdirSync` of the poems directory, no YAML parsing involved — names
+ * no file the manifest doesn't already know about.
+ *
+ * This is sound because the only way the true `$ref` graph can change is by
+ * editing some file already reachable from it (which touches that file's own
+ * mtime/size) or by adding a new poem/partial to the directory (which
+ * `dirEntries` catches directly) — so if neither has happened, the manifest's
+ * previously-derived source set, including its `$ref` targets, is still
+ * exactly right and a rebuild would recompute nothing different.
+ *
+ * Returns `false` — "can't tell, fall back to the full computation" — when
+ * the manifest is missing/unreadable, any of its files is missing or has
+ * changed, or `dirEntries` names a file the manifest doesn't have (a new
+ * poem/partial the manifest has never seen). A `false` here is a "must
+ * recompute" signal, not itself a "stale" verdict — the caller still derives
+ * the real source set and asks needsRebuildAggregate() for the final answer.
+ *
+ * @param {string} manifestPath - see needsRebuildAggregate()
+ * @param {string} baseDir - directory manifest keys are relative to
+ * @param {string[]} dirEntries - absolute paths of the poems directory's own
+ *   current entries (e.g. `fs.readdirSync(poemsDir)` mapped to full paths)
+ * @returns {boolean}
+ */
+function manifestSourcesUnchanged(manifestPath, baseDir, dirEntries) {
+  let previous;
+  try {
+    previous = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch {
+    return false;
+  }
+
+  const currentDirManifest = computeManifest(dirEntries, baseDir);
+  for (const [key, stat] of Object.entries(currentDirManifest)) {
+    const prev = previous[key];
+    if (!prev || prev.mtimeMs !== stat.mtimeMs || prev.size !== stat.size) return false;
+  }
+
+  for (const [key, prevStat] of Object.entries(previous)) {
+    let stat;
+    try {
+      stat = fs.statSync(path.resolve(baseDir, key));
+    } catch {
+      return false;
+    }
+    if (stat.mtimeMs !== prevStat.mtimeMs || stat.size !== prevStat.size) return false;
+  }
+
+  return true;
+}
+
+/**
  * True if `--force` was passed on the command line (checked against argv by
  * each script's own entry point) or POETIC_FORCE_REBUILD is set in the
  * environment (convenient for the `npm run build` chain, e.g.
@@ -172,4 +230,5 @@ module.exports = {
   computeManifest,
   recordManifest,
   forceRebuildRequested,
+  manifestSourcesUnchanged,
 };
