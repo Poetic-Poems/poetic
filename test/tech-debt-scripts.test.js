@@ -30,6 +30,7 @@ const OPEN_REWRITES_SCRIPT = path.join(
 );
 
 const COMMIT_FORMAT_SCRIPT = path.join(REPO_ROOT, '.githooks', 'check-commit-format.sh');
+const TOOLING_MANIFEST = path.join(REPO_ROOT, 'scripts', 'td-tooling-manifest');
 
 // Skip everywhere perl isn't installed (e.g. a bare Windows dev box); CI's
 // ubuntu runners always have it.
@@ -40,6 +41,11 @@ const HAVE_BASH = spawnSync('bash', ['-c', 'true']).status === 0;
 // contribution policy, enforced here by commit-format.yml, and consumers
 // carry neither the hooks nor that workflow.
 const HAVE_COMMIT_FORMAT = fs.existsSync(COMMIT_FORMAT_SCRIPT);
+// `test/` is synced verbatim into consumer repos, but the manifest itself is
+// deliberately not (see docs/TECH-DEBT-REGISTER.md's "Tooling manifest for
+// consumers"): consumers fetch it live from poetic main so a newly added
+// canonical script is picked up immediately, without waiting on a sync.
+const HAVE_TOOLING_MANIFEST = fs.existsSync(TOOLING_MANIFEST);
 
 // Isolate git from the developer's global/system config so runs are
 // deterministic everywhere.
@@ -714,9 +720,11 @@ test('td-check: allows a not-debt item with an empty body (legacy)', { skip: !HA
 // scripts/td-tooling-manifest (authoritative list for consumer drift checks)
 // ---------------------------------------------------------------------------
 
-test('td-tooling-manifest: one real, existing script path per line, no blanks or dupes', () => {
-  const manifestPath = path.join(REPO_ROOT, 'scripts', 'td-tooling-manifest');
-  const raw = fs.readFileSync(manifestPath, 'utf8');
+test('td-tooling-manifest: one real, existing script path per line, no blanks or dupes', {
+  skip: !HAVE_TOOLING_MANIFEST
+    && 'consumer repo: the manifest is fetched live from poetic main, not mirrored',
+}, () => {
+  const raw = fs.readFileSync(TOOLING_MANIFEST, 'utf8');
   assert.match(raw, /\n$/, 'manifest must end with a trailing newline');
   const lines = raw.split('\n').slice(0, -1);
   assert.ok(lines.length > 0, 'manifest must not be empty');
