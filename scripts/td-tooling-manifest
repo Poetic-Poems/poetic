@@ -1,0 +1,5 @@
+scripts/get-tech-debt-record.pl
+scripts/next-tech-debt-id.pl
+scripts/reserve-tech-debt-id.pl
+scripts/td-check.pl
+scripts/check-tech-debt-open-rewrites.pl

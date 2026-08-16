@@ -710,6 +710,30 @@ test('td-check: allows a not-debt item with an empty body (legacy)', { skip: !HA
   assert.match(r.stdout, /consistent/);
 });
 
+// ---------------------------------------------------------------------------
+// scripts/td-tooling-manifest (authoritative list for consumer drift checks)
+// ---------------------------------------------------------------------------
+
+test('td-tooling-manifest: one real, existing script path per line, no blanks or dupes', () => {
+  const manifestPath = path.join(REPO_ROOT, 'scripts', 'td-tooling-manifest');
+  const raw = fs.readFileSync(manifestPath, 'utf8');
+  assert.match(raw, /\n$/, 'manifest must end with a trailing newline');
+  const lines = raw.split('\n').slice(0, -1);
+  assert.ok(lines.length > 0, 'manifest must not be empty');
+  for (const line of lines) {
+    assert.match(line, /^scripts\/[\w.-]+$/, `unexpected manifest entry: ${line}`);
+    assert.ok(
+      fs.existsSync(path.join(REPO_ROOT, line)),
+      `manifest entry missing on disk: ${line}`
+    );
+  }
+  assert.strictEqual(
+    new Set(lines).size,
+    lines.length,
+    'manifest must not contain duplicate entries'
+  );
+});
+
 test('open-rewrites: rejects an append when the base body is empty', { skip: !HAVE_PERL }, (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-rewrite-empty-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
