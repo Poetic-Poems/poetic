@@ -3,13 +3,11 @@
 The tech-debt register is per-item: one file per item under `tech-debt/`,
 with the root `TECH-DEBT.md` holding only policy — the format pointer, the
 "Claiming an item" workflow, and the repository's declared scope. The
-tooling (`scripts/get-tech-debt-record.pl`, `scripts/next-tech-debt-id.pl`,
-`scripts/reserve-tech-debt-id.pl`, `scripts/td-check.pl`,
-`scripts/check-tech-debt-open-rewrites.pl`) recognises a register by the
-`tech-debt/` directory — or, for a register that has not yet filed its first
-item (git cannot commit an empty directory), by the `scope:` declaration in
-`TECH-DEBT.md`'s frontmatter, so allocation is scoped from the very first
-item.
+tooling (listed in `scripts/td-tooling-manifest`, see "Tooling manifest for
+consumers" below) recognises a register by the `tech-debt/` directory — or,
+for a register that has not yet filed its first item (git cannot commit an
+empty directory), by the `scope:` declaration in `TECH-DEBT.md`'s
+frontmatter, so allocation is scoped from the very first item.
 
 The per-item format exists because a single shared register file makes
 concurrent work on *adjacent* items collide: resolving an item edited both a
@@ -136,6 +134,31 @@ Any aggregated view of the register (a Ledger-style table, a dashboard
 tally) is **generated on demand and never committed** — a committed
 generated view would reintroduce exactly the merge conflicts the per-item
 format removes.
+
+## Tooling manifest for consumers
+
+`scripts/td-tooling-manifest` lists, one repo-relative path per line, the
+scripts that implement this register. It is the source of truth for which
+files a sibling repository's byte-identical copies must track — read the
+file itself for the current list rather than duplicating it here.
+
+A consumer repository's own drift-check workflow (`td-tooling-drift.yml`)
+fetches this manifest from poetic `main` and iterates it, instead of
+hard-coding the file list in its own workflow YAML:
+
+```bash
+manifest=$(curl -fsSL \
+  https://raw.githubusercontent.com/Poetic-Poems/poetic/main/scripts/td-tooling-manifest)
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  diff <(curl -fsSL "https://raw.githubusercontent.com/Poetic-Poems/poetic/main/$f") "$f" \
+    || echo "::error::$f has drifted from poetic main"
+done <<< "$manifest"
+```
+
+Adding or removing a canonical script updates this manifest in the same
+change, so every consumer's drift check picks up the addition or removal
+the next time it runs, before any consumer has mirrored the file itself.
 
 ## Consistency gate
 

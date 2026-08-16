@@ -11,6 +11,18 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`scripts/td-tooling-manifest` publishes the authoritative list of
+  tech-debt register scripts for consumer drift checks.** Sibling
+  repositories that hold byte-identical copies of the register tooling
+  (agent-ops, poetic-fiddle) previously diffed against a file list
+  hard-coded in their own `td-tooling-drift.yml`, so a newly added
+  canonical script never appeared in any consumer's check until someone
+  updated that hard-coded list by hand. Consumers now fetch
+  `scripts/td-tooling-manifest` from poetic `main` and iterate it instead;
+  adding or removing a canonical script here is picked up by every
+  consumer's drift check the next time it runs. See "Tooling manifest for
+  consumers" in `docs/TECH-DEBT-REGISTER.md`. Closes #188.
+
 - **Tech-debt ID allocation is now a reservation, not a scan.**
   `scripts/reserve-tech-debt-id.pl` fetches `origin/main` itself and pushes
   the candidate id's `td/<id>` branch as an atomic, fleet-wide lock — the
