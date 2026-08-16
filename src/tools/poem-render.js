@@ -178,14 +178,18 @@ function resolveRefs(data, basePath = POEMS_DIR, visited = new Set()) {
  * so a chained ref resolves relative to the file that declares it. The poem's
  * own file is not included. A referenced file that is missing or unparseable
  * is still recorded (so creating or repairing it invalidates the build) but is
- * not recursed into. `seen` guards against ref cycles and repeated work.
+ * not recursed into. `seen` guards against ref cycles and repeated work
+ * *within this call* — pass the same `cache` Map used elsewhere (e.g. by
+ * build-all-poems.js across every poem's call) to also avoid re-parsing a
+ * ref target shared *across* calls; see readYamlCached().
  *
  * @param {*} data - parsed (unresolved) YAML data
  * @param {string} [basePath] - directory `$ref` file paths resolve against
  * @param {Set<string>} [seen] - internal cycle/visited guard
+ * @param {Map<string, *>} [cache] - shared parse cache, see readYamlCached()
  * @returns {string[]} deduplicated absolute paths of referenced files
  */
-function collectRefFiles(data, basePath = POEMS_DIR, seen = new Set()) {
+function collectRefFiles(data, basePath = POEMS_DIR, seen = new Set(), cache) {
   const found = new Set();
 
   function walk(node, base) {
@@ -205,7 +209,7 @@ function collectRefFiles(data, basePath = POEMS_DIR, seen = new Set()) {
       seen.add(fullPath);
       let refData;
       try {
-        refData = yaml.load(fs.readFileSync(fullPath, 'utf8'));
+        refData = readYamlCached(fullPath, cache);
       } catch {
         return; // missing/unparseable: recorded above, nothing to recurse into
       }
@@ -228,7 +232,9 @@ function collectRefFiles(data, basePath = POEMS_DIR, seen = new Set()) {
  * collectRefFiles() for the traversal semantics.
  *
  * @param {string} yamlPath - absolute path to a poem's YAML source
- * @param {Map<string, *>} [cache] - shared parse cache, see readYamlCached()
+ * @param {Map<string, *>} [cache] - shared parse cache, see readYamlCached();
+ *   also threaded into collectRefFiles() so a $ref target shared by multiple
+ *   poems calling this with the same cache is parsed at most once.
  * @returns {string[]}
  */
 function refFilesForPoem(yamlPath, cache) {
@@ -238,7 +244,7 @@ function refFilesForPoem(yamlPath, cache) {
   } catch {
     return [];
   }
-  return collectRefFiles(data, path.dirname(yamlPath));
+  return collectRefFiles(data, path.dirname(yamlPath), new Set(), cache);
 }
 
 /**

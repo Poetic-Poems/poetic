@@ -19,7 +19,9 @@ const { hasResolvableSongs } = require('./song-handlers');
 const { renderTitleMarkup, BEAUTIFY_OPTIONS } = require('./render-core');
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require('./footer');
 const { REPO_ROOT } = require('./repo-root');
-const { needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested } = require('./needs-rebuild');
+const {
+  needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested, manifestSourcesUnchanged,
+} = require('./needs-rebuild');
 const {
   escapeAmpersand, buildPoemDataIsland, renderFreshIndexHtml, renderAllPoemsHtml,
 } = require('./aggregate-render-core');
@@ -404,6 +406,53 @@ function generateIndexHtml(
   }
 }
 
+/**
+ * Decide whether all-poems.html/index.html need rebuilding and, only if so,
+ * derive the full source set (every poem, plus every file transitively
+ * $ref'd) the outputs would be built from.
+ *
+ * The full derivation parses every poem's YAML and walks its $ref graph
+ * (refFilesForPoem) — negligible for a handful of poems, but it's unskippable
+ * work today even on the common "nothing changed" path, and it grows linearly
+ * with a consumer repo's poem count and $ref fan-out. manifestSourcesUnchanged
+ * (see needs-rebuild.js) can often prove nothing changed using only mtimes/
+ * sizes already on disk — no YAML parsing — so it's tried first; only when it
+ * can't tell (a poem/partial/`$ref` target was actually added, removed, or
+ * edited, or there's no prior manifest) does this fall back to the full,
+ * parse-driven computation and ask needsRebuildAggregate() for the final
+ * answer, exactly as before this fast path existed.
+ *
+ * @param {object} options
+ * @param {string} options.poemsDir
+ * @param {string} options.manifestPath
+ * @param {string} options.allPoemsOutputPath
+ * @param {string} options.indexPath
+ * @param {string[]} options.extraInputs - framework-wide inputs (template,
+ *   builtin song handlers, config, footer source)
+ * @param {boolean} options.force
+ * @param {Map<string, *>} options.yamlCache - shared parse cache, see
+ *   readYamlCached() in poem-render.js
+ * @returns {{ skip: boolean, sources: string[] }} `sources` is `[]` when
+ *   `skip` is true — the fast path proved a rebuild unnecessary without ever
+ *   deriving the full set.
+ */
+function determineAggregateBuildPlan({
+  poemsDir, manifestPath, allPoemsOutputPath, indexPath, extraInputs, force, yamlCache,
+}) {
+  const outputs = [allPoemsOutputPath, indexPath];
+  const dirEntries = fs.readdirSync(poemsDir).map((f) => path.join(poemsDir, f));
+
+  if (!needsRebuild(outputs, extraInputs, { force }) && manifestSourcesUnchanged(manifestPath, poemsDir, dirEntries)) {
+    return { skip: true, sources: [] };
+  }
+
+  const refTargets = listPoemYamlFiles(poemsDir)
+    .flatMap((f) => refFilesForPoem(path.join(poemsDir, f), yamlCache));
+  const sources = [...new Set([...dirEntries, ...refTargets])];
+  const skip = !needsRebuildAggregate(outputs, sources, { manifestPath, baseDir: poemsDir, extraInputs, force });
+  return { skip, sources };
+}
+
 // Main execution
 function main() {
   if (isHelpRequested(process.argv.slice(2))) {
@@ -476,17 +525,16 @@ function main() {
   // so each poem's YAML is parsed at most once per build (see
   // readYamlCached() in poem-render.js) rather than once per site.
   const yamlCache = new Map();
-  const dirEntries = fs.readdirSync(poemsDir).map((f) => path.join(poemsDir, f));
-  const refTargets = listPoemYamlFiles(poemsDir)
-    .flatMap((f) => refFilesForPoem(path.join(poemsDir, f), yamlCache));
-  const sources = [...new Set([...dirEntries, ...refTargets])];
   const extraInputs = [
     FRAGMENT_TEMPLATE,
     BUILTIN_HANDLERS_PATH,
     ...(fs.existsSync(configPath) ? [configPath] : []),
     ...(fs.existsSync(footerSourcePath) ? [footerSourcePath] : []),
   ];
-  if (!needsRebuildAggregate([allPoemsOutputPath, indexPath], sources, { manifestPath, baseDir: poemsDir, extraInputs, force })) {
+  const { skip, sources } = determineAggregateBuildPlan({
+    poemsDir, manifestPath, allPoemsOutputPath, indexPath, extraInputs, force, yamlCache,
+  });
+  if (skip) {
     console.log('⏭  all-poems.html and index.html are up to date, skipping.');
     return;
   }
@@ -546,4 +594,5 @@ module.exports = {
   copyDateUtilsAsset,
   findBalancedBlock,
   selfHealLandmarks,
+  determineAggregateBuildPlan,
 };

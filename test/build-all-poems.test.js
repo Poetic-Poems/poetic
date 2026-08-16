@@ -28,8 +28,9 @@ const os = require('os');
 const yaml = require('js-yaml');
 
 const {
-  concatenateAllHtmlFiles, generateIndexHtml, copyDateUtilsAsset, selfHealLandmarks,
+  concatenateAllHtmlFiles, generateIndexHtml, copyDateUtilsAsset, selfHealLandmarks, determineAggregateBuildPlan,
 } = require('../src/tools/build-all-poems');
+const { recordManifest } = require('../src/tools/needs-rebuild');
 const { REPO_ROOT } = require('../src/tools/repo-root');
 
 // A throwaway poems directory, cleaned up when the test ends.
@@ -441,4 +442,166 @@ test('date-utils.js guards module.exports so it is safe to load as a plain brows
     /typeof module !== ['"]undefined['"]/,
     'module.exports must be guarded — `module` is undefined in a classic (non-module) browser script'
   );
+});
+
+// ── determineAggregateBuildPlan (TD-PPpoet-26080815 gap 1) ──────────────────
+//
+// An unchanged corpus must skip the full parse pass (refFilesForPoem, which
+// parses every poem's YAML and walks its $ref graph) entirely, not just skip
+// rewriting the outputs after paying for it anyway. These tests plant a poem
+// that $refs a file *outside* poemsDir (so a directory-listing-only check
+// could not catch an edit to it) and assert both the skip/rebuild verdict and
+// — via a spy on js-yaml's own `load` — that no YAML parsing happens on the
+// unchanged path.
+
+function planFixture(t) {
+  const poemsDir = tmpPoemsDir(t);
+  const publicDir = tmpPublicDir(t);
+  const sharedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-build-all-poems-shared-'));
+  t.after(() => fs.rmSync(sharedDir, { recursive: true, force: true }));
+
+  const poemPath = path.join(poemsDir, 'poem.yaml');
+  const refTargetPath = path.join(sharedDir, 'partial.yaml');
+  fs.writeFileSync(refTargetPath, yaml.dump({ note: { content: 'shared text' } }), 'utf8');
+  fs.writeFileSync(
+    poemPath,
+    yaml.dump({
+      title: 'Ref Test Poem',
+      author: 'Test Author',
+      date: '2020-05-04',
+      postscript: { $ref: `${refTargetPath}#/note` },
+      versions: [{ segments: [{ lines: 'Hello\n' }] }],
+    }),
+    'utf8'
+  );
+
+  const template = path.join(publicDir, 'template.pug.stub');
+  fs.writeFileSync(template, 'stub', 'utf8');
+
+  return {
+    poemsDir,
+    publicDir,
+    poemPath,
+    refTargetPath,
+    manifestPath: path.join(publicDir, '.all-poems.manifest.json'),
+    allPoemsOutputPath: path.join(publicDir, 'all-poems.html'),
+    indexPath: path.join(publicDir, 'index.html'),
+    extraInputs: [template],
+  };
+}
+
+// Simulates "the outputs were successfully built from `sources`": writes
+// placeholder output files and records the manifest, exactly as main() does
+// after concatenateAllHtmlFiles/generateIndexHtml run.
+function recordBuiltState({ allPoemsOutputPath, indexPath, manifestPath, poemsDir }, sources) {
+  fs.writeFileSync(allPoemsOutputPath, 'built', 'utf8');
+  fs.writeFileSync(indexPath, 'built', 'utf8');
+  recordManifest(manifestPath, sources, poemsDir);
+}
+
+test('determineAggregateBuildPlan: no manifest yet -> does not skip, and derives sources including the external $ref target', (t) => {
+  const fx = planFixture(t);
+  const { skip, sources } = determineAggregateBuildPlan({
+    poemsDir: fx.poemsDir,
+    manifestPath: fx.manifestPath,
+    allPoemsOutputPath: fx.allPoemsOutputPath,
+    indexPath: fx.indexPath,
+    extraInputs: fx.extraInputs,
+    force: false,
+    yamlCache: new Map(),
+  });
+  assert.strictEqual(skip, false);
+  assert.ok(sources.includes(fx.poemPath));
+  assert.ok(sources.includes(fx.refTargetPath), 'the external $ref target must be part of the derived source set');
+});
+
+test('determineAggregateBuildPlan: an unchanged corpus skips the rebuild WITHOUT parsing any YAML', (t) => {
+  const fx = planFixture(t);
+  const first = determineAggregateBuildPlan({
+    poemsDir: fx.poemsDir,
+    manifestPath: fx.manifestPath,
+    allPoemsOutputPath: fx.allPoemsOutputPath,
+    indexPath: fx.indexPath,
+    extraInputs: fx.extraInputs,
+    force: false,
+    yamlCache: new Map(),
+  });
+  recordBuiltState(fx, first.sources);
+
+  const loadCalls = t.mock.method(yaml, 'load');
+  const second = determineAggregateBuildPlan({
+    poemsDir: fx.poemsDir,
+    manifestPath: fx.manifestPath,
+    allPoemsOutputPath: fx.allPoemsOutputPath,
+    indexPath: fx.indexPath,
+    extraInputs: fx.extraInputs,
+    force: false,
+    yamlCache: new Map(),
+  });
+
+  assert.strictEqual(second.skip, true);
+  assert.deepStrictEqual(second.sources, []);
+  assert.strictEqual(loadCalls.mock.callCount(), 0, 'the fast path must not parse any YAML when nothing changed');
+});
+
+test('determineAggregateBuildPlan: editing only the external $ref target (poem itself untouched) forces a rebuild', (t) => {
+  const fx = planFixture(t);
+  const first = determineAggregateBuildPlan({
+    poemsDir: fx.poemsDir,
+    manifestPath: fx.manifestPath,
+    allPoemsOutputPath: fx.allPoemsOutputPath,
+    indexPath: fx.indexPath,
+    extraInputs: fx.extraInputs,
+    force: false,
+    yamlCache: new Map(),
+  });
+  recordBuiltState(fx, first.sources);
+
+  // Edit the $ref target, not the poem — a directory-listing-only check on
+  // poemsDir would miss this, since refTargetPath lives outside it.
+  fs.writeFileSync(fx.refTargetPath, yaml.dump({ note: { content: 'shared text, edited' } }), 'utf8');
+
+  const second = determineAggregateBuildPlan({
+    poemsDir: fx.poemsDir,
+    manifestPath: fx.manifestPath,
+    allPoemsOutputPath: fx.allPoemsOutputPath,
+    indexPath: fx.indexPath,
+    extraInputs: fx.extraInputs,
+    force: false,
+    yamlCache: new Map(),
+  });
+  assert.strictEqual(second.skip, false);
+  assert.ok(second.sources.includes(fx.refTargetPath));
+});
+
+test('determineAggregateBuildPlan: a shared $ref target is parsed at most once across poems sharing one yamlCache', (t) => {
+  const fx = planFixture(t);
+  // Add a second poem that $refs the same external target.
+  const poem2Path = path.join(fx.poemsDir, 'poem2.yaml');
+  fs.writeFileSync(
+    poem2Path,
+    yaml.dump({
+      title: 'Second Ref Test Poem',
+      author: 'Test Author',
+      date: '2020-05-05',
+      postscript: { $ref: `${fx.refTargetPath}#/note` },
+      versions: [{ segments: [{ lines: 'World\n' }] }],
+    }),
+    'utf8'
+  );
+
+  const loadCalls = t.mock.method(yaml, 'load');
+  const { sources } = determineAggregateBuildPlan({
+    poemsDir: fx.poemsDir,
+    manifestPath: fx.manifestPath,
+    allPoemsOutputPath: fx.allPoemsOutputPath,
+    indexPath: fx.indexPath,
+    extraInputs: fx.extraInputs,
+    force: false,
+    yamlCache: new Map(),
+  });
+
+  assert.ok(sources.includes(fx.refTargetPath));
+  // Both poems (2) plus the shared ref target parsed once, not per-poem (3).
+  assert.strictEqual(loadCalls.mock.callCount(), 3, 'the shared $ref target must be parsed once, not once per referencing poem');
 });

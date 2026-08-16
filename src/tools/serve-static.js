@@ -13,6 +13,10 @@ const path = require('path');
 const { readPoeticConfig } = require('./poetic-config');
 const { renderFooter, upsertFooter } = require('./footer');
 const { concatenateAllHtmlFiles } = require('./build-all-poems');
+// Required as a namespace object (not destructured) so tests can spy on
+// poemRender.clearRefCache via t.mock.method — see the /all-poems handler
+// below and its regression test in serve-static.test.js.
+const poemRender = require('./poem-render');
 const { REPO_ROOT } = require('./repo-root');
 const pathGuard = require('./path-guard');
 const { isHelpRequested } = require('./cli-help');
@@ -234,6 +238,14 @@ function createServer(rootDir, opts = {}) {
 
       // Handle special concatenation endpoint
       if (pathname === '/all-poems') {
+        // poem-render.js's $ref cache (poemRender's module-level refCache,
+        // distinct from the fresh per-call yamlCache concatenateAllHtmlFiles
+        // already uses below) lives for the process's whole lifetime, so this
+        // long-running server would otherwise keep serving the *first*-ever
+        // resolved value of a shared $ref target no matter how many times its
+        // source changes. Clear it per request, matching every other route
+        // here, which already re-reads from disk each time.
+        poemRender.clearRefCache();
         const config = readPoeticConfig(REPO_ROOT);
         const rawFavicon = config.favicon || 'poetic-logo.svg';
         const favicon = rawFavicon.replace(/^public\//, '');

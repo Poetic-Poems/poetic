@@ -79,6 +79,21 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **`serve-static.js`'s `/all-poems` endpoint no longer serves a stale `$ref`
+  target for the lifetime of the dev server.** `poem-render.js`'s `$ref`
+  cache lives for the whole process, and every other route already re-reads
+  from disk per request, but `/all-poems` never cleared it — so a poet
+  live-editing a shared `$ref`'d partial kept seeing the *first*-ever
+  resolved version of it on every subsequent reload, however many times the
+  source changed, until the server was restarted. The handler now calls
+  `clearRefCache()` at the top of the route. Also: `build-all-poems.js`'s
+  "skip if up to date" staleness check no longer re-parses every poem's YAML
+  and `$ref` graph on an unchanged corpus — a cheap mtime/size pre-check
+  against the recorded manifest now proves nothing changed first, falling
+  back to the full parse only when it can't — and `collectRefFiles()` now
+  reuses the caller's shared parse cache instead of re-reading a `$ref`
+  target once per referencing poem. Resolves TD-PPpoet-26080815.
+
 - **`blogger-auth.js`'s outbound `fetch()` calls now carry a 30s timeout.**
   `exchangeCodeForTokens()`, `lookupBlogId()`, and `listMyBlogs()` each
   called the same Google OAuth token and Blogger API endpoints that
