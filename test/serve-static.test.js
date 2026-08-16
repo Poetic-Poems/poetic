@@ -7,21 +7,12 @@
  * they're interpolated into the generated listing page, and hrefs must be
  * percent-encoded.
  *
- * serve-static.js has no module.exports and starts a real HTTP server as a
- * side effect of being loaded (`server.listen(...)` at the top level), so it
- * can't be required directly in a test. Instead, its source is compiled into
- * a throwaway Module with http.createServer stubbed out (so no socket is
- * actually opened) and a controlled --dir argv (so the startup directory
- * check passes without touching the real `public/`), then the pure helpers
- * are pulled off by appending an export statement to the in-memory source —
- * the file on disk is never modified.
- *
- * The `http.createServer` stub also captures the request-handler callback
- * the module passes to it. That captured function is the same one a real
- * deployment wires up, so it's handed to a *second*, unstubbed
- * `http.createServer` bound to an ephemeral port, and driven with real
- * `http.request` calls below — exercising the actual request path (routing,
- * headers, streaming) rather than a re-implementation of it.
+ * serve-static.js exports a `createServer(rootDir, opts)` factory that
+ * returns an unbound `{ server, close }` pair with no module-load side
+ * effects, so it's required directly here and driven with a real
+ * `http.request` against `server.listen(0, ...)` — exercising the actual
+ * request path (routing, headers, streaming) rather than a
+ * re-implementation of it.
  */
 
 const { test } = require('node:test');
@@ -29,67 +20,14 @@ const assert = require('node:assert');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const Module = require('module');
 const http = require('http');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
 
+const { createServer, escapeHtml, encodeHref, generateDirectoryListing } = require('../src/tools/serve-static');
+const pathGuard = require('../src/tools/path-guard');
+
 const SERVE_STATIC_PATH = path.join(__dirname, '..', 'src', 'tools', 'serve-static.js');
-const PATH_GUARD_PATH = path.join(path.dirname(SERVE_STATIC_PATH), 'path-guard.js');
-
-function loadServeStaticInternals(dirForStartupCheck, extraArgs = [], { pathGuardOverrides } = {}) {
-  const source = fs.readFileSync(SERVE_STATIC_PATH, 'utf8');
-  const patched = `${source}\nmodule.exports = { escapeHtml, encodeHref, generateDirectoryListing, CORS_HEADERS, HOST };\n`;
-
-  const originalArgv = process.argv;
-  const originalCreateServer = http.createServer;
-  const originalPathGuardCacheEntry = require.cache[PATH_GUARD_PATH];
-  let capturedRequestHandler = null;
-  http.createServer = (handler) => {
-    capturedRequestHandler = handler;
-    return { listen() {} };
-  };
-  process.argv = [process.argv[0], SERVE_STATIC_PATH, '--dir', dirForStartupCheck, '--port', '0', ...extraArgs];
-
-  if (pathGuardOverrides) {
-    const real = require(PATH_GUARD_PATH);
-    require.cache[PATH_GUARD_PATH] = {
-      id: PATH_GUARD_PATH,
-      filename: PATH_GUARD_PATH,
-      loaded: true,
-      exports: { ...real, ...pathGuardOverrides },
-    };
-  }
-
-  try {
-    const mod = new Module(SERVE_STATIC_PATH, module);
-    mod.filename = SERVE_STATIC_PATH;
-    mod.paths = Module._nodeModulePaths(path.dirname(SERVE_STATIC_PATH));
-    mod._compile(patched, SERVE_STATIC_PATH);
-    return { ...mod.exports, requestHandler: capturedRequestHandler };
-  } finally {
-    process.argv = originalArgv;
-    http.createServer = originalCreateServer;
-    if (pathGuardOverrides) {
-      if (originalPathGuardCacheEntry) {
-        require.cache[PATH_GUARD_PATH] = originalPathGuardCacheEntry;
-      } else {
-        delete require.cache[PATH_GUARD_PATH];
-      }
-    }
-  }
-}
-
-function getFreePort() {
-  return new Promise((resolve, reject) => {
-    const srv = http.createServer();
-    srv.on('error', reject);
-    srv.listen(0, '127.0.0.1', () => {
-      const { port } = srv.address();
-      srv.close(() => resolve(port));
-    });
-  });
-}
 
 function withTempDir(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'serve-static-test-'));
@@ -111,11 +49,11 @@ async function withTempDirAsync(fn) {
   }
 }
 
-// Runs `fn(port)` against a real server wrapping `requestHandler`, closing
-// the server (and thus releasing the port) once `fn`'s promise settles.
-function withRunningServer(requestHandler, fn) {
+// Creates a server for `dir`, listens on an ephemeral loopback port, runs
+// `fn(port)` against it, then closes the server once `fn`'s promise settles.
+function withRunningServer(dir, opts, fn) {
+  const { server } = createServer(dir, opts);
   return new Promise((resolve, reject) => {
-    const server = http.createServer(requestHandler);
     server.listen(0, '127.0.0.1', () => {
       const { port } = server.address();
       Promise.resolve()
@@ -124,6 +62,30 @@ function withRunningServer(requestHandler, fn) {
           (result) => server.close(() => resolve(result)),
           (err) => server.close(() => reject(err))
         );
+    });
+  });
+}
+
+// Temporarily replaces `pathGuard.isWithinRoot` for tests that need to force
+// the traversal-guard branch (unreachable through any real request path —
+// see the test below that exercises it).
+async function withStubbedIsWithinRoot(stub, fn) {
+  const original = pathGuard.isWithinRoot;
+  pathGuard.isWithinRoot = stub;
+  try {
+    return await fn();
+  } finally {
+    pathGuard.isWithinRoot = original;
+  }
+}
+
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const srv = http.createServer();
+    srv.on('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
     });
   });
 }
@@ -150,25 +112,19 @@ function httpGet(port, requestPath) {
 }
 
 test('escapeHtml escapes &, <, >, ", and \'', () => {
-  withTempDir((dir) => {
-    const { escapeHtml } = loadServeStaticInternals(dir);
-    assert.strictEqual(
-      escapeHtml('<script>alert(\'x\')</script> & "quoted"'),
-      '&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt; &amp; &quot;quoted&quot;'
-    );
-  });
+  assert.strictEqual(
+    escapeHtml('<script>alert(\'x\')</script> & "quoted"'),
+    '&lt;script&gt;alert(&#39;x&#39;)&lt;/script&gt; &amp; &quot;quoted&quot;'
+  );
 });
 
 test('encodeHref percent-encodes each path segment', () => {
-  withTempDir((dir) => {
-    const { encodeHref } = loadServeStaticInternals(dir);
-    assert.strictEqual(
-      encodeHref('a dir/<script>.html'),
-      'a%20dir/%3Cscript%3E.html'
-    );
-    // A crafted "javascript:" segment is percent-encoded, not left as a scheme.
-    assert.strictEqual(encodeHref('javascript:alert(1)'), 'javascript%3Aalert(1)');
-  });
+  assert.strictEqual(
+    encodeHref('a dir/<script>.html'),
+    'a%20dir/%3Cscript%3E.html'
+  );
+  // A crafted "javascript:" segment is percent-encoded, not left as a scheme.
+  assert.strictEqual(encodeHref('javascript:alert(1)'), 'javascript%3Aalert(1)');
 });
 
 test('generateDirectoryListing escapes a hostile filename and encodes its href', () => {
@@ -179,7 +135,6 @@ test('generateDirectoryListing escapes a hostile filename and encodes its href',
     const hostileName = '<script>alert(1)>.txt';
     fs.writeFileSync(path.join(dir, hostileName), 'content');
 
-    const { generateDirectoryListing } = loadServeStaticInternals(dir);
     const html = generateDirectoryListing(dir, '/');
 
     assert.ok(
@@ -202,7 +157,6 @@ test('generateDirectoryListing escapes a relative path containing HTML', () => {
     const hostileDirName = '<img src=x onerror=alert(1)>';
     fs.mkdirSync(path.join(dir, hostileDirName));
 
-    const { generateDirectoryListing } = loadServeStaticInternals(dir);
     const html = generateDirectoryListing(dir, `/${hostileDirName}`);
 
     assert.ok(
@@ -221,7 +175,6 @@ test('generateDirectoryListing escapes quotes and ampersands in filenames', () =
     const name = 'it\'s "quoted" & ampersand.txt';
     fs.writeFileSync(path.join(dir, name), 'content');
 
-    const { generateDirectoryListing } = loadServeStaticInternals(dir);
     const html = generateDirectoryListing(dir, '/');
 
     assert.ok(html.includes('it&#39;s &quot;quoted&quot; &amp; ampersand.txt'));
@@ -229,43 +182,48 @@ test('generateDirectoryListing escapes quotes and ampersands in filenames', () =
   });
 });
 
-test('CORS_HEADERS: omits Access-Control-Allow-Origin on the default loopback bind (127.0.0.1)', () => {
+test('createServer throws when rootDir does not exist', () => {
   withTempDir((dir) => {
-    const { CORS_HEADERS, HOST } = loadServeStaticInternals(dir);
-    assert.strictEqual(HOST, '127.0.0.1');
-    assert.deepStrictEqual(CORS_HEADERS, {});
+    const missing = path.join(dir, 'does-not-exist');
+    assert.throws(() => createServer(missing), /Directory not found/);
   });
 });
 
-test('CORS_HEADERS: omits Access-Control-Allow-Origin for the ::1 loopback host', () => {
-  withTempDir((dir) => {
-    const { CORS_HEADERS, HOST } = loadServeStaticInternals(dir, ['--host', '::1']);
-    assert.strictEqual(HOST, '::1');
-    assert.deepStrictEqual(CORS_HEADERS, {});
+test('CORS: omits Access-Control-Allow-Origin on the default loopback bind (127.0.0.1)', async () => {
+  await withTempDirAsync(async (dir) => {
+    fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
+    const res = await withRunningServer(dir, { host: '127.0.0.1' }, (port) => httpGet(port, '/hello.txt'));
+    assert.strictEqual(res.headers['access-control-allow-origin'], undefined);
   });
 });
 
-test('CORS_HEADERS: sets a wildcard Access-Control-Allow-Origin when explicitly bound to 0.0.0.0', () => {
-  withTempDir((dir) => {
-    const { CORS_HEADERS, HOST } = loadServeStaticInternals(dir, ['--host', '0.0.0.0']);
-    assert.strictEqual(HOST, '0.0.0.0');
-    assert.deepStrictEqual(CORS_HEADERS, { 'Access-Control-Allow-Origin': '*' });
+test('CORS: omits Access-Control-Allow-Origin for the ::1 loopback host', async () => {
+  await withTempDirAsync(async (dir) => {
+    fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
+    const res = await withRunningServer(dir, { host: '::1' }, (port) => httpGet(port, '/hello.txt'));
+    assert.strictEqual(res.headers['access-control-allow-origin'], undefined);
+  });
+});
+
+test('CORS: sets a wildcard Access-Control-Allow-Origin when explicitly bound to 0.0.0.0', async () => {
+  await withTempDirAsync(async (dir) => {
+    fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
+    const res = await withRunningServer(dir, { host: '0.0.0.0' }, (port) => httpGet(port, '/hello.txt'));
+    assert.strictEqual(res.headers['access-control-allow-origin'], '*');
   });
 });
 
 /*
- * Request-handler integration tests below drive the real handler captured
- * from the stubbed http.createServer (see loadServeStaticInternals), wired
- * up to a genuine http.createServer/listen(0) and hit with real
- * http.request calls — no re-implementation of routing/header logic.
+ * Request-handler integration tests below drive the real handler wired up
+ * by createServer(), listening on an ephemeral port and hit with real
+ * http.request calls.
  */
 
 test('request handler: serves an existing file with 200 and the correct Content-Type', async () => {
   await withTempDirAsync(async (dir) => {
     fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
-    const { requestHandler } = loadServeStaticInternals(dir);
 
-    const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/hello.txt'));
+    const res = await withRunningServer(dir, {}, (port) => httpGet(port, '/hello.txt'));
 
     assert.strictEqual(res.statusCode, 200);
     assert.strictEqual(res.headers['content-type'], 'text/plain; charset=utf-8');
@@ -276,9 +234,8 @@ test('request handler: serves an existing file with 200 and the correct Content-
 test('request handler: falls back to index.html for a route with no file extension (SPA fallback)', async () => {
   await withTempDirAsync(async (dir) => {
     fs.writeFileSync(path.join(dir, 'index.html'), '<html>SPA shell</html>');
-    const { requestHandler } = loadServeStaticInternals(dir);
 
-    const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/some/client-route'));
+    const res = await withRunningServer(dir, {}, (port) => httpGet(port, '/some/client-route'));
 
     assert.strictEqual(res.statusCode, 200);
     assert.strictEqual(res.headers['content-type'], 'text/html; charset=utf-8');
@@ -289,9 +246,8 @@ test('request handler: falls back to index.html for a route with no file extensi
 test('request handler: returns 404 for a missing path with a file extension (no SPA fallback)', async () => {
   await withTempDirAsync(async (dir) => {
     fs.writeFileSync(path.join(dir, 'index.html'), '<html>SPA shell</html>');
-    const { requestHandler } = loadServeStaticInternals(dir);
 
-    const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/missing.png'));
+    const res = await withRunningServer(dir, {}, (port) => httpGet(port, '/missing.png'));
 
     assert.strictEqual(res.statusCode, 404);
     assert.strictEqual(res.body, 'Not Found');
@@ -309,9 +265,8 @@ test('request handler: a ../ traversal attempt cannot escape the root directory'
   // /etc/passwd or any other file outside the served directory.
   await withTempDirAsync(async (dir) => {
     fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
-    const { requestHandler } = loadServeStaticInternals(dir);
 
-    const res = await withRunningServer(requestHandler, (port) =>
+    const res = await withRunningServer(dir, {}, (port) =>
       httpGet(port, '/../../../../../../../../etc/passwd')
     );
 
@@ -327,11 +282,11 @@ test('request handler: returns 403 when the traversal guard trips on the file-se
   // ever let a candidate path slip past safeJoin().
   await withTempDirAsync(async (dir) => {
     fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
-    const { requestHandler } = loadServeStaticInternals(dir, [], {
-      pathGuardOverrides: { isWithinRoot: () => false },
-    });
 
-    const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/hello.txt'));
+    const res = await withStubbedIsWithinRoot(
+      () => false,
+      () => withRunningServer(dir, {}, (port) => httpGet(port, '/hello.txt'))
+    );
 
     assert.strictEqual(res.statusCode, 403);
     assert.strictEqual(res.body, 'Forbidden');
@@ -341,11 +296,11 @@ test('request handler: returns 403 when the traversal guard trips on the file-se
 test('request handler: returns 403 when the traversal guard trips on the directory-listing call site', async () => {
   await withTempDirAsync(async (dir) => {
     fs.writeFileSync(path.join(dir, 'index.html'), '<html>root index</html>');
-    const { requestHandler } = loadServeStaticInternals(dir, [], {
-      pathGuardOverrides: { isWithinRoot: () => false },
-    });
 
-    const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/'));
+    const res = await withStubbedIsWithinRoot(
+      () => false,
+      () => withRunningServer(dir, {}, (port) => httpGet(port, '/'))
+    );
 
     assert.strictEqual(res.statusCode, 403);
     assert.strictEqual(res.body, 'Forbidden');
@@ -353,18 +308,17 @@ test('request handler: returns 403 when the traversal guard trips on the directo
 });
 
 test('request handler: returns 403 for a symlink committed inside root whose target resolves outside it', async () => {
-  // No pathGuardOverrides here — this exercises the real path-guard.js
-  // against a genuine on-disk symlink, the scenario TD26072801 fixed
-  // (e.g. public/theme.html -> /etc/passwd, published verbatim).
+  // No stubbing here — this exercises the real path-guard.js against a
+  // genuine on-disk symlink, the scenario TD26072801 fixed (e.g.
+  // public/theme.html -> /etc/passwd, published verbatim).
   await withTempDirAsync(async (dir) => {
     const root = fs.realpathSync(dir);
     const outsideFile = path.join(root, '..', `serve-static-secret-${crypto.randomUUID()}.txt`);
     fs.writeFileSync(outsideFile, 'top secret');
     fs.symlinkSync(outsideFile, path.join(root, 'linked.txt'));
-    const { requestHandler } = loadServeStaticInternals(root);
 
     try {
-      const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/linked.txt'));
+      const res = await withRunningServer(root, {}, (port) => httpGet(port, '/linked.txt'));
       assert.strictEqual(res.statusCode, 403);
       assert.strictEqual(res.body, 'Forbidden');
     } finally {
@@ -379,9 +333,7 @@ test('request handler: still answers 404 for a request path that does not exist 
   // rather than crash — the existing fileExists() check downstream is what
   // turns "not found" into a 404.
   await withTempDirAsync(async (dir) => {
-    const { requestHandler } = loadServeStaticInternals(dir);
-
-    const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/no-such-file.txt'));
+    const res = await withRunningServer(dir, {}, (port) => httpGet(port, '/no-such-file.txt'));
 
     assert.strictEqual(res.statusCode, 404);
     assert.strictEqual(res.body, 'Not Found');
@@ -399,10 +351,9 @@ test('request handler: a directory index.html symlinked out of root is not serve
     fs.writeFileSync(outsideFile, 'top secret');
     fs.mkdirSync(path.join(root, 'sub'));
     fs.symlinkSync(outsideFile, path.join(root, 'sub', 'index.html'));
-    const { requestHandler } = loadServeStaticInternals(root);
 
     try {
-      const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/sub/'));
+      const res = await withRunningServer(root, {}, (port) => httpGet(port, '/sub/'));
       assert.strictEqual(res.statusCode, 200);
       assert.doesNotMatch(res.body, /top secret/);
       assert.match(res.body, /Directory Listing/);
@@ -427,10 +378,9 @@ test('request handler: the SPA fallback does not serve a root index.html symlink
     const outsideFile = path.join(root, '..', `serve-static-secret-${crypto.randomUUID()}.txt`);
     fs.writeFileSync(outsideFile, 'top secret');
     fs.symlinkSync(outsideFile, path.join(root, 'index.html'));
-    const { requestHandler } = loadServeStaticInternals(root);
 
     try {
-      const res = await withRunningServer(requestHandler, (port) => httpGet(port, '/some/route'));
+      const res = await withRunningServer(root, {}, (port) => httpGet(port, '/some/route'));
       assert.strictEqual(res.statusCode, 404);
       assert.strictEqual(res.body, 'Not Found');
     } finally {
@@ -441,11 +391,11 @@ test('request handler: the SPA fallback does not serve a root index.html symlink
 
 /*
  * Graceful-shutdown tests below spawn the real serve-static.js as a child
- * process, rather than using the throwaway-Module technique above — that
- * technique stubs `http.createServer`'s `listen`/`close` away entirely
- * (see loadServeStaticInternals) and so can't exercise a real signal
- * reaching a real `process.exit`. TD26072619: before this fix, `npm run
- * stop`'s bare SIGTERM terminated the process immediately, mid-response.
+ * process — the CLI entry point (`require.main === module`) is what binds a
+ * port and registers SIGINT/SIGTERM handlers, so exercising a real signal
+ * reaching a real `process.exit` needs a real process, not an in-process
+ * server. TD26072619: before this fix, `npm run stop`'s bare SIGTERM
+ * terminated the process immediately, mid-response.
  */
 
 function waitForServerReady(child) {
