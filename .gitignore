@@ -1,4 +1,6 @@
 .claude/settings.json
+.claude/settings.local.json
+*.orig
 *.code-workspace
 *.sw[op]
 node_modules
