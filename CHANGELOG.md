@@ -184,6 +184,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   expected file first; running the single-file and `yaml-to-poem.js` steps
   without `--all` failed with `ENOENT`.
 
+- **README's "Convert to YAML (and back)" section now shows three distinct,
+  independently-working approaches** instead of one mixed sequence: a
+  single-file round-trip that writes alongside its input by default, an
+  explicit-output-path round-trip for both directions, and `--all` batch
+  conversion. The previous explicit-path example passed an output path to
+  `poem-to-yaml.js` but not to the matching `yaml-to-poem.js` call, so the
+  converted `.poem` file landed back in `src/poems/yaml/` rather than
+  `src/poems/poem/`. Each approach was verified end-to-end.
+
 - **The open-item rewrite guard no longer exempts wholesale replacement of
   an empty body.** `check-tech-debt-open-rewrites.pl`'s strict-append
   exemption checked only that the head body starts with the base body —
