@@ -206,15 +206,31 @@ npm run build
 
 ### Convert to YAML (and back)
 
+**Single file conversion** (writes alongside the input):
+
 ```bash
-# .poem → YAML
+# .poem → YAML (writes to src/poems/poem/my-poem.yaml by default)
+node src/tools/poem-to-yaml.js src/poems/poem/my-poem.poem
+
+# YAML → .poem (writes back to src/poems/poem/my-poem.poem)
+node src/tools/yaml-to-poem.js src/poems/poem/my-poem.yaml
+```
+
+Or **specify an explicit output path** for either conversion:
+
+```bash
+# .poem → YAML (writes to specified path)
 node src/tools/poem-to-yaml.js src/poems/poem/my-poem.poem src/poems/yaml/my-poem.yaml
 
-# Convert all .poem files at once
-node src/tools/poem-to-yaml.js --all
+# YAML → .poem (writes to specified path)
+node src/tools/yaml-to-poem.js src/poems/yaml/my-poem.yaml src/poems/poem/my-poem.poem
+```
 
-# YAML → .poem
-node src/tools/yaml-to-poem.js src/poems/yaml/my-poem.yaml
+Or **convert all .poem files at once**:
+
+```bash
+# Convert all .poem files to YAML in src/poems/yaml/
+node src/tools/poem-to-yaml.js --all
 ```
 
 ### Shared variables
