@@ -18,7 +18,7 @@
   "dependencies": {
     "js-beautify": "^2.0.3",
     "js-yaml": "^5.4.1",
-    "markdown-it": "^15.0.0",
+    "markdown-it": "^15.0.1",
     "pug": "^3.0.2"
   },
   "scripts": {
