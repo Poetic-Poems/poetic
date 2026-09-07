@@ -30,12 +30,12 @@ tech-debt/
 id: TD-PPpoet-26072424        # equals the filename stem
 legacy-id: TD26072424         # only on items migrated from the earlier single-file format
 title: One-line summary of the debt
-status: resolved               # open | in-progress | resolved | not-debt
-filed: 2026-07-24               # date matching the ID's YYMMDD
+status: resolved              # open | in-progress | resolved | not-debt
+filed: 2026-07-24             # date matching the ID's YYMMDD
 review: project-review-2026-07-23 R-22 F-ARCH-01   # optional provenance
-resolved: 2026-07-30
-ref: 231                        # PR number/commit that resolved it; for
-                                 # not-debt, where the content moved instead
+resolved: 2026-07-30          # date the status became resolved
+ref: 231                      # PR number/commit that resolved it; for
+                              # not-debt, where the content moved instead
 ---
 
 Free-prose description: what the debt was, why it mattered, where, and how
@@ -98,11 +98,10 @@ artistos-governance).
 canonical scripts that read this archive format (`scripts/get-tech-debt-record.pl`,
 `scripts/next-tech-debt-id.pl`, `scripts/reserve-tech-debt-id.pl`,
 `scripts/td-check.pl`, `scripts/check-tech-debt-open-rewrites.pl`). These
-scripts are no longer part of `scripts/sync-framework.sh`'s synced set —
-new consumer repos file debt as labelled issues from the start and never
-need them — but they stay in this repository, and a sibling repository that
-still holds a byte-identical copy from before this freeze can keep fetching
-this manifest for its own drift check:
+scripts sit outside `scripts/sync-framework.sh`'s synced set — a consumer
+repo files debt as labelled issues and never needs them — but they stay in
+this repository, and a sibling repository holding a byte-identical copy
+fetches this manifest for its own drift check:
 
 ```bash
 manifest=$(curl -fsSL \
@@ -116,13 +115,13 @@ done <<< "$manifest"
 
 ## Consistency gate
 
-`.github/workflows/tech-debt-register.yml` still runs `perl scripts/td-check.pl`
+`.github/workflows/tech-debt-register.yml` runs `perl scripts/td-check.pl`
 (also `npm run check:td-register`) on every pull request in this
 repository, guarding the frozen archive's invariants: no file in
 `tech-debt/` may be deleted or renamed, and no old-format `### TD` item
 section may reappear in `TECH-DEBT.md`. Its open-item-body-append-only
-guard (`scripts/check-tech-debt-open-rewrites.pl`) has nothing left to
-check now that every record is `resolved` or `not-debt`, and stays a
-harmless no-op. This workflow is no longer part of
-`scripts/sync-framework.sh`'s synced set — it protects this repository's
-own frozen archive and is not something a new consumer repo needs.
+guard (`scripts/check-tech-debt-open-rewrites.pl`) is a no-op against an
+archive in which every record is `resolved` or `not-debt`. The workflow
+sits outside `scripts/sync-framework.sh`'s synced set: it protects this
+repository's own frozen archive and is not something a consumer repo
+needs.
