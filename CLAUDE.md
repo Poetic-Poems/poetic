@@ -208,33 +208,31 @@ commit on the branch.
 
 ## Tech debt
 
-When you defer work, take a shortcut, or notice a known gap, record it in
-the tech-debt register — do not leave it only in a commit message or in
-chat. The register is per-item: one `tech-debt/<id>.md` file per record
-(YAML frontmatter plus a Markdown body), IDs scoped `PPpoet`, with
-`TECH-DEBT.md` at the repo root holding only the policy — the filing and
-claiming workflows and the declared scope. `docs/TECH-DEBT-REGISTER.md`
-specifies the format, the ID grammar and the scope-code registry. If an
-entry is referenced in other places (e.g. code comments), note that
-reference in the entry's body, so whoever resolves it knows to also remove
-the references.
+When you defer work, take a shortcut, or notice a known gap, record it —
+do not leave it only in a commit message or in chat. Tech debt is filed as
+a GitHub issue labelled `pw::type:tech-debt`, not as a file in this
+repository: dedup-search first (`gh issue list --label pw::type:tech-debt
+--search "<working title>"`), and cite an existing hit instead of filing a
+second one. File the issue with the shortcut and its provenance in the
+body (e.g. "Noticed while working #631"), then add a `Defers: #<n>` line
+to the pull request that noticed it — never a closing keyword, since
+deferring is not resolving.
 
-The register is an append-only set — item files are never deleted or
-renamed once on `main`, so an ID is never reused (CI enforces this).
-Reserve a new entry's ID with `scripts/reserve-tech-debt-id.pl` rather than
-counting by hand or scanning filenames yourself — it fetches `origin/main`
-itself and pushes the reserved id's `td/<id>` branch as an atomic,
-fleet-wide lock, retrying the next id itself if another writer wins the
-race for one. Fetch and check out that branch, then create
-`tech-debt/<id>.md` with `status: open`. When picking up an existing open
-item, follow the "Claiming an item" workflow in `TECH-DEBT.md`: verify
-state against `origin/main`, take the claim by pushing a branch named
-`td/<id>` (its creation is the race-safe lock — a rejected push means
-someone else claimed first), flip the item's frontmatter to
-`status: in-progress`, and open a draft PR immediately, so the claim is
-visible to other agents/developers before the fix lands. Resolving is a
-frontmatter-only edit — `status: resolved` plus `resolved:` and `ref:` —
-with the body left in place as the permanent record.
+Resolve a tech-debt issue by closing it with a real closing keyword (e.g.
+`Fixes #<n>`) in the pull request that fixes it, plus a fenced `td-record`
+block in that pull request's body (`issue`, `title`, `filed`, `summary`,
+`resolution`) — the squash-merge commit then carries the permanent record
+into `main`'s own immutable history, since a GitHub issue is mutable and
+editable but `main`'s history is not.
+
+`tech-debt/` is a **frozen historical archive** of the per-item register
+this repository used before this policy: every record ever allocated
+under scope `PPpoet`, kept in place forever — never edited, deleted, or
+renamed. `TECH-DEBT.md` is a short policy pointer; `docs/TECH-DEBT-REGISTER.md`
+documents the frozen archive's format, ID grammar and the scope-code
+registry for repositories that still hold one. Do not add new files to
+`tech-debt/`, and do not resurrect the `td/<id>` claim-branch workflow —
+both belong to the frozen format, not the current policy.
 
 ## Key docs
 

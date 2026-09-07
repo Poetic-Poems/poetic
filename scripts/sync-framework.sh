@@ -129,7 +129,6 @@ FRAMEWORK_PATHS=(
   .github/workflows/build-poems.yml
   .github/workflows/sync-blogger.yml
   .github/workflows/sync-framework.yml
-  .github/workflows/tech-debt-register.yml
   LICENCE
   docs
   editors
@@ -146,16 +145,11 @@ FRAMEWORK_PATHS=(
   public/poetic.js
   scripts/check-build-artifacts.sh
   scripts/check-licenses.js
-  scripts/check-tech-debt-open-rewrites.pl
   scripts/edit-poem
-  scripts/get-tech-debt-record.pl
   scripts/new-poem
-  scripts/next-tech-debt-id.pl
   scripts/remove-trailing-spaces.sh
-  scripts/reserve-tech-debt-id.pl
   scripts/setup-linux.sh
   scripts/sync-framework.sh
-  scripts/td-check.pl
   src/browser
   src/poems/poem/_example.poem
   src/poems/poem/_minimal.poem

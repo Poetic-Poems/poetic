@@ -9,6 +9,31 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+
+- **Tech debt is now filed as GitHub issues labelled `pw::type:tech-debt`,
+  not as new files under `tech-debt/`.** Fleet-wide roadmap decision D15
+  (revised, Poetic-Poems/agent-ops#869) moves debt off the in-repo per-item
+  register: filing is now one API call instead of an ID reservation and a
+  pull request, and resolving is a closing keyword (`Fixes #<n>`) plus a
+  `td-record` block in the resolving pull request's body, which the
+  squash-merge commit carries into `main`'s own immutable history.
+  `tech-debt/` freezes in place as a historical archive — every record ever
+  allocated stays, never edited, deleted, or renamed — since `origin/main`
+  carried zero open or in-progress records at the time of the freeze, so
+  there was nothing to migrate. `TECH-DEBT.md` is now a short policy
+  pointer, and `docs/TECH-DEBT-REGISTER.md` documents the frozen archive's
+  format as-built. `scripts/sync-framework.sh` no longer syncs the register
+  scripts (`scripts/get-tech-debt-record.pl`, `scripts/next-tech-debt-id.pl`,
+  `scripts/reserve-tech-debt-id.pl`, `scripts/td-check.pl`,
+  `scripts/check-tech-debt-open-rewrites.pl`) to consumer repositories — a
+  new consumer files debt as labelled issues from the start and never needs
+  them. The canonical scripts and `scripts/td-tooling-manifest` stay in this
+  repository for any sibling repo still holding a byte-identical copy from
+  before this freeze, and `.github/workflows/tech-debt-register.yml`
+  continues to guard this repository's own frozen archive against deletion
+  or rename. Closes #199.
+
 ### Added
 
 - **`scripts/td-tooling-manifest` publishes the authoritative list of
