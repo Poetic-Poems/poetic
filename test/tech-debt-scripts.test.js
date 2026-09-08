@@ -46,6 +46,19 @@ const HAVE_COMMIT_FORMAT = fs.existsSync(COMMIT_FORMAT_SCRIPT);
 // consumers"): consumers fetch it live from poetic main so a newly added
 // canonical script is picked up immediately, without waiting on a sync.
 const HAVE_TOOLING_MANIFEST = fs.existsSync(TOOLING_MANIFEST);
+// `test/` is synced verbatim into consumer repos, but the register scripts
+// under test are not (see scripts/sync-framework.sh): a consumer files tech
+// debt as `pw::type:tech-debt` issues and never needs them, so a consumer
+// synced from here has these tests without their subjects.
+const HAVE_TD_SCRIPTS = [
+  RECORD_SCRIPT,
+  NEXT_ID_SCRIPT,
+  RESERVE_ID_SCRIPT,
+  TD_CHECK_SCRIPT,
+  OPEN_REWRITES_SCRIPT,
+].every((script) => fs.existsSync(script));
+// Every test below drives one of those scripts through perl.
+const CAN_RUN_TD_SCRIPTS = HAVE_PERL && HAVE_TD_SCRIPTS;
 
 // Isolate git from the developer's global/system config so runs are
 // deterministic everywhere.
@@ -225,7 +238,7 @@ function remoteBranches(remoteDir, pattern = 'refs/heads/td/*') {
     .filter(Boolean);
 }
 
-test('per-item: a unique suffix resolves with status and path', { skip: !HAVE_PERL }, (t) => {
+test('per-item: a unique suffix resolves with status and path', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   const r = runRecord(repo, '72001');
   assert.strictEqual(r.status, 0, r.stderr);
@@ -235,7 +248,7 @@ test('per-item: a unique suffix resolves with status and path', { skip: !HAVE_PE
   assert.match(r.stdout, /Body B\./);
 });
 
-test('per-item: a legacy-id segment matches its record', { skip: !HAVE_PERL }, (t) => {
+test('per-item: a legacy-id segment matches its record', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   const r = runRecord(repo, 'TD26072001');
   assert.strictEqual(r.status, 0, r.stderr);
@@ -243,21 +256,21 @@ test('per-item: a legacy-id segment matches its record', { skip: !HAVE_PERL }, (
   assert.match(r.stdout, /^legacy-id: TD26072001$/m);
 });
 
-test('per-item: a scoped segment matches', { skip: !HAVE_PERL }, (t) => {
+test('per-item: a scoped segment matches', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   const r = runRecord(repo, 'test-26072002');
   assert.strictEqual(r.status, 0, r.stderr);
   assert.deepStrictEqual(ids(r.stdout), ['TD-PPtest-26072002']);
 });
 
-test('per-item: a shared suffix is ambiguous (exit = matches - 1)', { skip: !HAVE_PERL }, (t) => {
+test('per-item: a shared suffix is ambiguous (exit = matches - 1)', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   const r = runRecord(repo, '1');
   assert.strictEqual(r.status, 1, r.stderr);
   assert.deepStrictEqual(ids(r.stdout), ['TD-PPtest-26071901', 'TD-PPtest-26072001']);
 });
 
-test('per-item: --ref reads the register at the ref, not the working tree', { skip: !HAVE_PERL }, (t) => {
+test('per-item: --ref reads the register at the ref, not the working tree', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   fs.writeFileSync(
     path.join(repo, 'tech-debt', 'TD-PPtest-26072003.md'),
@@ -273,7 +286,7 @@ test('per-item: --ref reads the register at the ref, not the working tree', { sk
   assert.deepStrictEqual(ids(atRef.stdout), []);
 });
 
-test('per-item: next-tech-debt-id allocates from filenames and the declared scope', { skip: !HAVE_PERL }, (t) => {
+test('per-item: next-tech-debt-id allocates from filenames and the declared scope', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   const sameDay = runNextId(repo, '260720');
   assert.strictEqual(sameDay.status, 0, sameDay.stderr);
@@ -284,7 +297,7 @@ test('per-item: next-tech-debt-id allocates from filenames and the declared scop
   assert.strictEqual(freshDay.stdout.trim(), 'TD-PPtest-26073101');
 });
 
-test('per-item: next-tech-debt-id --ref ignores uncommitted items', { skip: !HAVE_PERL }, (t) => {
+test('per-item: next-tech-debt-id --ref ignores uncommitted items', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   fs.writeFileSync(
     path.join(repo, 'tech-debt', 'TD-PPtest-26072003.md'),
@@ -296,7 +309,7 @@ test('per-item: next-tech-debt-id --ref ignores uncommitted items', { skip: !HAV
   assert.strictEqual(atRef.stdout.trim(), 'TD-PPtest-26072003');
 });
 
-test('per-item: NN overflows 99 -> a0 -> .. -> z9, then dies', { skip: !HAVE_PERL }, (t) => {
+test('per-item: NN overflows 99 -> a0 -> .. -> z9, then dies', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t, {
     ...ITEMS,
     'TD-PPtest-26080199.md': itemFile('TD-PPtest-26080199'),
@@ -318,14 +331,14 @@ test('per-item: NN overflows 99 -> a0 -> .. -> z9, then dies', { skip: !HAVE_PER
   assert.match(overflow.stderr, /NN overflow/);
 });
 
-test('per-item: next-tech-debt-id dies without a declared scope', { skip: !HAVE_PERL }, (t) => {
+test('per-item: next-tech-debt-id dies without a declared scope', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t, ITEMS, '# Tech debt\n\nNo frontmatter.\n');
   const r = runNextId(repo, '260720');
   assert.notStrictEqual(r.status, 0);
   assert.match(r.stderr, /declares no scope/);
 });
 
-test('per-item: td-check passes a consistent register, via arg and auto-detect', { skip: !HAVE_PERL }, (t) => {
+test('per-item: td-check passes a consistent register, via arg and auto-detect', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   const explicit = runCheck(repo, 'tech-debt');
   assert.strictEqual(explicit.status, 0, explicit.stdout);
@@ -336,7 +349,7 @@ test('per-item: td-check passes a consistent register, via arg and auto-detect',
   assert.match(autodetect.stdout, /^tech-debt: 3 items/m);
 });
 
-test('per-item: td-check reports the drift classes', { skip: !HAVE_PERL }, (t) => {
+test('per-item: td-check reports the drift classes', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t, {
     ...ITEMS,
     // id does not match the filename, and the status is unrecognised
@@ -362,7 +375,7 @@ test('per-item: td-check reports the drift classes', { skip: !HAVE_PERL }, (t) =
   assert.match(r.stdout, /STALE FIELD {4}TD-PPtest-26072501\.md \(resolved/);
 });
 
-test('per-item: an empty register (scope declared, no directory yet) is per-item', { skip: !HAVE_PERL }, (t) => {
+test('per-item: an empty register (scope declared, no directory yet) is per-item', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   // A register that has not filed its first item cannot commit an empty
   // tech-debt/ directory, so the scope: declaration alone must put the repo
   // on the per-item format — otherwise its first allocation would come out
@@ -389,7 +402,7 @@ test('per-item: an empty register (scope declared, no directory yet) is per-item
   assert.strictEqual(record.stderr, '');
 });
 
-test('per-item: TD/D-prefixed legacy segments resolve via legacy-id', { skip: !HAVE_PERL }, (t) => {
+test('per-item: TD/D-prefixed legacy segments resolve via legacy-id', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   for (const segment of ['TD26072001', 'D26072001', '26072001']) {
     const r = runRecord(repo, segment);
@@ -398,21 +411,21 @@ test('per-item: TD/D-prefixed legacy segments resolve via legacy-id', { skip: !H
   }
 });
 
-test('per-item: an invalid segment dies without matching', { skip: !HAVE_PERL }, (t) => {
+test('per-item: an invalid segment dies without matching', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   const r = runRecord(repo, 'xyz');
   assert.notStrictEqual(r.status, 0);
   assert.match(r.stderr, /Invalid ID segment/);
 });
 
-test('per-item: --ref with an unknown ref fails loudly', { skip: !HAVE_PERL }, (t) => {
+test('per-item: --ref with an unknown ref fails loudly', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   const r = runRecord(repo, '--ref', 'no-such-ref', '72001');
   assert.notStrictEqual(r.status, 0);
   assert.match(r.stderr, /Cannot resolve ref/);
 });
 
-test('per-item: next-tech-debt-id rejects a malformed date', { skip: !HAVE_PERL }, (t) => {
+test('per-item: next-tech-debt-id rejects a malformed date', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t);
   const r = runNextId(repo, '2607');
   assert.notStrictEqual(r.status, 0);
@@ -423,7 +436,7 @@ test('per-item: next-tech-debt-id rejects a malformed date', { skip: !HAVE_PERL 
 // reserve-tech-debt-id.pl (atomic allocation against a real origin remote)
 // ---------------------------------------------------------------------------
 
-test('reserve: allocates the next free id and pushes its td/<id> branch', { skip: !HAVE_PERL }, (t) => {
+test('reserve: allocates the next free id and pushes its td/<id> branch', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const { remoteDir } = makeRemoteRepo(t);
   const clone = cloneRemote(t, remoteDir, 'w1');
   const r = runReserve(clone, '260720');
@@ -436,7 +449,7 @@ test('reserve: allocates the next free id and pushes its td/<id> branch', { skip
 });
 
 test('reserve: the reservation commit passes the Conventional Commits check', {
-  skip: !HAVE_PERL || !HAVE_BASH
+  skip: !CAN_RUN_TD_SCRIPTS || !HAVE_BASH
     || (!HAVE_COMMIT_FORMAT && 'consumer repo: .githooks/ is this repository\'s own contribution policy'),
 }, (t) => {
   // The reservation commit is the base of the filing branch and survives
@@ -459,7 +472,7 @@ test('reserve: the reservation commit passes the Conventional Commits check', {
   assert.strictEqual(checked.status, 0, `${subject}\n${checked.stderr}`);
 });
 
-test('reserve: skips ids already reserved by an unmerged td/* branch', { skip: !HAVE_PERL }, (t) => {
+test('reserve: skips ids already reserved by an unmerged td/* branch', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const { remoteDir } = makeRemoteRepo(t);
   const seeder = cloneRemote(t, remoteDir, 'seeder');
   // Reserve TD-PPtest-26072003 (the next free filed id) directly, without
@@ -473,7 +486,7 @@ test('reserve: skips ids already reserved by an unmerged td/* branch', { skip: !
   assert.strictEqual(r.stdout.trim(), 'TD-PPtest-26072004');
 });
 
-test('reserve: sequential reservations from independent clones never collide', { skip: !HAVE_PERL }, (t) => {
+test('reserve: sequential reservations from independent clones never collide', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const { remoteDir } = makeRemoteRepo(t);
   const ids = [];
   for (const name of ['w1', 'w2', 'w3']) {
@@ -489,7 +502,7 @@ test('reserve: sequential reservations from independent clones never collide', {
   ]);
 });
 
-test('reserve: a rejected push retries the next NN instead of moving the existing branch', { skip: !HAVE_PERL }, (t) => {
+test('reserve: a rejected push retries the next NN instead of moving the existing branch', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   // Regression test for the collision this item (TD-PPpoet-26080801) exists
   // to fix: pre-create the exact branch a naive scan-then-push would target,
   // pointing at a commit that is an *ancestor* of origin/main (so a plain
@@ -514,7 +527,7 @@ test('reserve: a rejected push retries the next NN instead of moving the existin
   );
 });
 
-test('reserve: concurrent reservations for the same date never collide', { skip: !HAVE_PERL }, async (t) => {
+test('reserve: concurrent reservations for the same date never collide', { skip: !CAN_RUN_TD_SCRIPTS }, async (t) => {
   const { remoteDir } = makeRemoteRepo(t, {}, SCOPED_POLICY);
   const N = 6;
   const clones = Array.from({ length: N }, (_, i) => cloneRemote(t, remoteDir, `w${i}`));
@@ -527,7 +540,7 @@ test('reserve: concurrent reservations for the same date never collide', { skip:
   assert.deepStrictEqual([...ids].sort(), remoteBranches(remoteDir).map((ref) => ref.replace('refs/heads/td/', '')).sort());
 });
 
-test('reserve: works against a register that has not filed its first item', { skip: !HAVE_PERL }, (t) => {
+test('reserve: works against a register that has not filed its first item', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const { remoteDir } = makeRemoteRepo(t, {}, SCOPED_POLICY);
   const clone = cloneRemote(t, remoteDir, 'w1');
   const r = runReserve(clone, '260801');
@@ -535,7 +548,7 @@ test('reserve: works against a register that has not filed its first item', { sk
   assert.strictEqual(r.stdout.trim(), 'TD-PPtest-26080101');
 });
 
-test('reserve: dies without a git remote named origin', { skip: !HAVE_PERL }, (t) => {
+test('reserve: dies without a git remote named origin', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-noorigin-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   git(dir, 'init', '-q', '-b', 'main');
@@ -543,7 +556,7 @@ test('reserve: dies without a git remote named origin', { skip: !HAVE_PERL }, (t
   assert.notStrictEqual(r.status, 0);
 });
 
-test('reserve: rejects a malformed date and a stray extra argument', { skip: !HAVE_PERL }, (t) => {
+test('reserve: rejects a malformed date and a stray extra argument', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const { remoteDir } = makeRemoteRepo(t);
   const clone = cloneRemote(t, remoteDir, 'w1');
 
@@ -574,7 +587,7 @@ function makeRewriteRepo(t) {
   return dir;
 }
 
-test('open-rewrites: flags a body change on an item whose status stays open', { skip: !HAVE_PERL }, (t) => {
+test('open-rewrites: flags a body change on an item whose status stays open', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const dir = makeRewriteRepo(t);
   git(dir, 'checkout', '-q', '-b', 'overwrite');
   fs.writeFileSync(
@@ -588,7 +601,7 @@ test('open-rewrites: flags a body change on an item whose status stays open', { 
   assert.match(r.stdout, /BODY REWRITE\s+tech-debt\/TD-PPtest-26080101\.md/);
 });
 
-test('open-rewrites: allows a strict append to an open item\'s body', { skip: !HAVE_PERL }, (t) => {
+test('open-rewrites: allows a strict append to an open item\'s body', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const dir = makeRewriteRepo(t);
   git(dir, 'checkout', '-q', '-b', 'append');
   fs.writeFileSync(
@@ -602,7 +615,7 @@ test('open-rewrites: allows a strict append to an open item\'s body', { skip: !H
   assert.match(r.stdout, /no open-item body rewrites/);
 });
 
-test('open-rewrites: flags a same-length rewrite even though it is not a whole-body swap', { skip: !HAVE_PERL }, (t) => {
+test('open-rewrites: flags a same-length rewrite even though it is not a whole-body swap', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const dir = makeRewriteRepo(t);
   git(dir, 'checkout', '-q', '-b', 'samelength');
   fs.writeFileSync(
@@ -616,7 +629,7 @@ test('open-rewrites: flags a same-length rewrite even though it is not a whole-b
   assert.match(r.stdout, /BODY REWRITE\s+tech-debt\/TD-PPtest-26080101\.md/);
 });
 
-test('open-rewrites: allows a claim (status changes, body unchanged)', { skip: !HAVE_PERL }, (t) => {
+test('open-rewrites: allows a claim (status changes, body unchanged)', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const dir = makeRewriteRepo(t);
   git(dir, 'checkout', '-q', '-b', 'claim');
   fs.writeFileSync(
@@ -630,7 +643,7 @@ test('open-rewrites: allows a claim (status changes, body unchanged)', { skip: !
   assert.match(r.stdout, /no open-item body rewrites/);
 });
 
-test('open-rewrites: allows a resolution (status changes to resolved)', { skip: !HAVE_PERL }, (t) => {
+test('open-rewrites: allows a resolution (status changes to resolved)', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const dir = makeRewriteRepo(t);
   git(dir, 'checkout', '-q', '-b', 'resolve');
   fs.writeFileSync(
@@ -647,7 +660,7 @@ test('open-rewrites: allows a resolution (status changes to resolved)', { skip: 
   assert.strictEqual(r.status, 0, r.stdout);
 });
 
-test('open-rewrites: ignores newly added items', { skip: !HAVE_PERL }, (t) => {
+test('open-rewrites: ignores newly added items', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const dir = makeRewriteRepo(t);
   git(dir, 'checkout', '-q', '-b', 'addition');
   fs.writeFileSync(
@@ -661,7 +674,7 @@ test('open-rewrites: ignores newly added items', { skip: !HAVE_PERL }, (t) => {
   assert.strictEqual(r.status, 0, r.stdout);
 });
 
-test('open-rewrites: a clean diff exits 0', { skip: !HAVE_PERL }, (t) => {
+test('open-rewrites: a clean diff exits 0', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const dir = makeRewriteRepo(t);
   git(dir, 'checkout', '-q', '-b', 'noop');
   fs.writeFileSync(path.join(dir, 'unrelated.txt'), 'hi\n');
@@ -672,7 +685,7 @@ test('open-rewrites: a clean diff exits 0', { skip: !HAVE_PERL }, (t) => {
   assert.strictEqual(r.status, 0, r.stdout);
 });
 
-test('td-check: rejects an open item with an empty body', { skip: !HAVE_PERL }, (t) => {
+test('td-check: rejects an open item with an empty body', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t, {
     ...ITEMS,
     'TD-PPtest-26072601.md': itemFile('TD-PPtest-26072601', {}, ''),
@@ -682,7 +695,7 @@ test('td-check: rejects an open item with an empty body', { skip: !HAVE_PERL }, 
   assert.match(r.stdout, /MISSING FIELD.*TD-PPtest-26072601\.md \(body/);
 });
 
-test('td-check: rejects an open item with a whitespace-only body', { skip: !HAVE_PERL }, (t) => {
+test('td-check: rejects an open item with a whitespace-only body', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t, {
     ...ITEMS,
     'TD-PPtest-26072701.md': itemFile('TD-PPtest-26072701', {}, '   \n\n  \t  \n'),
@@ -692,7 +705,7 @@ test('td-check: rejects an open item with a whitespace-only body', { skip: !HAVE
   assert.match(r.stdout, /MISSING FIELD.*TD-PPtest-26072701\.md \(body/);
 });
 
-test('td-check: allows a resolved item with an empty body (legacy)', { skip: !HAVE_PERL }, (t) => {
+test('td-check: allows a resolved item with an empty body (legacy)', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t, {
     ...ITEMS,
     'TD-PPtest-26072801.md': itemFile(
@@ -706,7 +719,7 @@ test('td-check: allows a resolved item with an empty body (legacy)', { skip: !HA
   assert.match(r.stdout, /consistent/);
 });
 
-test('td-check: allows a not-debt item with an empty body (legacy)', { skip: !HAVE_PERL }, (t) => {
+test('td-check: allows a not-debt item with an empty body (legacy)', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const repo = makeItemRepo(t, {
     ...ITEMS,
     'TD-PPtest-26072901.md': itemFile('TD-PPtest-26072901', { status: 'not-debt', ref: '#98' }, ''),
@@ -742,7 +755,7 @@ test('td-tooling-manifest: one real, existing script path per line, no blanks or
   );
 });
 
-test('open-rewrites: rejects an append when the base body is empty', { skip: !HAVE_PERL }, (t) => {
+test('open-rewrites: rejects an append when the base body is empty', { skip: !CAN_RUN_TD_SCRIPTS }, (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'td-rewrite-empty-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   git(dir, 'init', '-q', '-b', 'main');
