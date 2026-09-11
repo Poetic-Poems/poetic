@@ -14,10 +14,10 @@ name: Tech-debt register check
 #
 # scripts/td-check.pl is the canonical copy for the sibling repositories,
 # which hold a byte-identical copy guarded by their td-tooling-drift
-# workflow. scripts/check-tech-debt-open-rewrites.pl remains here for the
-# same reason — its own guard has nothing left to check now that every
-# tech-debt/ record is resolved or not-debt — but nothing in this
-# repository's own CI invokes it any more.
+# workflow. scripts/check-tech-debt-open-rewrites.pl is canonical for them
+# in the same way, and that is its only role here: this repository's own CI
+# does not invoke it, since its guard fires only on a record whose status is
+# open, and every record in the frozen archive is resolved or not-debt.
 
 on:
   pull_request:
