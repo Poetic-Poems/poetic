@@ -201,9 +201,9 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `scripts/check-tech-debt-open-rewrites.pl` and
   `scripts/reserve-tech-debt-id.pl` were absent from `FRAMEWORK_PATHS` in
   `scripts/sync-framework.sh`, so a sync carried down the tests
-  covering both scripts, but neither script itself — breaking the consumer's `register`
-  and `build` checks on the sync pull request itself. The reservation
-  commit's Conventional Commits test now also skips where
+  covering both scripts, but neither script itself — breaking the
+  consumer's `register` and `build` checks on the sync pull request itself.
+  The reservation commit's Conventional Commits test now also skips where
   `.githooks/check-commit-format.sh` is absent, since `test/` is synced
   verbatim but `.githooks/` is this repository's own contribution policy,
   enforced here by `commit-format.yml` and carried by no consumer.
