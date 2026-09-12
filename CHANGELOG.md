@@ -33,6 +33,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   before this freeze, and `.github/workflows/tech-debt-register.yml`
   continues to guard this repository's own frozen archive against deletion
   or rename. Closes #199.
+- **The `/td` skill now resolves an open `pw::type:tech-debt`-labelled GitHub
+  issue instead of a `tech-debt/` register record**, matching the policy
+  change above. `/td <n>` takes an issue number, resolved per repo via `gh
+  issue view` rather than `scripts/get-tech-debt-record.pl`; the launched
+  agent no longer creates a `td/<id>` claim branch or edits a record's
+  frontmatter, and instead closes the issue with a real closing keyword plus
+  a `td-record` body block in its pull request, per `CLAUDE.md`'s "Tech
+  debt" section. Since `.claude/skills` is synced to consumer repositories,
+  this change reaches every consumer too. Fixes #210.
 
 ### Added
 
