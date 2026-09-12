@@ -70,8 +70,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `td-check.pl`, since neither sees an add/add conflict. `TECH-DEBT.md`'s
   "Filing an item" now calls the new script instead of prescribing a manual
   skim of open pull requests and `td/*` branches.
-  `.github/workflows/tech-debt-register.yml` gained a second guard,
-  `scripts/check-tech-debt-open-rewrites.pl`, that fails a pull request
+  `scripts/check-tech-debt-open-rewrites.pl` fails a pull request
   rewriting existing text in an open item's body without moving its
   `status:` field — an open item's body is append-only, so a
   `Referenced from:` note or other new text may still be appended — the
@@ -201,9 +200,8 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **The tech-debt register's two new scripts now reach consumer repos.**
   `scripts/check-tech-debt-open-rewrites.pl` and
   `scripts/reserve-tech-debt-id.pl` were absent from `FRAMEWORK_PATHS` in
-  `scripts/sync-framework.sh`, so a sync carried down the
-  `tech-debt-register.yml` step that invokes the first and the tests
-  covering both, but neither script — breaking the consumer's `register`
+  `scripts/sync-framework.sh`, so a sync carried down the tests
+  covering both scripts, but neither script itself — breaking the consumer's `register`
   and `build` checks on the sync pull request itself. The reservation
   commit's Conventional Commits test now also skips where
   `.githooks/check-commit-format.sh` is absent, since `test/` is synced
