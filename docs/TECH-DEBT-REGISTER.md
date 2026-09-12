@@ -119,9 +119,6 @@ done <<< "$manifest"
 (also `npm run check:td-register`) on every pull request in this
 repository, guarding the frozen archive's invariants: no file in
 `tech-debt/` may be deleted or renamed, and no old-format `### TD` item
-section may reappear in `TECH-DEBT.md`. Its open-item-body-append-only
-guard (`scripts/check-tech-debt-open-rewrites.pl`) is a no-op against an
-archive in which every record is `resolved` or `not-debt`. The workflow
-sits outside `scripts/sync-framework.sh`'s synced set: it protects this
-repository's own frozen archive and is not something a consumer repo
-needs.
+section may reappear in `TECH-DEBT.md`. The workflow sits outside
+`scripts/sync-framework.sh`'s synced set: it protects this repository's
+own frozen archive and is not something a consumer repo needs.
