@@ -82,7 +82,7 @@ artistos-governance).
 
 | Poetic-Poems repo | Code |
 |-------------------|------|
-| agent-ops | `agop` |
+| agent-ops (now `Pullwright/agent-ops`; the code names its archive, allocated while the repository was here) | `agop` |
 | agent-ops-state | `agos` |
 | poetic | `poet` |
 | poetic-fiddle | `pfid` |
