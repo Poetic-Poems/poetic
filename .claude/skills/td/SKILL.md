@@ -73,9 +73,9 @@ the full description and the suggested fix, and instruct it to:
 
 1. Make its own dedicated fresh clone of the resolved repo's `origin/main`
    and work only in that clone — never in a checkout shared with the user or
-   another agent. Then read that repo's `CLAUDE.md` first and follow its
-   conventions (Conventional Commits, the CHANGELOG/as-built-docs policy, and
-   the tech-debt policy).
+   another agent. Then read that repo's `AGENTS.md` first (its `CLAUDE.md`
+   imports it) and follow its conventions (Conventional Commits, the
+   CHANGELOG/as-built-docs policy, and the tech-debt policy).
 2. Before doing anything else, check the issue isn't already being worked:
    skim open pull requests for its number (e.g. `gh pr list --repo
    <owner>/<repo> --search "Fixes #<n>" --state open`). If it looks already
@@ -86,13 +86,14 @@ the full description and the suggested fix, and instruct it to:
    scanning open PRs; comment on the issue linking the draft PR.
 3. Implement the fix described in the issue's `body`, pushing commits to the
    branch/PR as the work progresses.
-4. Run the relevant checks for the area it touched (e.g. `npm test`,
+4. Run the relevant checks for the area it touched, as that repo's
+   `AGENTS.md` lists them (for the poetic framework: `npm test`,
    `npm run build`, `npm run check`, `npm run check:build`; on WSL/Linux via
    `./scripts/setup-linux.sh`).
-5. Add a `[Unreleased]` `CHANGELOG.md` entry if the change is visible to poem
-   authors or site publishers (skip it for routine/patch-level fixes, per that
-   file's own header).
-6. On success, close the loop per `CLAUDE.md`'s "Tech debt" section: the PR
+5. Add a `[Unreleased]` `CHANGELOG.md` entry if the change is notable under
+   that repo's documentation principles (skip it for routine/patch-level
+   fixes, per that file's own header).
+6. On success, close the loop per `AGENTS.md`'s "Tech debt" section: the PR
    body carries a real GitHub closing keyword (e.g. `Fixes #<n>`) naming the
    resolved issue, plus a fenced `td-record` block —
 
@@ -116,7 +117,7 @@ the full description and the suggested fix, and instruct it to:
    outside the obvious scope, follow-ups left undone, tech-debt entries added).
    Keep the PR title as-is; only the body changes.
 8. Push the final commits and mark the draft PR ready for review — per
-   `CLAUDE.md`'s branch workflow, agents work autonomously up to the PR
+   `AGENTS.md`'s branch workflow, agents work autonomously up to the PR
    stage without pausing to ask first. If verification fails and the agent
    can't resolve it, close the draft PR and delete the branch (this releases
    the claim), and report what blocked it instead of leaving a stale claim in
