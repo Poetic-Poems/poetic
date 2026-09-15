@@ -4,15 +4,13 @@ Tech debt in the Poetic framework is filed as GitHub issues labelled
 `pw::type:tech-debt` — see `TECH-DEBT.md` for the current policy. This
 document describes `tech-debt/`, the **frozen historical archive** of the
 per-item register that predates that policy: the format its files were
-written in, so a reader (or `scripts/get-tech-debt-record.pl`, still used to
-resolve an ID or ID segment against it) can make sense of them, and the
-scope-code registry that named this repository's `PPpoet` prefix.
+written in, so a reader can make sense of them, and the scope-code registry
+that named this repository's `PPpoet` prefix.
 
 `tech-debt/` is an **append-only set, frozen in place**: files are never
-added, edited, deleted, or renamed — CI enforces the deletion/rename guard.
-A repository's own `scope:` declaration (`TECH-DEBT.md`'s frontmatter) and
-the ID grammar below remain live only insofar as `scripts/get-tech-debt-record.pl`
-and sibling scopes' equivalents still resolve archived IDs by them.
+added, edited, deleted, or renamed. A repository's own `scope:` declaration
+(`TECH-DEBT.md`'s frontmatter) and the ID grammar below remain live only
+insofar as a reader still resolves archived IDs by them.
 
 ## Layout
 
@@ -91,34 +89,3 @@ artistos-governance).
 | warwick-allen repo | Code |
 |--------------------|------|
 | fragments-and-unity | `frag` |
-
-## Tooling manifest for consumers
-
-`scripts/td-tooling-manifest` lists, one repo-relative path per line, the
-canonical scripts that read this archive format (`scripts/get-tech-debt-record.pl`,
-`scripts/next-tech-debt-id.pl`, `scripts/reserve-tech-debt-id.pl`,
-`scripts/td-check.pl`, `scripts/check-tech-debt-open-rewrites.pl`). These
-scripts sit outside `scripts/sync-framework.sh`'s synced set — a consumer
-repo files debt as labelled issues and never needs them — but they stay in
-this repository, and a sibling repository holding a byte-identical copy
-fetches this manifest for its own drift check:
-
-```bash
-manifest=$(curl -fsSL \
-  https://raw.githubusercontent.com/Poetic-Poems/poetic/main/scripts/td-tooling-manifest)
-while IFS= read -r f; do
-  [ -n "$f" ] || continue
-  diff <(curl -fsSL "https://raw.githubusercontent.com/Poetic-Poems/poetic/main/$f") "$f" \
-    || echo "::error::$f has drifted from poetic main"
-done <<< "$manifest"
-```
-
-## Consistency gate
-
-`.github/workflows/tech-debt-register.yml` runs `perl scripts/td-check.pl`
-(also `npm run check:td-register`) on every pull request in this
-repository, guarding the frozen archive's invariants: no file in
-`tech-debt/` may be deleted or renamed, and no old-format `### TD` item
-section may reappear in `TECH-DEBT.md`. The workflow sits outside
-`scripts/sync-framework.sh`'s synced set: it protects this repository's
-own frozen archive and is not something a consumer repo needs.

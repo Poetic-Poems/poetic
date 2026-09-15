@@ -14,7 +14,6 @@ then carries the record into `main`'s own immutable history.
 repository ever allocated under its `PPpoet` scope while debt was tracked
 as a per-item register, before that policy changed. Its files are never
 edited, deleted, or renamed — `git log --follow tech-debt/<id>.md` remains
-each one's audit trail, and `scripts/get-tech-debt-record.pl` still
-resolves an ID (or ID segment) against it. The frozen format, ID grammar
-and scope-code registry are documented in
+each one's audit trail. The frozen format, ID grammar and scope-code
+registry are documented in
 [docs/TECH-DEBT-REGISTER.md](docs/TECH-DEBT-REGISTER.md).

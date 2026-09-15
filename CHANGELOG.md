@@ -42,6 +42,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a `td-record` body block in its pull request, per `CLAUDE.md`'s "Tech
   debt" section. Since `.claude/skills` is synced to consumer repositories,
   this change reaches every consumer too. Fixes #210.
+- **The canonical tech-debt register tooling and manifest are gone.** Every
+  Poetic-Poems consumer has frozen its own register and retired its drift
+  workflow, so `scripts/get-tech-debt-record.pl`, `scripts/next-tech-debt-id.pl`,
+  `scripts/reserve-tech-debt-id.pl`, `scripts/td-check.pl`,
+  `scripts/check-tech-debt-open-rewrites.pl`, `scripts/td-tooling-manifest`,
+  their tests, `.github/workflows/tech-debt-register.yml` and the
+  `check:td-register` npm script are deleted. `tech-debt/`'s frozen archive
+  and `docs/TECH-DEBT-REGISTER.md`'s description of its format are
+  untouched. Fixes #200.
 
 ### Added
 
