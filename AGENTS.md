@@ -32,7 +32,7 @@ editors/vim/      ← Vim filetype + syntax files
 docs/             ← documentation
 examples/         ← example poem files
 .github/workflows/← CI: build-poems.yml, codeql.yml, commit-format.yml, release.yml,
-                    sync-blogger.yml, sync-framework.yml, tech-debt-register.yml
+                    sync-blogger.yml, sync-framework.yml
 ```
 
 ## Build commands
