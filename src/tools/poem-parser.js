@@ -10,7 +10,7 @@
 
 const yaml = require('js-yaml');
 const { renderGfm } = require('./markdown');
-const { convertMarkup, convertSpacesToNbsp, reservedEscapeError } = require('./poem-markup');
+const { convertMarkup, convertSpacesToNbsp, splitBalancedHtmlLines, reservedEscapeError } = require('./poem-markup');
 const {
   checkReservedName,
   substituteVariables: substituteVariablesPure,
@@ -1009,7 +1009,7 @@ class PoemParser {
       }
 
       const withMarkup = convertMarkup(normalLines.join('\n'));
-      for (const l of withMarkup.split('\n')) {
+      for (const l of splitBalancedHtmlLines(withMarkup)) {
         processedParts.push(l);
       }
     }

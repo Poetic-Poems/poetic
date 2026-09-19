@@ -71,6 +71,13 @@ h1 {
   text-indent: -1em;
 }
 
+/* text-indent is inherited, and a nested block (a blockquote is emitted as a
+   single poem line) gets no matching padding to cancel it, so its first line
+   would otherwise hang 1em to the left of the rest of the quote. */
+.poem-line blockquote {
+  text-indent: 0;
+}
+
 .poem-info {
   color: #707070;
   font-size: 90%;

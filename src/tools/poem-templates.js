@@ -62,7 +62,13 @@ pug_html = pug_html + "\u003Cbr\u002F\u003E";
 }
 }
 else {
+const hardBreak = line.match(/^([\s\S]*)<br\/>((?:<\/[a-zA-Z][a-zA-Z0-9]*>)*)$/)
+if (hardBreak) {
+pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = hardBreak[1] + hardBreak[2]) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E";
+}
+else {
 pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = line) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E";
+}
 }
 index++
       }
@@ -77,7 +83,13 @@ pug_html = pug_html + "\u003Cbr\u002F\u003E";
 }
 }
 else {
+const hardBreak = line.match(/^([\s\S]*)<br\/>((?:<\/[a-zA-Z][a-zA-Z0-9]*>)*)$/)
+if (hardBreak) {
+pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = hardBreak[1] + hardBreak[2]) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E";
+}
+else {
 pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = line) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E";
+}
 }
 index++
     }
@@ -552,7 +564,13 @@ pug_html = pug_html + "\u003Cbr\u002F\u003E";
 }
 }
 else {
+const hardBreak = line.match(/^([\s\S]*)<br\/>((?:<\/[a-zA-Z][a-zA-Z0-9]*>)*)$/)
+if (hardBreak) {
+pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = hardBreak[1] + hardBreak[2]) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E";
+}
+else {
 pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = line) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E";
+}
 }
 index++
       }
@@ -567,7 +585,13 @@ pug_html = pug_html + "\u003Cbr\u002F\u003E";
 }
 }
 else {
+const hardBreak = line.match(/^([\s\S]*)<br\/>((?:<\/[a-zA-Z][a-zA-Z0-9]*>)*)$/)
+if (hardBreak) {
+pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = hardBreak[1] + hardBreak[2]) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E";
+}
+else {
 pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = line) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E";
+}
 }
 index++
     }

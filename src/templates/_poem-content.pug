@@ -39,6 +39,14 @@
 //- joined block has just one "first line" for the whole poem, not one per
 //- line. A blank entry (an unlabelled stanza break within one segment)
 //- still renders as a plain <br />, matching a real blank line's height.
+//-
+//- A line can end in convertMarkup()'s hard-line-break marker (a literal
+//- <br/>, from a trailing double-space in the .poem source), optionally
+//- followed by closing tags that splitBalancedHtmlLines() (poem-markup.js)
+//- added to re-close a tag left open across this line boundary. A <br/> as
+//- the last child of a block produces no line box, so it must render
+//- outside the div — the closing tags stay inside, since they close markup
+//- that belongs to this line's own content, not to the break.
 mixin processLines(text)
   if text
     - const lines = text.split('\n')
@@ -48,7 +56,12 @@ mixin processLines(text)
         if index < lines.length - 1
           br
       else
-        div.poem-line!= line
+        - const hardBreak = line.match(/^([\s\S]*)<br\/>((?:<\/[a-zA-Z][a-zA-Z0-9]*>)*)$/)
+        if hardBreak
+          div.poem-line!= hardBreak[1] + hardBreak[2]
+          br
+        else
+          div.poem-line!= line
       - index++
 
 //- Main poem-content mixin.

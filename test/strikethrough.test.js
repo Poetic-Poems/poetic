@@ -48,8 +48,12 @@ test('body: \\~ escapes a literal ~, including writing two adjacent literal tild
 });
 
 test('body: ~~ pairs match across lines within a paragraph but not across paragraph boundaries', () => {
+  // splitBalancedHtmlLines() (poem-markup.js) closes the pair at the end of
+  // the first line and reopens it at the start of the second, rather than
+  // storing a raw <s> spanning the '\n', so each stored line stays
+  // well-formed HTML on its own (poem-parser.js's processWysiwygLines()).
   const spanning = parseSegments(['{Verse}', 'a ~~word', 'continued~~ b']);
-  assert.match(spanning[0].lines, /<s>word\ncontinued<\/s>/);
+  assert.match(spanning[0].lines, /<s>word<\/s>\n<s>continued<\/s> b/);
 
   const acrossParagraphs = parseSegments(['{Verse}', 'a ~~word', '', 'continued~~ b']);
   assert.doesNotMatch(acrossParagraphs[0].lines, /<s>/);

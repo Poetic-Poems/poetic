@@ -155,9 +155,58 @@ function convertMarkup(text) {
   return text;
 }
 
+/**
+ * A tag convertMarkup() never emits split across a '\n', so it needs no
+ * balancing here; only <br/> is both void and one of its outputs.
+ */
+const VOID_TAGS = new Set(['br']);
+const HTML_TAG_RE = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g;
+
+/**
+ * Split convertMarkup() output on '\n' so every returned line is well-formed
+ * HTML on its own, even though convertMarkup()'s emphasis/strong/strikethrough
+ * /span/link patterns match across the newlines within one paragraph (see
+ * "Paragraph Boundaries" in docs/POEM-SYNTAX.md) and so can open a tag on one
+ * physical line and close it on a later one. A tag still open at a line
+ * boundary is closed at the end of that line and reopened, verbatim, at the
+ * start of the next -- the same technique a caption or block-quote renderer
+ * uses to keep formatting intact across a forced line break.
+ *
+ * @param {string} html
+ * @returns {string[]}
+ */
+function splitBalancedHtmlLines(html) {
+  const openTags = []; // {name, text}, outermost first, for tags still open
+
+  return html.split('\n').map((line) => {
+    const prefix = openTags.map((tag) => tag.text).join('');
+
+    HTML_TAG_RE.lastIndex = 0;
+    let match;
+    while ((match = HTML_TAG_RE.exec(line)) !== null) {
+      const tagName = match[1].toLowerCase();
+      if (VOID_TAGS.has(tagName)) continue;
+      if (match[0][1] === '/') {
+        for (let i = openTags.length - 1; i >= 0; i--) {
+          if (openTags[i].name === tagName) {
+            openTags.splice(i, 1);
+            break;
+          }
+        }
+      } else {
+        openTags.push({ name: tagName, text: match[0] });
+      }
+    }
+
+    const suffix = openTags.map((tag) => `</${tag.name}>`).reverse().join('');
+    return prefix + line + suffix;
+  });
+}
+
 module.exports = {
   reservedEscapeError,
   checkReservedEscape,
   convertSpacesToNbsp,
   convertMarkup,
+  splitBalancedHtmlLines,
 };

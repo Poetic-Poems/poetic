@@ -123,15 +123,18 @@ function initFilterBar() {
     // textContent ignores <br> and block-element boundaries entirely (unlike
     // innerText, it inserts no whitespace), so adjacent lines can fuse into
     // one word at a line boundary (e.g. "cavernous<br>Now" -> "cavernousNow",
-    // which spuriously contains "snow"; likewise adjacent .poem-line divs).
-    // Replace <br> and insert a space before each .poem-line on a clone
-    // before reading textContent so line boundaries can't fuse words.
+    // which spuriously contains "snow"; likewise adjacent .poem-line divs, or
+    // a .poem-line sitting directly next to a raw-HTML part with no <br>
+    // between them). Replace <br> and bracket every .poem-line with a space
+    // on both sides on a clone before reading textContent, so no line
+    // boundary - line-to-line or line-to-non-line - can fuse words.
     function textOf(el) {
         if (!el) return '';
         const clone = el.cloneNode(true);
         clone.querySelectorAll('br').forEach((br) => br.replaceWith(' '));
         clone.querySelectorAll('.poem-line').forEach((line) => {
             line.parentNode.insertBefore(document.createTextNode(' '), line);
+            line.parentNode.insertBefore(document.createTextNode(' '), line.nextSibling);
         });
         return clone.textContent;
     }
