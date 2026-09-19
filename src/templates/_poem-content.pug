@@ -32,15 +32,23 @@
 -   return processedParagraphs.join('');
 - }
 
-//- Mixin to process lines and add <br /> tags
+//- Mixin to process lines. Each real poem line becomes its own block
+//- (.poem-line) so the hanging-indent CSS in public/poetic.css can indent a
+//- *wrapped* continuation of a long line without also indenting the next
+//- real line — a hanging indent only works per block, and a shared <br />-
+//- joined block has just one "first line" for the whole poem, not one per
+//- line. A blank entry (an unlabelled stanza break within one segment)
+//- still renders as a plain <br />, matching a real blank line's height.
 mixin processLines(text)
   if text
     - const lines = text.split('\n')
     - let index = 0
     each line in lines
-      != line
-      if index < lines.length - 1
-        br
+      if line === ''
+        if index < lines.length - 1
+          br
+      else
+        div.poem-line!= line
       - index++
 
 //- Main poem-content mixin.

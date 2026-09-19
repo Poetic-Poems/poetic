@@ -56,9 +56,13 @@ let index = 0
   if ('number' == typeof $$obj.length) {
       for (var pug_index0 = 0, $$l = $$obj.length; pug_index0 < $$l; pug_index0++) {
         var line = $$obj[pug_index0];
-pug_html = pug_html + (null == (pug_interp = line) ? "" : pug_interp);
+if (line === '') {
 if (index < lines.length - 1) {
 pug_html = pug_html + "\u003Cbr\u002F\u003E";
+}
+}
+else {
+pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = line) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E";
 }
 index++
       }
@@ -67,9 +71,13 @@ index++
     for (var pug_index0 in $$obj) {
       $$l++;
       var line = $$obj[pug_index0];
-pug_html = pug_html + (null == (pug_interp = line) ? "" : pug_interp);
+if (line === '') {
 if (index < lines.length - 1) {
 pug_html = pug_html + "\u003Cbr\u002F\u003E";
+}
+}
+else {
+pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = line) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E";
 }
 index++
     }
@@ -538,9 +546,13 @@ let index = 0
   if ('number' == typeof $$obj.length) {
       for (var pug_index0 = 0, $$l = $$obj.length; pug_index0 < $$l; pug_index0++) {
         var line = $$obj[pug_index0];
-pug_html = pug_html + (null == (pug_interp = line) ? "" : pug_interp);
+if (line === '') {
 if (index < lines.length - 1) {
 pug_html = pug_html + "\u003Cbr\u002F\u003E";
+}
+}
+else {
+pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = line) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E";
 }
 index++
       }
@@ -549,9 +561,13 @@ index++
     for (var pug_index0 in $$obj) {
       $$l++;
       var line = $$obj[pug_index0];
-pug_html = pug_html + (null == (pug_interp = line) ? "" : pug_interp);
+if (line === '') {
 if (index < lines.length - 1) {
 pug_html = pug_html + "\u003Cbr\u002F\u003E";
+}
+}
+else {
+pug_html = pug_html + "\u003Cdiv class=\"poem-line\"\u003E" + (null == (pug_interp = line) ? "" : pug_interp) + "\u003C\u002Fdiv\u003E";
 }
 index++
     }
