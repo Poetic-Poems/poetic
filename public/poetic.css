@@ -66,6 +66,11 @@ h1 {
   margin: 0 0 20px 0;
 }
 
+.poem-body {
+  padding-left: 1em;
+  text-indent: -1em;
+}
+
 .poem-info {
   color: #707070;
   font-size: 90%;
