@@ -38,6 +38,75 @@ versions:
 - The segment `label` field is optional. When omitted, the segment will be rendered without a label.
 - Each version contains its own `segments` list.
 
+### Mixed Segments (`parts`)
+
+When a segment contains both plain verse text and embedded `<<<...>>>` blocks (literal HTML,
+markdown tables, or other structured content), the segment is stored as a `parts` array instead
+of the plain `lines:` field. The `parts` array alternates between `lines` and `html` entries,
+preserving the order in which they appear in the source poem.
+
+Each entry in `parts` is one of:
+
+- `{ type: 'lines', lines: <html> }` — one or more consecutive verse lines processed into HTML
+- `{ type: 'html', html: <rendered-html> }` — the processed output of an embedded block
+
+#### Example: Verse with Embedded Table
+
+Source poem (`.poem` format):
+```
+{Verse with embedded table}
+The structural beats are:
+<<<markdown
+| Section | Bars |
+|---------|------|
+| Verse   | 8    |
+| Chorus  | 4    |
+>>>
+and the verse resumes after the table.
+```
+
+Converted YAML:
+```yaml
+versions:
+  - segments:
+      - label: Verse with embedded table
+        parts:
+          - type: lines
+            lines: |
+              The structural beats are:
+          - type: html
+            html: |
+              <table>
+              <thead>
+              <tr>
+              <th>Section</th>
+              <th>Bars</th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr>
+              <td>Verse</td>
+              <td>8</td>
+              </tr>
+              <tr>
+              <td>Chorus</td>
+              <td>4</td>
+              </tr>
+              </tbody>
+              </table>
+          - type: lines
+            lines: |
+              and the verse resumes after the table.
+```
+
+**Notes:**
+- Segments with only plain verse lines use the simple `lines:` field (no `parts`).
+- Only segments that mix verse with embedded blocks use `parts`.
+- The `lines` HTML in a `parts` entry is processed the same way as the simple `lines:` field — verse
+  markup, smart typography, and other transformations are all applied.
+- The `html` entries are rendered from the embedded block's tag type (`markdown`, bare `<<<...>>>`,
+  or other configured block handlers) and passed through as-is.
+
 ## Optional Fields
 
 ### Audio
