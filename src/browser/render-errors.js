@@ -20,16 +20,19 @@ class PoemRenderError extends Error {
   }
 }
 
-// Messages thrown by src/tools/poem-parser.js's parseHeader() for a mandatory
-// header field that's missing or malformed.
-const KNOWN_MESSAGES = {
-  'Missing title': 'MISSING_TITLE',
-  'Missing date': 'MISSING_DATE',
-  'Invalid or missing date': 'INVALID_DATE',
-};
+// Message prefixes thrown by src/tools/poem-parser.js's parseHeader() for a
+// mandatory header field that's missing or malformed. Each throw appends
+// ` (line N)`, so these are matched as prefixes rather than exact strings.
+const KNOWN_MESSAGE_PREFIXES = [
+  ['Missing title', 'MISSING_TITLE'],
+  ['Missing date', 'MISSING_DATE'],
+  ['Invalid or missing date', 'INVALID_DATE'],
+];
 
 function codeFor(err) {
-  if (KNOWN_MESSAGES[err.message]) return KNOWN_MESSAGES[err.message];
+  for (const [prefix, code] of KNOWN_MESSAGE_PREFIXES) {
+    if (err.message.startsWith(prefix)) return code;
+  }
   // src/tools/poem-markup.js's reservedEscapeError().
   if (/^Reserved syntax:/.test(err.message)) return 'RESERVED_ESCAPE';
   return 'RENDER_ERROR';

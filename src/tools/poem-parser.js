@@ -733,10 +733,12 @@ class PoemParser {
   parseHeader() {
     this.skipBlankLines();
 
-    // Title (mandatory)
+    // Title (mandatory). Captured before next() advances this.index, so it
+    // names the line the title was expected on even when none remains.
+    const titleLine = this.index + 1;
     const title = this.next();
     if (!title) {
-      throw new Error('Missing title');
+      throw new Error(`Missing title (line ${titleLine})`);
     }
     // Decode `\%` → `%` so a title may begin with a literal `%` without being
     // read as a Preamble directive. `\%{...}` is preserved (see
@@ -744,9 +746,10 @@ class PoemParser {
     this.result.title = this.decodePercentEscape(this.substituteVariables(title.trim()));
 
     // Author (optional) or Date
+    let lineNumber = this.index + 1;
     let line = this.next();
     if (!line) {
-      throw new Error('Missing date');
+      throw new Error(`Missing date (line ${lineNumber})`);
     }
 
     // Check if this is a date (YYYY-MM-DD format) after variable substitution
@@ -760,13 +763,14 @@ class PoemParser {
       // This is the author
       this.result.author = substitutedLine;
       // Next line must be date
+      lineNumber = this.index + 1;
       line = this.next();
       if (!line) {
-        throw new Error('Missing date');
+        throw new Error(`Missing date (line ${lineNumber})`);
       }
       const substitutedDateLine = this.substituteVariables(line.trim());
       if (!datePattern.test(substitutedDateLine)) {
-        throw new Error('Invalid or missing date');
+        throw new Error(`Invalid or missing date (line ${lineNumber})`);
       }
       this.result.date = substitutedDateLine;
     }
