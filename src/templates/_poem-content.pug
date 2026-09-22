@@ -1,36 +1,9 @@
 //- Shared poem-content mixin — included by poem.pug (fragment) and poem-page.pug (full page).
 //- Do NOT add a <script> block here; the embedded-player loader lives in public/poetic.js.
 
-//- JavaScript helper: slugify text (mirrors slugify.js)
-- function slugify(text) {
--   text = text.toLowerCase().trim()
--   text = text.replace(/[^a-z0-9 -]/g, '')
--   text = text.replace(/ +/g, '-')
--   return text;
-- }
-
-//- Compute effective postscript preview settings from a postscript item's params.
-//- preview defaults to true unless params.preview is the string "false".
-//- previewLines defaults to 5 unless params['preview-lines'] parses as an integer >= 1.
-- function postscriptPreviewSettings(params) {
--   const preview = !(params && params.preview === 'false');
--   let previewLines = parseInt(params && params['preview-lines'], 10);
--   if (isNaN(previewLines) || previewLines < 1) previewLines = 5;
--   return { preview, previewLines };
-- }
-
-//- Function to process analysis text - convert blank lines to paragraph breaks
-- function processAnalysisText(text) {
--   const paragraphs = text.split(/\n\s*\n/).map(para => para.trim()).filter(para => para.length > 0);
--   const processedParagraphs = paragraphs.map(para => {
--     if (para.includes('<') && para.includes('>')) {
--       return para;
--     } else {
--       return '<p>' + para + '</p>';
--     }
--   });
--   return processedParagraphs.join('');
-- }
+//- slugify/postscriptPreviewSettings/processAnalysisText are passed in as Pug
+//- locals (see render-core.js), each called multiple times per render on
+//- different per-item values, rather than defined inline here.
 
 //- Mixin to process lines. Each real poem line becomes its own block
 //- (.poem-line) so the hanging-indent CSS in public/poetic.css can indent a
@@ -65,7 +38,8 @@ mixin processLines(text)
       - index++
 
 //- Main poem-content mixin.
-//- Locals used: title, author, date, slug, versions, songs, postscript, analysis, labels, labelBase, standalone
+//- Locals used: title, author, date, slug, versions, songs, postscript, analysis, labels,
+//- labelBase, standalone, slugify, postscriptPreviewSettings, processAnalysisText
 mixin poemContent
   if standalone
     //- A caller that embeds this fragment with no title heading of its own

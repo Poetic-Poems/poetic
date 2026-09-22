@@ -25,7 +25,9 @@ const {
   PAGE_TEMPLATE,
 } = require('../src/tools/build-templates');
 const { renderFragmentTemplate, renderPageTemplate } = require('../src/tools/poem-templates');
-const { resolveContextVars, songsFor } = require('../src/tools/render-core');
+const {
+  resolveContextVars, songsFor, slugify, postscriptPreviewSettings, processAnalysisText,
+} = require('../src/tools/render-core');
 const { convertPoemToYaml } = require('../src/tools/poem-to-yaml');
 const { slugFromFile } = require('../src/tools/slugify');
 const { formatDateForDisplay } = require('../src/tools/date-utils');
@@ -60,14 +62,19 @@ test('precompiled templates render identically to the runtime pug.compileFile', 
     const resolved = resolveContextVars(data);
     const songs = songsFor(resolved, {});
 
-    const fragmentLocals = { ...resolved, songs, labelBase: '' };
+    const fragmentLocals = {
+      ...resolved, songs, labelBase: '', slugify, postscriptPreviewSettings, processAnalysisText,
+    };
     assert.strictEqual(
       renderFragmentTemplate(fragmentLocals),
       runtimeFragment(fragmentLocals),
       `precompiled fragment template drifted for ${f}`
     );
 
-    const pageLocals = { ...resolved, favicon: 'poetic-logo.svg', subtitle: 'My Poems', songs, labelBase: '../' };
+    const pageLocals = {
+      ...resolved, favicon: 'poetic-logo.svg', subtitle: 'My Poems', songs, labelBase: '../',
+      slugify, postscriptPreviewSettings, processAnalysisText,
+    };
     assert.strictEqual(
       renderPageTemplate(pageLocals),
       runtimePage(pageLocals),

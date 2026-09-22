@@ -21,31 +21,8 @@ var pug_match_html=/["&<>]/;
 function pug_style(r){if(!r)return"";if("object"==typeof r){var t="";for(var e in r)pug_has_own_property.call(r,e)&&(t=t+e+":"+r[e]+";");return t}return r+""}function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;
     var locals_for_with = (locals || {});
 
-    (function (analysis, author, date, encodeURIComponent, isNaN, labelBase, labels, parseInt, postscript, slug, songs, standalone, titleHtml, versions) {
-      function slugify(text) {
-text = text.toLowerCase().trim()
-text = text.replace(/[^a-z0-9 -]/g, '')
-text = text.replace(/ +/g, '-')
-return text;
-}
-function postscriptPreviewSettings(params) {
-const preview = !(params && params.preview === 'false');
-let previewLines = parseInt(params && params['preview-lines'], 10);
-if (isNaN(previewLines) || previewLines < 1) previewLines = 5;
-return { preview, previewLines };
-}
-function processAnalysisText(text) {
-const paragraphs = text.split(/\n\s*\n/).map(para => para.trim()).filter(para => para.length > 0);
-const processedParagraphs = paragraphs.map(para => {
-if (para.includes('<') && para.includes('>')) {
-return para;
-} else {
-return '<p>' + para + '</p>';
-}
-});
-return processedParagraphs.join('');
-}
-pug_mixins["processLines"] = pug_interp = function(text){
+    (function (analysis, author, date, encodeURIComponent, labelBase, labels, postscript, postscriptPreviewSettings, processAnalysisText, slug, slugify, songs, standalone, titleHtml, versions) {
+      pug_mixins["processLines"] = pug_interp = function(text){
 var block = (this && this.block), attributes = (this && this.attributes) || {};
 if (text) {
 const lines = text.split('\n')
@@ -487,19 +464,21 @@ pug_mixins["poemContent"]();
         locals_for_with.date :
         typeof date !== 'undefined' ? date : undefined, "encodeURIComponent" in locals_for_with ?
         locals_for_with.encodeURIComponent :
-        typeof encodeURIComponent !== 'undefined' ? encodeURIComponent : undefined, "isNaN" in locals_for_with ?
-        locals_for_with.isNaN :
-        typeof isNaN !== 'undefined' ? isNaN : undefined, "labelBase" in locals_for_with ?
+        typeof encodeURIComponent !== 'undefined' ? encodeURIComponent : undefined, "labelBase" in locals_for_with ?
         locals_for_with.labelBase :
         typeof labelBase !== 'undefined' ? labelBase : undefined, "labels" in locals_for_with ?
         locals_for_with.labels :
-        typeof labels !== 'undefined' ? labels : undefined, "parseInt" in locals_for_with ?
-        locals_for_with.parseInt :
-        typeof parseInt !== 'undefined' ? parseInt : undefined, "postscript" in locals_for_with ?
+        typeof labels !== 'undefined' ? labels : undefined, "postscript" in locals_for_with ?
         locals_for_with.postscript :
-        typeof postscript !== 'undefined' ? postscript : undefined, "slug" in locals_for_with ?
+        typeof postscript !== 'undefined' ? postscript : undefined, "postscriptPreviewSettings" in locals_for_with ?
+        locals_for_with.postscriptPreviewSettings :
+        typeof postscriptPreviewSettings !== 'undefined' ? postscriptPreviewSettings : undefined, "processAnalysisText" in locals_for_with ?
+        locals_for_with.processAnalysisText :
+        typeof processAnalysisText !== 'undefined' ? processAnalysisText : undefined, "slug" in locals_for_with ?
         locals_for_with.slug :
-        typeof slug !== 'undefined' ? slug : undefined, "songs" in locals_for_with ?
+        typeof slug !== 'undefined' ? slug : undefined, "slugify" in locals_for_with ?
+        locals_for_with.slugify :
+        typeof slugify !== 'undefined' ? slugify : undefined, "songs" in locals_for_with ?
         locals_for_with.songs :
         typeof songs !== 'undefined' ? songs : undefined, "standalone" in locals_for_with ?
         locals_for_with.standalone :
@@ -523,31 +502,8 @@ var pug_match_html=/["&<>]/;
 function pug_style(r){if(!r)return"";if("object"==typeof r){var t="";for(var e in r)pug_has_own_property.call(r,e)&&(t=t+e+":"+r[e]+";");return t}return r+""}function template(locals) {var pug_html = "", pug_mixins = {}, pug_interp;;
     var locals_for_with = (locals || {});
 
-    (function (analysis, author, date, encodeURIComponent, favicon, isNaN, labelBase, labels, parseInt, postscript, slug, songs, standalone, title, titleHtml, versions) {
-      function slugify(text) {
-text = text.toLowerCase().trim()
-text = text.replace(/[^a-z0-9 -]/g, '')
-text = text.replace(/ +/g, '-')
-return text;
-}
-function postscriptPreviewSettings(params) {
-const preview = !(params && params.preview === 'false');
-let previewLines = parseInt(params && params['preview-lines'], 10);
-if (isNaN(previewLines) || previewLines < 1) previewLines = 5;
-return { preview, previewLines };
-}
-function processAnalysisText(text) {
-const paragraphs = text.split(/\n\s*\n/).map(para => para.trim()).filter(para => para.length > 0);
-const processedParagraphs = paragraphs.map(para => {
-if (para.includes('<') && para.includes('>')) {
-return para;
-} else {
-return '<p>' + para + '</p>';
-}
-});
-return processedParagraphs.join('');
-}
-pug_mixins["processLines"] = pug_interp = function(text){
+    (function (analysis, author, date, encodeURIComponent, favicon, labelBase, labels, postscript, postscriptPreviewSettings, processAnalysisText, slug, slugify, songs, standalone, title, titleHtml, versions) {
+      pug_mixins["processLines"] = pug_interp = function(text){
 var block = (this && this.block), attributes = (this && this.attributes) || {};
 if (text) {
 const lines = text.split('\n')
@@ -993,19 +949,21 @@ pug_html = pug_html + "\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003C\u002Fmai
         locals_for_with.encodeURIComponent :
         typeof encodeURIComponent !== 'undefined' ? encodeURIComponent : undefined, "favicon" in locals_for_with ?
         locals_for_with.favicon :
-        typeof favicon !== 'undefined' ? favicon : undefined, "isNaN" in locals_for_with ?
-        locals_for_with.isNaN :
-        typeof isNaN !== 'undefined' ? isNaN : undefined, "labelBase" in locals_for_with ?
+        typeof favicon !== 'undefined' ? favicon : undefined, "labelBase" in locals_for_with ?
         locals_for_with.labelBase :
         typeof labelBase !== 'undefined' ? labelBase : undefined, "labels" in locals_for_with ?
         locals_for_with.labels :
-        typeof labels !== 'undefined' ? labels : undefined, "parseInt" in locals_for_with ?
-        locals_for_with.parseInt :
-        typeof parseInt !== 'undefined' ? parseInt : undefined, "postscript" in locals_for_with ?
+        typeof labels !== 'undefined' ? labels : undefined, "postscript" in locals_for_with ?
         locals_for_with.postscript :
-        typeof postscript !== 'undefined' ? postscript : undefined, "slug" in locals_for_with ?
+        typeof postscript !== 'undefined' ? postscript : undefined, "postscriptPreviewSettings" in locals_for_with ?
+        locals_for_with.postscriptPreviewSettings :
+        typeof postscriptPreviewSettings !== 'undefined' ? postscriptPreviewSettings : undefined, "processAnalysisText" in locals_for_with ?
+        locals_for_with.processAnalysisText :
+        typeof processAnalysisText !== 'undefined' ? processAnalysisText : undefined, "slug" in locals_for_with ?
         locals_for_with.slug :
-        typeof slug !== 'undefined' ? slug : undefined, "songs" in locals_for_with ?
+        typeof slug !== 'undefined' ? slug : undefined, "slugify" in locals_for_with ?
+        locals_for_with.slugify :
+        typeof slugify !== 'undefined' ? slugify : undefined, "songs" in locals_for_with ?
         locals_for_with.songs :
         typeof songs !== 'undefined' ? songs : undefined, "standalone" in locals_for_with ?
         locals_for_with.standalone :
