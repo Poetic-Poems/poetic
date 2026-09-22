@@ -7,8 +7,11 @@
  */
 
 /**
- * Utility function to slugify text
- * This matches the logic from the Pug template
+ * Utility function to slugify text.
+ *
+ * The sole definition: `src/templates/_poem-content.pug` receives this very
+ * function as a Pug local (re-exported by render-core.js) rather than
+ * carrying its own copy of the logic.
  */
 function slugify(text) {
   text = text.toLowerCase().trim();
