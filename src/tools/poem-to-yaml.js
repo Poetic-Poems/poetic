@@ -164,7 +164,7 @@ function main() {
       fs.writeFileSync(outputFile, yamlContent, 'utf8');
       console.log(`Converted ${inputFile} → ${outputFile}`);
     } catch (error) {
-      console.error('Error:', error.message);
+      console.error(`Error converting ${inputFile}:`, error.message);
       process.exit(1);
     }
   }

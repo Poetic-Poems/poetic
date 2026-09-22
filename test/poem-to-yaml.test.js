@@ -172,6 +172,28 @@ test('convertAllPoemsToYaml counts a per-file conversion failure and exits non-z
   const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
 
   assert.strictEqual(result.status, 1);
-  assert.match(result.stderr, /Error converting broken\.poem/);
+  assert.match(result.stderr, /Error converting broken\.poem: Missing title \(line \d+\)/);
   assert.match(result.stderr, /1 poem\(s\) failed to convert\./);
+});
+
+test('the single-file CLI path (no --all) prefixes a parse error with the filename and line number', (t) => {
+  // Runs the real CLI entry point (node src/tools/poem-to-yaml.js <file>) as
+  // a subprocess, since main() reads process.argv directly and calls
+  // process.exit(1) on failure.
+  const { poemDir } = tmpDirs(t);
+  const poemPath = path.join(poemDir, 'broken.poem');
+  // Title only, no date: "Missing date".
+  fs.writeFileSync(poemPath, 'Title Only\n', 'utf8');
+
+  const result = spawnSync(
+    process.execPath,
+    [path.join(__dirname, '..', 'src', 'tools', 'poem-to-yaml.js'), poemPath],
+    { encoding: 'utf8' }
+  );
+
+  assert.strictEqual(result.status, 1);
+  assert.match(
+    result.stderr,
+    new RegExp(`Error converting ${poemPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: Missing date \\(line \\d+\\)`)
+  );
 });

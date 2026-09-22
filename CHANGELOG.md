@@ -112,6 +112,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **A `.poem` file missing its title or date now names the offending line
+  and file, instead of a bare `Missing title`/`Missing date`/`Invalid or
+  missing date`.** `poem-parser.js`'s `parseHeader()` throws now include the
+  1-based line number from `PoemParser`'s own line-tracking index, and the
+  single-file CLI path (`node src/tools/poem-to-yaml.js <file>`) prefixes
+  thrown errors with the source filename, matching the `--all` batch path's
+  existing behaviour. Fixes #227.
+
 - **`serve-static.js`'s `/all-poems` endpoint no longer serves a stale `$ref`
   target for the lifetime of the dev server.** `poem-render.js`'s `$ref`
   cache lives for the whole process, and every other route already re-reads
