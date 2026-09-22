@@ -12,18 +12,17 @@
 const fs = require('fs');
 const path = require('path');
 const { slugFromFile } = require('./slugify');
-const { parseDateForSorting, formatDateForDisplay, toISODate } = require('./date-utils');
+const { parseDateForSorting } = require('./date-utils');
 const { readPoeticConfig, CONFIG_FILENAME } = require('./poetic-config');
 const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, readYamlCached, FRAGMENT_TEMPLATE } = require('./poem-render');
-const { hasResolvableSongs } = require('./song-handlers');
-const { renderTitleMarkup, BEAUTIFY_OPTIONS } = require('./render-core');
+const { BEAUTIFY_OPTIONS } = require('./render-core');
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require('./footer');
 const { REPO_ROOT } = require('./repo-root');
 const {
   needsRebuild, needsRebuildAggregate, recordManifest, forceRebuildRequested, manifestSourcesUnchanged,
 } = require('./needs-rebuild');
 const {
-  escapeAmpersand, buildPoemDataIsland, renderFreshIndexHtml, renderAllPoemsHtml,
+  escapeAmpersand, summarizePoem, buildPoemDataIsland, renderFreshIndexHtml, renderAllPoemsHtml,
 } = require('./aggregate-render-core');
 const beautify = require('js-beautify');
 const { isHelpRequested } = require('./cli-help');
@@ -94,12 +93,7 @@ function concatenateAllHtmlFiles(
           return;
         }
 
-        const titleHtml = renderTitleMarkup(title);
-        const date = data.date ? formatDateForDisplay(data.date) : 'Unknown Date';
-        const isoDate = data.date ? toISODate(data.date) : '';
-        const hasAudio = hasResolvableSongs(data.audio, config);
-
-        poemData.push({ slug, title, titleHtml, date, isoDate, yamlPath, hasAudio });
+        poemData.push({ ...summarizePoem({ data, slug }, config), yamlPath });
       } catch (err) {
         console.warn(`Warning: Could not read ${file}:`, err.message);
       }
@@ -280,19 +274,18 @@ function generateIndexHtml(
         }
 
         // Clean URL: point to slug/ directory instead of slug.html
-        const file = `${slug}/`;
-        const titleHtml = renderTitleMarkup(title);
-        const hasAudio = hasResolvableSongs(data.audio, config);
-        const date = toISODate(data.date);
-        const labels = Array.isArray(data.labels) ? data.labels : [];
+        const summary = summarizePoem({ data, slug }, config);
 
         poemData.push({
-          file: file,
-          title: title,
-          titleHtml: titleHtml,
-          hasAudio: hasAudio,
-          date: date,
-          labels: labels,
+          file: `${slug}/`,
+          title: summary.title,
+          titleHtml: summary.titleHtml,
+          hasAudio: summary.hasAudio,
+          // summarizePoem() normalises a missing/unparsable ISO date to '',
+          // but this JSON island must keep this field's original null (see
+          // toISODate in date-utils.js) so the emitted payload is unchanged.
+          date: summary.isoDate || null,
+          labels: summary.labels,
         });
       } catch (err) {
         console.warn(`Warning: Could not read ${yamlFile}:`, err.message);
