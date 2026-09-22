@@ -23,6 +23,26 @@ const {
 } = require('./poem-metadata');
 
 /**
+ * Recognise a `{Label}` or `{Label(param)}` marker line. `excludeVersionLabel`
+ * lets segment-label call sites rule out a `{{Version}}` marker, which they'd
+ * otherwise mistake for a segment label; postscript/analysis call sites never
+ * see a version label at that point, so they don't need it.
+ *
+ * @param {string} line
+ * @param {{excludeVersionLabel?: boolean}} [options]
+ * @returns {boolean}
+ */
+function isLabelLine(line, { excludeVersionLabel = false } = {}) {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith('{') || !trimmed.includes('}')) return false;
+  if (excludeVersionLabel && trimmed.startsWith('{{')) return false;
+  return true;
+}
+
+/** Label names reserved for analysis sections, never a segment/postscript label. */
+const RESERVED_LABELS = new Set(['Synopsis', 'Full']);
+
+/**
  * Parse a .poem file and convert to structured data
  */
 class PoemParser {
@@ -878,9 +898,9 @@ class PoemParser {
     const segment = {};
 
     // Check for segment label
-    if (line.trim().startsWith('{') && line.trim().includes('}') && !line.trim().startsWith('{{')) {
+    if (isLabelLine(line, { excludeVersionLabel: true })) {
       const { label, params } = this.parseLabelWithParams(line, '{');
-      if (label && label !== 'Synopsis' && label !== 'Full') {
+      if (label && !RESERVED_LABELS.has(label)) {
         segment.label = convertMarkup(this.substituteVariables(label));
         if (params) {
           segment.params = params;
@@ -915,10 +935,9 @@ class PoemParser {
       }
 
       // Check if this is the start of a new segment (has a label)
-      if (contentLine.trim().startsWith('{') && contentLine.trim().includes('}') &&
-          !contentLine.trim().startsWith('{{')) {
+      if (isLabelLine(contentLine, { excludeVersionLabel: true })) {
         const { label: possibleLabel } = this.parseLabelWithParams(contentLine, '{');
-        if (possibleLabel && possibleLabel !== 'Synopsis' && possibleLabel !== 'Full') {
+        if (possibleLabel && !RESERVED_LABELS.has(possibleLabel)) {
           // This is a new segment, stop here
           break;
         }
@@ -1267,9 +1286,9 @@ class PoemParser {
     const postscript = {};
 
     // Check for label
-    if (line.trim().startsWith('{') && line.trim().includes('}')) {
+    if (isLabelLine(line)) {
       const { label, params } = this.parseLabelWithParams(line, '{');
-      if (label && label !== 'Synopsis' && label !== 'Full') {
+      if (label && !RESERVED_LABELS.has(label)) {
         postscript.label = convertMarkup(this.substituteVariables(label));
         if (params) {
           postscript.params = params;
@@ -1405,7 +1424,7 @@ class PoemParser {
     // list, but parseLabelWithParams is still used to recognise the label
     // when one is (erroneously) present, so a trailing `(...)` can't corrupt
     // the `{Synopsis}` match; any params found are discarded.
-    if (line.trim().startsWith('{') && line.trim().includes('}')) {
+    if (isLabelLine(line)) {
       const { label } = this.parseLabelWithParams(line, '{');
       if (label === 'Synopsis') {
         this.next();
@@ -1417,7 +1436,7 @@ class PoemParser {
 
     // Check for Full
     const fullLine = this.peek();
-    if (fullLine && fullLine.trim().startsWith('{') && fullLine.trim().includes('}')) {
+    if (fullLine && isLabelLine(fullLine)) {
       const { label } = this.parseLabelWithParams(fullLine, '{');
       if (label === 'Full') {
         this.next();
