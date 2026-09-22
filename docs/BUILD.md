@@ -20,12 +20,6 @@ Since GitHub Pages serves static files only, we use a build script to generate t
    npm run build:all
    ```
 
-2.5 **Generate raw text files from `.poem` sources:**
-
-   ```bash
-   npm run poem-to-raw
-   ```
-
 3. **View locally:**
    - Main page: http://localhost:8080
    - All poems: http://localhost:8080/all-poems.html
