@@ -21,6 +21,7 @@ const {
   parseDirectiveLine: parseDirectiveLinePure,
   matchLabelLine: matchLabelLinePure,
 } = require('./poem-metadata');
+const { MISSING_TITLE, MISSING_DATE, INVALID_DATE } = require('./poem-parse-errors');
 
 /**
  * Recognise a `{Label}` or `{Label(param)}` marker line. `excludeVersionLabel`
@@ -758,7 +759,7 @@ class PoemParser {
     const titleLine = this.index + 1;
     const title = this.next();
     if (!title) {
-      throw new Error(`Missing title (line ${titleLine})`);
+      throw new Error(`${MISSING_TITLE} (line ${titleLine})`);
     }
     // Decode `\%` → `%` so a title may begin with a literal `%` without being
     // read as a Preamble directive. `\%{...}` is preserved (see
@@ -769,7 +770,7 @@ class PoemParser {
     let lineNumber = this.index + 1;
     let line = this.next();
     if (!line) {
-      throw new Error(`Missing date (line ${lineNumber})`);
+      throw new Error(`${MISSING_DATE} (line ${lineNumber})`);
     }
 
     // Check if this is a date (YYYY-MM-DD format) after variable substitution
@@ -786,11 +787,11 @@ class PoemParser {
       lineNumber = this.index + 1;
       line = this.next();
       if (!line) {
-        throw new Error(`Missing date (line ${lineNumber})`);
+        throw new Error(`${MISSING_DATE} (line ${lineNumber})`);
       }
       const substitutedDateLine = this.substituteVariables(line.trim());
       if (!datePattern.test(substitutedDateLine)) {
-        throw new Error(`Invalid or missing date (line ${lineNumber})`);
+        throw new Error(`${INVALID_DATE} (line ${lineNumber})`);
       }
       this.result.date = substitutedDateLine;
     }
