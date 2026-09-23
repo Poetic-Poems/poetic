@@ -1,6 +1,8 @@
 # Poetic &nbsp; ![Poetic logo](public/poetic-logo.png)
 
 [![Build](https://github.com/Poetic-Poems/poetic/actions/workflows/build-poems.yml/badge.svg)](https://github.com/Poetic-Poems/poetic/actions/workflows/build-poems.yml)
+[![Commit Format](https://github.com/Poetic-Poems/poetic/actions/workflows/commit-format.yml/badge.svg)](https://github.com/Poetic-Poems/poetic/actions/workflows/commit-format.yml)
+[![CodeQL](https://github.com/Poetic-Poems/poetic/actions/workflows/codeql.yml/badge.svg)](https://github.com/Poetic-Poems/poetic/actions/workflows/codeql.yml)
 
 ***A plain-text poem authoring framework.***
 Write poems in a concise `.poem` format, build them into HTML,
