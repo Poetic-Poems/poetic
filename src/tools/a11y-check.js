@@ -3,8 +3,9 @@
 /**
  * Non-blocking accessibility check for the generated site.
  *
- * Runs axe-core (https://github.com/dequelabs/axe-core) against public/index.html
- * and one built poem page, using puppeteer-core driving a Chrome/Chromium
+ * Runs axe-core (https://github.com/dequelabs/axe-core) against public/index.html,
+ * public/all-poems.html, and one built poem page, using puppeteer-core driving a
+ * Chrome/Chromium
  * already installed on the runner (GitHub's ubuntu-latest images ship Google
  * Chrome out of the box — see docs/BUILD.md) rather than downloading a bundled
  * browser, so this stays a small, dependency-light devDependency.
@@ -26,9 +27,30 @@ const { isHelpRequested } = require('./cli-help');
 const PUBLIC_DIR = path.join(REPO_ROOT, 'public');
 
 /**
- * Pick the pages to check: the site index, plus the first individual poem
- * page found directly under publicDir (skipping `raw/`, which holds plain-text
- * mirrors, not poem markup).
+ * A built poem page carries these markup fragments only when its source poem
+ * has the corresponding section (see src/templates/_poem-content.pug): an
+ * `id="song--…"` container for the audio section, an `id="postscript-…"`
+ * container per postscript note, and the `id="show-analysis--…"` toggle
+ * button for the analysis section.
+ *
+ * @param {string} filePath
+ * @returns {boolean}
+ */
+function pageHasAudioPostscriptAndAnalysis(filePath) {
+  const html = fs.readFileSync(filePath, 'utf8');
+  return html.includes('id="song--')
+    && html.includes('id="postscript-')
+    && html.includes('id="show-analysis--');
+}
+
+/**
+ * Pick the pages to check: the site index, the all-poems listing, and one
+ * individual poem page found directly under publicDir (skipping `raw/`,
+ * which holds plain-text mirrors, not poem markup). The individual poem page
+ * is the first (alphabetically) one whose built markup exercises the audio,
+ * postscript and analysis sections together, so those code paths are
+ * actually sampled; if no built poem combines all three, the first poem
+ * directory found is used instead, matching prior behaviour.
  *
  * @param {string} publicDir
  * @returns {Array<{ name: string, filePath: string }>}
@@ -41,11 +63,20 @@ function discoverCheckTargets(publicDir) {
     targets.push({ name: 'index.html', filePath: indexPath });
   }
 
-  const poemDirName = fs.readdirSync(publicDir, { withFileTypes: true })
+  const allPoemsPath = path.join(publicDir, 'all-poems.html');
+  if (fs.existsSync(allPoemsPath)) {
+    targets.push({ name: 'all-poems.html', filePath: allPoemsPath });
+  }
+
+  const poemDirNames = fs.readdirSync(publicDir, { withFileTypes: true })
     .filter((entry) => entry.isDirectory() && entry.name !== 'raw')
     .map((entry) => entry.name)
     .sort()
-    .find((name) => fs.existsSync(path.join(publicDir, name, 'index.html')));
+    .filter((name) => fs.existsSync(path.join(publicDir, name, 'index.html')));
+
+  const poemDirName = poemDirNames.find(
+    (name) => pageHasAudioPostscriptAndAnalysis(path.join(publicDir, name, 'index.html'))
+  ) || poemDirNames[0];
 
   if (poemDirName) {
     targets.push({
@@ -102,8 +133,9 @@ async function main() {
   if (isHelpRequested(process.argv.slice(2))) {
     console.log('Usage: node src/tools/a11y-check.js');
     console.log('');
-    console.log('Run axe-core accessibility checks against public/index.html and one built');
-    console.log('poem page (requires a local Chrome/Chromium and a prior "npm run build").');
+    console.log('Run axe-core accessibility checks against public/index.html,');
+    console.log('public/all-poems.html, and one built poem page (requires a local');
+    console.log('Chrome/Chromium and a prior "npm run build").');
     console.log('');
     console.log('Options:');
     console.log('  --help, -h   Show this help');
@@ -163,4 +195,9 @@ if (require.main === module) {
   });
 }
 
-module.exports = { discoverCheckTargets, formatViolations, findChromeExecutable };
+module.exports = {
+  discoverCheckTargets,
+  formatViolations,
+  findChromeExecutable,
+  pageHasAudioPostscriptAndAnalysis,
+};
