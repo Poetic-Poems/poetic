@@ -24,6 +24,13 @@
   width: 1px;
 }
 
+/* #707070 (secondary/meta text; also used at :82,478,533,551,563) against the
+   #f5f5f5 page background below measures 4.54:1 by the W3C relative-luminance
+   formula, clearing the WCAG AA 4.5:1 minimum for normal-size text — verified
+   with the wcag-contrast npm package, cross-checked against the formula
+   implemented from scratch, against each usage site's actual computed style
+   (see #234). It sits close to that floor by design, not headroom to spend:
+   darken it further if you need more contrast, don't lighten it. */
 .no-content {
   color: #707070;
   font-style: italic;
