@@ -12,6 +12,8 @@
  * otherwise.
  */
 
+const { MISSING_TITLE, MISSING_DATE, INVALID_DATE } = require('../tools/poem-parse-errors');
+
 class PoemRenderError extends Error {
   constructor(message, code) {
     super(message);
@@ -24,9 +26,9 @@ class PoemRenderError extends Error {
 // mandatory header field that's missing or malformed. Each throw appends
 // ` (line N)`, so these are matched as prefixes rather than exact strings.
 const KNOWN_MESSAGE_PREFIXES = [
-  ['Missing title', 'MISSING_TITLE'],
-  ['Missing date', 'MISSING_DATE'],
-  ['Invalid or missing date', 'INVALID_DATE'],
+  [MISSING_TITLE, 'MISSING_TITLE'],
+  [MISSING_DATE, 'MISSING_DATE'],
+  [INVALID_DATE, 'INVALID_DATE'],
 ];
 
 function codeFor(err) {
