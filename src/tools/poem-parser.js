@@ -49,6 +49,14 @@ class PoemParser {
   constructor(content) {
     this.content = content;
     this.lines = content.split('\n');
+    // Parallel to `this.lines`: each entry is that line's true 1-based
+    // original source line number. removeCommentBlocks(), joinContinuedLines(),
+    // processVariables() and extractPreambleDirectives() each remove, fold, or
+    // expand lines before parseHeader() runs, and keep this array in lockstep
+    // as they do, so parseHeader()'s throw sites can report the true source
+    // line rather than a post-preprocessing count (see sourceLineAt()).
+    this.lineNumbers = this.lines.map((_, i) => i + 1);
+    this.totalSourceLines = this.lines.length;
     this.index = 0;
     this.result = {};
     this.variables = new Map();
@@ -123,9 +131,11 @@ class PoemParser {
    */
   removeCommentBlocks() {
     const newLines = [];
+    const newLineNumbers = [];
     let inComment = false;
 
-    for (const line of this.lines) {
+    for (let i = 0; i < this.lines.length; i++) {
+      const line = this.lines[i];
       if (line.trimStart().startsWith('<<#')) {
         inComment = true;
         continue;
@@ -136,10 +146,12 @@ class PoemParser {
       }
       if (!inComment) {
         newLines.push(line);
+        newLineNumbers.push(this.lineNumbers[i]);
       }
     }
 
     this.lines = newLines;
+    this.lineNumbers = newLineNumbers;
   }
 
   /**
@@ -162,6 +174,7 @@ class PoemParser {
    */
   joinContinuedLines() {
     const out = [];
+    const outLineNumbers = [];
     let inBlock = false;
     let i = 0;
 
@@ -169,9 +182,14 @@ class PoemParser {
       let line = this.lines[i];
 
       // Block markers and their interiors are opaque to continuation.
-      if (this.blockStartTag(line) !== null) { inBlock = true; out.push(line); i++; continue; }
-      if (this.isBlockEnd(line)) { inBlock = false; out.push(line); i++; continue; }
-      if (inBlock) { out.push(line); i++; continue; }
+      if (this.blockStartTag(line) !== null) { inBlock = true; out.push(line); outLineNumbers.push(this.lineNumbers[i]); i++; continue; }
+      if (this.isBlockEnd(line)) { inBlock = false; out.push(line); outLineNumbers.push(this.lineNumbers[i]); i++; continue; }
+      if (inBlock) { out.push(line); outLineNumbers.push(this.lineNumbers[i]); i++; continue; }
+
+      // The folded line carries the first physical line's own original
+      // number, captured before the inner loop advances `i` over any
+      // continuation lines it consumes.
+      const startI = i;
 
       // Fold a (possibly multi-line) chain of continuations into `line`.
       while (true) {
@@ -205,10 +223,12 @@ class PoemParser {
       }
 
       out.push(line);
+      outLineNumbers.push(this.lineNumbers[startI]);
       i++;
     }
 
     this.lines = out;
+    this.lineNumbers = outLineNumbers;
   }
 
   /**
@@ -489,6 +509,7 @@ class PoemParser {
    */
   processVariables() {
     const newLines = [];
+    const newLineNumbers = [];
     let i = 0;
     let inLiteralBlock = false;
 
@@ -500,12 +521,14 @@ class PoemParser {
       if (this.blockStartTag(line) !== null) {
         inLiteralBlock = true;
         newLines.push(line);
+        newLineNumbers.push(this.lineNumbers[i]);
         i++;
         continue;
       }
       if (this.isBlockEnd(line)) {
         inLiteralBlock = false;
         newLines.push(line);
+        newLineNumbers.push(this.lineNumbers[i]);
         i++;
         continue;
       }
@@ -513,6 +536,7 @@ class PoemParser {
       // Skip variable definition inside literal blocks
       if (inLiteralBlock) {
         newLines.push(line);
+        newLineNumbers.push(this.lineNumbers[i]);
         i++;
         continue;
       }
@@ -556,18 +580,24 @@ class PoemParser {
 
       // Regular line - don't substitute yet, keep as-is
       newLines.push(line);
+      newLineNumbers.push(this.lineNumbers[i]);
       i++;
     }
 
     this.lines = newLines;
+    this.lineNumbers = newLineNumbers;
 
     // Expand standalone multi-line variable references (a `${name}` alone on its
     // line) into that variable's body lines, recursively. Values are kept raw:
     // every ${...} reference (nested or not) is resolved exactly once, at its
     // point of use, by substituteVariables() during the structural parse. This
     // gives nested references late (dynamic) binding. Single-line and inline
-    // references are left untouched here for that later resolution.
-    this.lines = expandStandaloneRefs(this.lines, [], this.variables);
+    // references are left untouched here for that later resolution. Every
+    // expanded line carries the original source line of the `${name}`
+    // reference itself (see expandStandaloneRefs()'s docstring).
+    const expanded = expandStandaloneRefs(this.lines, [], this.variables, this.lineNumbers);
+    this.lines = expanded.lines;
+    this.lineNumbers = expanded.lineNumbers;
   }
 
   /**
@@ -609,6 +639,20 @@ class PoemParser {
    */
   eof() {
     return this.index >= this.lines.length;
+  }
+
+  /**
+   * The true original 1-based source line number for `this.lines[index]`,
+   * tracked through the preprocessing passes (see the constructor's
+   * `this.lineNumbers` comment) that can remove, fold, or expand lines before
+   * parseHeader() runs. Falls back to one past the last original source line
+   * when `index` is at or past EOF, since nothing survived there to anchor to.
+   *
+   * @param {number} index
+   * @returns {number}
+   */
+  sourceLineAt(index) {
+    return index < this.lineNumbers.length ? this.lineNumbers[index] : this.totalSourceLines + 1;
   }
 
   /**
@@ -744,6 +788,7 @@ class PoemParser {
       if (directive === null) break; // first non-directive line begins the header
       this.pushDirective(directive);
       this.lines.splice(i, 1); // remove; the next line shifts into position i
+      this.lineNumbers.splice(i, 1);
     }
   }
 
@@ -754,8 +799,9 @@ class PoemParser {
     this.skipBlankLines();
 
     // Title (mandatory). Captured before next() advances this.index, so it
-    // names the line the title was expected on even when none remains.
-    const titleLine = this.index + 1;
+    // names the true original source line the title was expected on even
+    // when none remains.
+    const titleLine = this.sourceLineAt(this.index);
     const title = this.next();
     if (!title) {
       throw new Error(`Missing title (line ${titleLine})`);
@@ -766,7 +812,7 @@ class PoemParser {
     this.result.title = this.decodePercentEscape(this.substituteVariables(title.trim()));
 
     // Author (optional) or Date
-    let lineNumber = this.index + 1;
+    let lineNumber = this.sourceLineAt(this.index);
     let line = this.next();
     if (!line) {
       throw new Error(`Missing date (line ${lineNumber})`);
@@ -783,7 +829,7 @@ class PoemParser {
       // This is the author
       this.result.author = substitutedLine;
       // Next line must be date
-      lineNumber = this.index + 1;
+      lineNumber = this.sourceLineAt(this.index);
       line = this.next();
       if (!line) {
         throw new Error(`Missing date (line ${lineNumber})`);
