@@ -18,7 +18,10 @@ const pug = require('pug');
 const { slugFromFile } = require('./slugify');
 const { formatDateForDisplay } = require('./date-utils');
 const { REPO_ROOT } = require('./repo-root');
-const { CONTEXT_VAR_NAMES, substituteContextVars, resolveContextVars, songsFor } = require('./render-core');
+const {
+  CONTEXT_VAR_NAMES, substituteContextVars, resolveContextVars, songsFor,
+  slugify, postscriptPreviewSettings, processAnalysisText,
+} = require('./render-core');
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 const FRAGMENT_TEMPLATE = path.join(TEMPLATES_DIR, 'poem.pug');
@@ -327,7 +330,9 @@ function renderFragment(poemData, opts = {}) {
   const data = resolveContextVars(poemData);
   const songs = songsFor(data, config);
   const compiledFn = pug.compileFile(FRAGMENT_TEMPLATE, { pretty: false, cache: false });
-  return compiledFn({ ...data, songs, labelBase: '', standalone });
+  return compiledFn({
+    ...data, songs, labelBase: '', standalone, slugify, postscriptPreviewSettings, processAnalysisText,
+  });
 }
 
 /**
@@ -347,7 +352,9 @@ function renderPage(poemData, opts = {}) {
   const data = resolveContextVars(poemData);
   const songs = songsFor(data, config);
   const compiledFn = pug.compileFile(PAGE_TEMPLATE, { pretty: false, cache: false });
-  return compiledFn({ ...data, favicon, subtitle, songs, labelBase: '../' });
+  return compiledFn({
+    ...data, favicon, subtitle, songs, labelBase: '../', slugify, postscriptPreviewSettings, processAnalysisText,
+  });
 }
 
 module.exports = {
