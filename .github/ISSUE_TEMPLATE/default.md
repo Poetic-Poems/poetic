@@ -4,9 +4,9 @@ Describe the issue or feature request clearly and concisely.
 
 ## Steps to reproduce (for bugs)
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Expected behaviour
 
