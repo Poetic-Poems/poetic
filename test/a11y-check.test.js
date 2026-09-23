@@ -13,7 +13,24 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { discoverCheckTargets, formatViolations, findChromeExecutable } = require('../src/tools/a11y-check');
+const {
+  discoverCheckTargets,
+  formatViolations,
+  findChromeExecutable,
+  pageHasAudioPostscriptAndAnalysis,
+} = require('../src/tools/a11y-check');
+
+function writeFeatureRichPage(filePath) {
+  fs.writeFileSync(
+    filePath,
+    '<html><body>'
+    + '<div id="song--a-poem"></div>'
+    + '<div id="postscript-item--a-poem"></div>'
+    + '<button id="show-analysis--a-poem"></button>'
+    + '</body></html>',
+    'utf8'
+  );
+}
 
 function tmpDir(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'poetic-a11y-check-'));
@@ -61,6 +78,70 @@ test('discoverCheckTargets: skips a directory with no index.html of its own', (t
   const dir = tmpDir(t);
   fs.mkdirSync(path.join(dir, 'empty-dir'));
   assert.deepStrictEqual(discoverCheckTargets(dir), []);
+});
+
+test('discoverCheckTargets: includes all-poems.html when it has been built', (t) => {
+  const dir = tmpDir(t);
+  fs.writeFileSync(path.join(dir, 'all-poems.html'), '<html></html>', 'utf8');
+
+  const targets = discoverCheckTargets(dir);
+
+  assert.deepStrictEqual(targets, [
+    { name: 'all-poems.html', filePath: path.join(dir, 'all-poems.html') },
+  ]);
+});
+
+test('discoverCheckTargets: omits all-poems.html when it has not been built', (t) => {
+  const dir = tmpDir(t);
+  fs.writeFileSync(path.join(dir, 'index.html'), '<html></html>', 'utf8');
+
+  const targets = discoverCheckTargets(dir);
+
+  assert.deepStrictEqual(
+    targets.map((target) => target.name),
+    ['index.html']
+  );
+});
+
+test('discoverCheckTargets: prefers a poem page combining audio, postscript and analysis over an earlier-sorting plain one', (t) => {
+  const dir = tmpDir(t);
+  fs.mkdirSync(path.join(dir, 'a-plain-poem'));
+  fs.writeFileSync(path.join(dir, 'a-plain-poem', 'index.html'), '<html></html>', 'utf8');
+  fs.mkdirSync(path.join(dir, 'z-feature-rich-poem'));
+  writeFeatureRichPage(path.join(dir, 'z-feature-rich-poem', 'index.html'));
+
+  const targets = discoverCheckTargets(dir);
+
+  assert.deepStrictEqual(
+    targets.map((target) => target.name),
+    ['z-feature-rich-poem/index.html']
+  );
+});
+
+test('discoverCheckTargets: falls back to the first poem directory when none combine all three sections', (t) => {
+  const dir = tmpDir(t);
+  fs.mkdirSync(path.join(dir, 'a-poem'));
+  fs.writeFileSync(path.join(dir, 'a-poem', 'index.html'), '<html></html>', 'utf8');
+  fs.mkdirSync(path.join(dir, 'b-poem'));
+  fs.writeFileSync(path.join(dir, 'b-poem', 'index.html'), '<html><div id="song--b-poem"></div></html>', 'utf8');
+
+  const targets = discoverCheckTargets(dir);
+
+  assert.deepStrictEqual(
+    targets.map((target) => target.name),
+    ['a-poem/index.html']
+  );
+});
+
+test('pageHasAudioPostscriptAndAnalysis: true only when all three markers are present', (t) => {
+  const dir = tmpDir(t);
+  const richPath = path.join(dir, 'rich.html');
+  writeFeatureRichPage(richPath);
+  assert.strictEqual(pageHasAudioPostscriptAndAnalysis(richPath), true);
+
+  const plainPath = path.join(dir, 'plain.html');
+  fs.writeFileSync(plainPath, '<html><div id="song--a-poem"></div></html>', 'utf8');
+  assert.strictEqual(pageHasAudioPostscriptAndAnalysis(plainPath), false);
 });
 
 test('formatViolations: reports a clean pass when there are no violations', () => {
