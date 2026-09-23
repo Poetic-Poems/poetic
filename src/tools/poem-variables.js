@@ -164,14 +164,28 @@ function expandVarAt(str, at, variables, usedBeforeDefined) {
  * not standalone references to a multi-line variable are passed through
  * unchanged.
  *
+ * `lineNumbers`, when supplied, is a parallel array of `lines`' original
+ * 1-based source line numbers; every line an expansion produces (however many
+ * levels of nested reference it takes to produce them) carries the original
+ * number of the `${name}` reference line itself, not the variable's
+ * definition-site lines (those were already stripped before this runs, so
+ * they have no bearing here). When `lineNumbers` is omitted, the return value
+ * is the plain `lines` array, as before; when supplied, the return value is
+ * `{ lines, lineNumbers }`.
+ *
  * @param {string[]} lines
  * @param {string[]} stack - names of variables currently being expanded
  * @param {Map<string, (string|string[])>} variables
- * @returns {string[]}
+ * @param {number[]} [lineNumbers]
+ * @returns {string[]|{lines: string[], lineNumbers: number[]}}
  */
-function expandStandaloneRefs(lines, stack, variables) {
+function expandStandaloneRefs(lines, stack, variables, lineNumbers) {
   const out = [];
-  for (const line of lines) {
+  const outLineNumbers = lineNumbers ? [] : undefined;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const srcLine = lineNumbers ? lineNumbers[i] : undefined;
     const m = line.trim().match(/^\$\{([^}]+)\}$/);
     if (m) {
       const name = m[1];
@@ -180,8 +194,13 @@ function expandStandaloneRefs(lines, stack, variables) {
         if (stack.includes(name)) {
           console.warn(`Warning: Variable reference cycle detected at '\${${name}}'; left unexpanded.`);
           out.push(line);
+          if (outLineNumbers) outLineNumbers.push(srcLine);
         } else {
-          out.push(...expandStandaloneRefs(value, stack.concat(name), variables));
+          const expanded = expandStandaloneRefs(value, stack.concat(name), variables);
+          out.push(...expanded);
+          if (outLineNumbers) {
+            for (let k = 0; k < expanded.length; k++) outLineNumbers.push(srcLine);
+          }
         }
         continue;
       }
@@ -189,8 +208,10 @@ function expandStandaloneRefs(lines, stack, variables) {
       // line for substituteVariables() (or the render stage) to handle.
     }
     out.push(line);
+    if (outLineNumbers) outLineNumbers.push(srcLine);
   }
-  return out;
+
+  return outLineNumbers ? { lines: out, lineNumbers: outLineNumbers } : out;
 }
 
 module.exports = {

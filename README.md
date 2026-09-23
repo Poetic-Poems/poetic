@@ -338,8 +338,10 @@ To switch channels, edit `.poetic-version` and change the `channel` line.
 - [`docs/POEM-TO-YAML.md`](docs/POEM-TO-YAML.md) — converter documentation
 - [`docs/RENDERER-BROWSER.md`](docs/RENDERER-BROWSER.md) — browser-safe renderer API
 - [`docs/BUILD.md`](docs/BUILD.md) — GitHub Pages deployment details
+- [`docs/BLOGGER.md`](docs/BLOGGER.md) — Blogger publishing setup and configuration
 - [`docs/SCRIPTS.md`](docs/SCRIPTS.md) — shell scripts reference (`new-poem`, `edit-poem`, `sync-framework.sh`, etc.)
 - [`docs/VIM-SYNTAX.md`](docs/VIM-SYNTAX.md) — Vim syntax highlighting setup
+- [`docs/VIM-SYNTAX-EMBEDDED-LANGUAGES.md`](docs/VIM-SYNTAX-EMBEDDED-LANGUAGES.md) — Vim embedded language syntax support
 - [`docs/QUICKSTART-VIM.md`](docs/QUICKSTART-VIM.md) — quick Vim setup guide
 
 ## Contributing

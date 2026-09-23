@@ -5,12 +5,13 @@
  *   - build-time `%{name}` context-variable substitution, and
  *   - resolving a poem's `audio` section into the song render model.
  *
- * Keep this module browser-safe: its only dependency is song-handlers.js
- * (itself fs-free), so do NOT add `fs`/`path`/`__dirname` or any other
- * Node-only dependency here.
+ * Keep this module browser-safe: its only dependencies are song-handlers.js
+ * and slugify.js (both fs-free), so do NOT add `fs`/`path`/`__dirname` or any
+ * other Node-only dependency here.
  */
 
 const { resolveSongs } = require('./song-handlers');
+const { slugify } = require('./slugify');
 
 /**
  * The closed set of build-time "context" variable names that `%{name}`
@@ -155,6 +156,34 @@ function songsFor(data, config) {
 }
 
 /**
+ * Compute effective postscript preview settings from a postscript item's params.
+ * preview defaults to true unless params.preview is the string "false".
+ * previewLines defaults to 5 unless params['preview-lines'] parses as an integer >= 1.
+ */
+function postscriptPreviewSettings(params) {
+  const preview = !(params && params.preview === 'false');
+  let previewLines = parseInt(params && params['preview-lines'], 10);
+  if (isNaN(previewLines) || previewLines < 1) previewLines = 5;
+  return { preview, previewLines };
+}
+
+/**
+ * Convert blank lines in analysis text into paragraph breaks. A paragraph
+ * that already contains markup (an opening and closing angle bracket) is
+ * passed through unwrapped; a plain-text paragraph is wrapped in <p>.
+ */
+function processAnalysisText(text) {
+  const paragraphs = text.split(/\n\s*\n/).map((para) => para.trim()).filter((para) => para.length > 0);
+  const processedParagraphs = paragraphs.map((para) => {
+    if (para.includes('<') && para.includes('>')) {
+      return para;
+    }
+    return '<p>' + para + '</p>';
+  });
+  return processedParagraphs.join('');
+}
+
+/**
  * Shared HTML beautification options used across build scripts.
  */
 const BEAUTIFY_OPTIONS = {
@@ -202,4 +231,7 @@ module.exports = {
   renderTitleMarkup,
   createEscapeProtector,
   songsFor,
+  slugify,
+  postscriptPreviewSettings,
+  processAnalysisText,
 };

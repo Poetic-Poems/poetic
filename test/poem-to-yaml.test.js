@@ -21,6 +21,7 @@ const os = require('os');
 const { spawnSync } = require('child_process');
 
 const { convertAllPoemsToYaml } = require('../src/tools/poem-to-yaml');
+const { PoemParser } = require('../src/tools/poem-parser');
 
 const FIXTURE_POEM = 'Sample Poem\n1970-01-01\n\n{Verse}\na line\n';
 
@@ -172,6 +173,80 @@ test('convertAllPoemsToYaml counts a per-file conversion failure and exits non-z
   const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
 
   assert.strictEqual(result.status, 1);
-  assert.match(result.stderr, /Error converting broken\.poem/);
+  assert.match(result.stderr, /Error converting broken\.poem: Missing title \(line \d+\)/);
   assert.match(result.stderr, /1 poem\(s\) failed to convert\./);
+});
+
+test('the single-file CLI path (no --all) prefixes a parse error with the filename and line number', (t) => {
+  // Runs the real CLI entry point (node src/tools/poem-to-yaml.js <file>) as
+  // a subprocess, since main() reads process.argv directly and calls
+  // process.exit(1) on failure.
+  const { poemDir } = tmpDirs(t);
+  const poemPath = path.join(poemDir, 'broken.poem');
+  // Title only, no date: "Missing date".
+  fs.writeFileSync(poemPath, 'Title Only\n', 'utf8');
+
+  const result = spawnSync(
+    process.execPath,
+    [path.join(__dirname, '..', 'src', 'tools', 'poem-to-yaml.js'), poemPath],
+    { encoding: 'utf8' }
+  );
+
+  assert.strictEqual(result.status, 1);
+  assert.match(
+    result.stderr,
+    new RegExp(`Error converting ${poemPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: Missing date \\(line \\d+\\)`)
+  );
+});
+
+// parseHeader()'s three throw sites derive their line number from
+// PoemParser's own line-number tracking, kept in sync through
+// removeCommentBlocks(), joinContinuedLines(), processVariables() and
+// extractPreambleDirectives() — each of which can remove, fold, or expand
+// lines before the header parses. These assert the *true* original source
+// line, not a post-preprocessing count.
+
+test('parseHeader() reports the true source line when a Preamble directive precedes the header', () => {
+  // %directive1 / blank / Title / Author / malformed date, on real line 5.
+  assert.throws(
+    () => new PoemParser('%directive1\n\nTitle\nAuthor\nbad-date\n').parse(),
+    /Invalid or missing date \(line 5\)/
+  );
+});
+
+test('parseHeader() reports the true source line when a comment block precedes the header', () => {
+  // <<# / comment / #>> / Title / Author / malformed date, on real line 6.
+  assert.throws(
+    () => new PoemParser('<<#\ncomment\n#>>\nTitle\nAuthor\nbad-date\n').parse(),
+    /Invalid or missing date \(line 6\)/
+  );
+});
+
+test('parseHeader() reports the true source line when a single-line variable definition precedes the header', () => {
+  // ={x}=hello / Title / Author / malformed date, on real line 4.
+  assert.throws(
+    () => new PoemParser('={x}=hello\nTitle\nAuthor\nbad-date\n').parse(),
+    /Invalid or missing date \(line 4\)/
+  );
+});
+
+test('parseHeader() reports the true source line when a directive, a comment block, and a variable definition all precede the header (offsets compound)', () => {
+  // %directive1 / <<# / comment / #>> / ={x}=hello / Title / Author /
+  // malformed date, on real line 8.
+  assert.throws(
+    () => new PoemParser('%directive1\n<<#\ncomment\n#>>\n={x}=hello\nTitle\nAuthor\nbad-date\n').parse(),
+    /Invalid or missing date \(line 8\)/
+  );
+});
+
+test('parseHeader() reports the reference line, not the definition-site lines, when a standalone multi-line-variable reference stands in for the title/author', () => {
+  // ={greet}<<= / Hello / World / =>> / ${greet} (source line 5) / Author /
+  // malformed date. ${greet} expands to two lines ("Hello", "World"), both
+  // carrying line 5: "Hello" becomes the title, "World" becomes the author,
+  // so the date is expected on line 6, not undercounted by the four
+  // definition-site lines already stripped before this runs.
+  assert.throws(
+    () => new PoemParser('={greet}<<=\nHello\nWorld\n=>>\n${greet}\nAuthor\nbad-date\n').parse(),
+    /Invalid or missing date \(line 6\)/
+  );
 });

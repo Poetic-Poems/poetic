@@ -26,7 +26,9 @@
  */
 
 const { PoemParser } = require('../tools/poem-parser');
-const { resolveContextVars, songsFor } = require('../tools/render-core');
+const {
+  resolveContextVars, songsFor, postscriptPreviewSettings, processAnalysisText,
+} = require('../tools/render-core');
 const { renderFragmentTemplate, renderPageTemplate } = require('../tools/poem-templates');
 const { slugify } = require('../tools/slugify');
 const { formatDateForDisplay } = require('../tools/date-utils');
@@ -71,7 +73,9 @@ function renderPoem(text, opts = {}) {
     const { config = {}, standalone = true } = opts;
     const data = resolveContextVars(parseAndAugment(text, opts));
     const songs = songsFor(data, config);
-    return renderFragmentTemplate({ ...data, songs, labelBase: '', standalone });
+    return renderFragmentTemplate({
+      ...data, songs, labelBase: '', standalone, slugify, postscriptPreviewSettings, processAnalysisText,
+    });
   });
 }
 
@@ -90,7 +94,9 @@ function renderPoemPage(text, opts = {}) {
     const { config = {}, favicon = 'poetic-logo.svg', subtitle = 'My Poems' } = opts;
     const data = resolveContextVars(parseAndAugment(text, opts));
     const songs = songsFor(data, config);
-    return renderPageTemplate({ ...data, favicon, subtitle, songs, labelBase: '../' });
+    return renderPageTemplate({
+      ...data, favicon, subtitle, songs, labelBase: '../', slugify, postscriptPreviewSettings, processAnalysisText,
+    });
   });
 }
 

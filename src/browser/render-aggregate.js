@@ -28,7 +28,9 @@
  * UNTRUSTED and unsanitised; the consumer must sanitise at the boundary.
  */
 
-const { resolveContextVars, songsFor } = require('../tools/render-core');
+const {
+  resolveContextVars, songsFor, slugify, postscriptPreviewSettings, processAnalysisText,
+} = require('../tools/render-core');
 const { renderFragmentTemplate } = require('../tools/poem-templates');
 const { formatDateForDisplay, parseDateForSorting } = require('../tools/date-utils');
 const {
@@ -45,7 +47,9 @@ function renderPoemDataFragment(data, slug, config) {
   const augmented = { ...data, slug, date: data.date ? formatDateForDisplay(data.date) : data.date };
   const resolved = resolveContextVars(augmented);
   const songs = songsFor(resolved, config);
-  return renderFragmentTemplate({ ...resolved, songs, labelBase: '' });
+  return renderFragmentTemplate({
+    ...resolved, songs, labelBase: '', slugify, postscriptPreviewSettings, processAnalysisText,
+  });
 }
 
 /**
