@@ -120,6 +120,16 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   thrown errors with the source filename, matching the `--all` batch path's
   existing behaviour. Fixes #227.
 
+- **That line number is now the true original source line**, even when a
+  Preamble directive, a comment block, or a variable definition precedes the
+  header — each of those is stripped from `PoemParser`'s internal line list
+  before the header parses, which previously left the reported line
+  undercounting the real one by however many lines were stripped.
+  `removeCommentBlocks()`, `joinContinuedLines()`, `processVariables()`
+  (including its standalone multi-line-variable-reference expansion) and
+  `extractPreambleDirectives()` now track each surviving line's original
+  line number alongside it. Fixes #241.
+
 - **`serve-static.js`'s `/all-poems` endpoint no longer serves a stale `$ref`
   target for the lifetime of the dev server.** `poem-render.js`'s `$ref`
   cache lives for the whole process, and every other route already re-reads

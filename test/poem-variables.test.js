@@ -107,3 +107,19 @@ test('expandStandaloneRefs leaves a non-reference or single-line-variable refere
     ['plain text', '${name}', '${undefined}']
   );
 });
+
+test('expandStandaloneRefs, given a parallel lineNumbers array, tags every expanded line with the reference line\'s own number', () => {
+  const variables = new Map([['a', ['A1', 'A2']], ['b', ['${a}', 'B2']]]);
+  assert.deepStrictEqual(
+    expandStandaloneRefs(['before', '${b}', 'after'], [], variables, [10, 11, 12]),
+    { lines: ['before', 'A1', 'A2', 'B2', 'after'], lineNumbers: [10, 11, 11, 11, 12] }
+  );
+});
+
+test('expandStandaloneRefs, given a parallel lineNumbers array, still tags an unexpanded cycle line with its own number', () => {
+  const variables = new Map([['a', ['${a}']]]);
+  assert.deepStrictEqual(
+    expandStandaloneRefs(['${a}'], [], variables, [7]),
+    { lines: ['${a}'], lineNumbers: [7] }
+  );
+});
