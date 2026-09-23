@@ -24,7 +24,7 @@
   width: 1px;
 }
 
-/* #707070 (secondary/meta text; also used at :82,478,533,551,563) against the
+/* #707070 (secondary/meta text; also used at :89,485,540,558,570) against the
    #f5f5f5 page background below measures 4.54:1 by the W3C relative-luminance
    formula, clearing the WCAG AA 4.5:1 minimum for normal-size text — verified
    with the wcag-contrast npm package, cross-checked against the formula
