@@ -1,3 +1,8 @@
+---
+name: Issue
+about: Report a bug or request a feature
+---
+
 ## Description
 
 Describe the issue or feature request clearly and concisely.
