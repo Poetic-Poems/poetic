@@ -42,6 +42,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   a `td-record` body block in its pull request, per `CLAUDE.md`'s "Tech
   debt" section. Since `.claude/skills` is synced to consumer repositories,
   this change reaches every consumer too. Fixes #210.
+- **`blogger-auth.js --help`/`-h` now goes through the same `isHelpRequested()`
+  helper (`src/tools/cli-help.js`) every other CLI tool in `src/tools/`
+  uses**, instead of a hand-rolled check — same end-user behaviour, one less
+  place `--help` detection can drift from the shared convention.
+  **`poem-to-yaml.js --help`** now includes an `Options:` block, matching the
+  format `build-poems.js`/`serve-static.js` already use. Fixes #236.
 
 ### Added
 

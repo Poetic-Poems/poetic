@@ -40,6 +40,7 @@ const crypto = require('crypto');
 const { URL, URLSearchParams } = require('url');
 const { readPoeticConfig } = require('./poetic-config');
 const { escapeHtml } = require('./html-escape');
+const { isHelpRequested } = require('./cli-help');
 
 const BLOGGER_SCOPE = 'https://www.googleapis.com/auth/blogger';
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
@@ -92,7 +93,7 @@ function saveFileMode0600(filePath, contents) {
 // ── CLI argument parsing ──────────────────────────────────────────────────────
 
 function parseArgs(argv) {
-  const args = { port: 4753, blogUrl: null, help: false };
+  const args = { port: 4753, blogUrl: null };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--port' && argv[i + 1]) {
       args.port = parseInt(argv[i + 1], 10);
@@ -100,8 +101,6 @@ function parseArgs(argv) {
     } else if (argv[i] === '--blog-url' && argv[i + 1]) {
       args.blogUrl = argv[i + 1];
       i++;
-    } else if (argv[i] === '--help' || argv[i] === '-h') {
-      args.help = true;
     }
   }
   return args;
@@ -418,9 +417,7 @@ function buildConsentUrl(clientId, redirectUri, state, codeChallenge) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  const cliArgs = parseArgs(process.argv.slice(2));
-
-  if (cliArgs.help) {
+  if (isHelpRequested(process.argv.slice(2))) {
     console.log(`
 blogger-auth.js — Mint a Blogger API refresh token
 
@@ -451,6 +448,8 @@ After running:
 `);
     return;
   }
+
+  const cliArgs = parseArgs(process.argv.slice(2));
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
