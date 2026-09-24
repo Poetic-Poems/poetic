@@ -142,7 +142,15 @@ function main() {
 
   if (isHelpRequested(args)) {
     console.log('Usage: poem-to-yaml.js <file.poem> [output.yaml]');
-    console.log('   or: poem-to-yaml.js --all');
+    console.log('   or: poem-to-yaml.js --all [--force]');
+    console.log('');
+    console.log('Convert a .poem source file (or every .poem file in src/poems/poem/)');
+    console.log('to YAML in src/poems/yaml/.');
+    console.log('');
+    console.log('Options:');
+    console.log('  --all        Convert every .poem file, skipping any already up to date');
+    console.log('  --force      With --all, reconvert every poem regardless of staleness');
+    console.log('  --help, -h   Show this help');
     return;
   }
 
