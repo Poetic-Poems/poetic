@@ -11,37 +11,6 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
-- **Tech debt is now filed as GitHub issues labelled `pw::type:tech-debt`,
-  not as new files under `tech-debt/`.** Fleet-wide roadmap decision D15
-  (revised, Poetic-Poems/agent-ops#869) moves debt off the in-repo per-item
-  register: filing is now one API call instead of an ID reservation and a
-  pull request, and resolving is a closing keyword (`Fixes #<n>`) plus a
-  `td-record` block in the resolving pull request's body, which the
-  squash-merge commit carries into `main`'s own immutable history.
-  `tech-debt/` freezes in place as a historical archive — every record ever
-  allocated stays, never edited, deleted, or renamed — since `origin/main`
-  carried zero open or in-progress records at the time of the freeze, so
-  there was nothing to migrate. `TECH-DEBT.md` is now a short policy
-  pointer, and `docs/TECH-DEBT-REGISTER.md` documents the frozen archive's
-  format as-built. `scripts/sync-framework.sh` no longer syncs the register
-  scripts (`scripts/get-tech-debt-record.pl`, `scripts/next-tech-debt-id.pl`,
-  `scripts/reserve-tech-debt-id.pl`, `scripts/td-check.pl`,
-  `scripts/check-tech-debt-open-rewrites.pl`) to consumer repositories — a
-  new consumer files debt as labelled issues from the start and never needs
-  them. The canonical scripts and `scripts/td-tooling-manifest` stay in this
-  repository for any sibling repo still holding a byte-identical copy from
-  before this freeze, and `.github/workflows/tech-debt-register.yml`
-  continues to guard this repository's own frozen archive against deletion
-  or rename. Closes #199.
-- **The `/td` skill now resolves an open `pw::type:tech-debt`-labelled GitHub
-  issue instead of a `tech-debt/` register record**, matching the policy
-  change above. `/td <n>` takes an issue number, resolved per repo via `gh
-  issue view` rather than `scripts/get-tech-debt-record.pl`; the launched
-  agent no longer creates a `td/<id>` claim branch or edits a record's
-  frontmatter, and instead closes the issue with a real closing keyword plus
-  a `td-record` body block in its pull request, per `CLAUDE.md`'s "Tech
-  debt" section. Since `.claude/skills` is synced to consumer repositories,
-  this change reaches every consumer too. Fixes #210.
 - **`blogger-auth.js --help`/`-h` now goes through the same `isHelpRequested()`
   helper (`src/tools/cli-help.js`) every other CLI tool in `src/tools/`
   uses**, instead of a hand-rolled check — same end-user behaviour, one less
@@ -50,38 +19,6 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   format `build-poems.js`/`serve-static.js` already use. Fixes #236.
 
 ### Added
-
-- **`scripts/td-tooling-manifest` publishes the authoritative list of
-  tech-debt register scripts for consumer drift checks.** Sibling
-  repositories that hold byte-identical copies of the register tooling
-  (agent-ops, poetic-fiddle) previously diffed against a file list
-  hard-coded in their own `td-tooling-drift.yml`, so a newly added
-  canonical script never appeared in any consumer's check until someone
-  updated that hard-coded list by hand. Consumers now fetch
-  `scripts/td-tooling-manifest` from poetic `main` and iterate it instead;
-  adding or removing a canonical script here is picked up by every
-  consumer's drift check the next time it runs. See "Tooling manifest for
-  consumers" in `docs/TECH-DEBT-REGISTER.md`. Closes #188.
-
-- **Tech-debt ID allocation is now a reservation, not a scan.**
-  `scripts/reserve-tech-debt-id.pl` fetches `origin/main` itself and pushes
-  the candidate id's `td/<id>` branch as an atomic, fleet-wide lock — the
-  same mechanism "Claiming an item" already uses to work an existing item —
-  retrying the next id itself whenever a push is rejected. Previously,
-  `scripts/next-tech-debt-id.pl` only computed the next free id by scanning
-  filenames, reserving nothing; two concurrent writers could be handed the
-  same id, and a writer whose clone already contained the taken id would
-  overwrite an already-merged item's body as an ordinary content
-  modification — invisible to both the deletion/rename guard and
-  `td-check.pl`, since neither sees an add/add conflict. `TECH-DEBT.md`'s
-  "Filing an item" now calls the new script instead of prescribing a manual
-  skim of open pull requests and `td/*` branches.
-  `scripts/check-tech-debt-open-rewrites.pl` fails a pull request
-  rewriting existing text in an open item's body without moving its
-  `status:` field — an open item's body is append-only, so a
-  `Referenced from:` note or other new text may still be appended — the
-  remaining failure mode no reservation can prevent, since it only ever
-  attempts to file a *new* id. Resolves TD-PPpoet-26080801.
 
 - **Regression tests for `sync-blogger.js`'s `main()` and its network
   helpers.** `getAccessToken`, `listAllPosts`, `listAccessibleBlogs`, and
@@ -97,24 +34,6 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   catch → `diagnoseBloggerFailure` path. `sync-blogger.js` coverage rises
   from 80.96% to 99.25% lines. No behaviour change. Resolves
   TD-PPpoet-26080807.
-
-- **Every required CI check now reports on `merge_group` events, so a GitHub
-  merge queue can be enabled on `main`.** A queue builds each candidate merge
-  on a `gh-readonly-queue/main/*` ref and waits for every required status
-  check to report there, but an Actions workflow only runs for a merge group
-  if it carries an `on: merge_group` trigger. `build-poems.yml`,
-  `codeql.yml`, `tech-debt-register.yml`, `release.yml` and
-  `commit-format.yml` gained one. The checks that re-validate the tree run
-  for real against `github.event.merge_group.base_sha`/`head_sha`, since a
-  merge group carries no `pull_request` payload; `commit-format` stays gated
-  to `pull_request` and reports `skipped`, having nothing PR-scoped to check.
-  `build-poems.yml`'s `deploy` and `release.yml`'s `release` still fire only
-  on their existing `push`/`workflow_dispatch` conditions, and a merge-group
-  build is keyed to its own concurrency group so an unrelated run cannot
-  cancel it out of the queue. Two of these workflows (`build-poems.yml`,
-  `tech-debt-register.yml`) are synced to consumer repositories, which pick
-  the triggers up on their next `scripts/sync-framework.sh` run; they stay
-  inert unless the consumer enables a merge queue of its own.
 
 ### Fixed
 
