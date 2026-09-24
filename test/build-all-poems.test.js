@@ -29,6 +29,7 @@ const yaml = require('js-yaml');
 
 const {
   concatenateAllHtmlFiles, generateIndexHtml, copyDateUtilsAsset, selfHealLandmarks, determineAggregateBuildPlan,
+  describeConfigNotices, main,
 } = require('../src/tools/build-all-poems');
 const { recordManifest } = require('../src/tools/needs-rebuild');
 const { REPO_ROOT } = require('../src/tools/repo-root');
@@ -604,4 +605,174 @@ test('determineAggregateBuildPlan: a shared $ref target is parsed at most once a
   assert.ok(sources.includes(fx.refTargetPath));
   // Both poems (2) plus the shared ref target parsed once, not per-poem (3).
   assert.strictEqual(loadCalls.mock.callCount(), 3, 'the shared $ref target must be parsed once, not once per referencing poem');
+});
+
+// ── describeConfigNotices (TD-PPpoet, issue #237) ───────────────────────────
+//
+// The favicon/subtitle/title/footer notices main() prints are pure decisions
+// over the resolved config, extracted so they're testable without a real
+// .poetic-config.yaml or a build — same shape as blogger-auth.js's
+// describeBlogAccess().
+
+test('describeConfigNotices: empty config falls back to the default favicon and prints no notices', () => {
+  const { favicon, notices } = describeConfigNotices({});
+  assert.strictEqual(favicon, 'poetic-logo.svg');
+  assert.deepStrictEqual(notices, []);
+});
+
+test('describeConfigNotices: a configured favicon is noted, with a leading "public/" stripped', () => {
+  const { favicon, notices } = describeConfigNotices({ favicon: 'public/custom.svg' });
+  assert.strictEqual(favicon, 'custom.svg');
+  assert.deepStrictEqual(notices, ['Using favicon from .poetic-config.yaml: custom.svg']);
+});
+
+test('describeConfigNotices: a configured subtitle is noted', () => {
+  const { notices } = describeConfigNotices({ subtitle: 'My Verses' });
+  assert.deepStrictEqual(notices, ['Using subtitle from .poetic-config.yaml: My Verses']);
+});
+
+test('describeConfigNotices: a configured title is noted', () => {
+  const { notices } = describeConfigNotices({ title: 'My Site' });
+  assert.deepStrictEqual(notices, ['Using title from .poetic-config.yaml: My Site']);
+});
+
+test('describeConfigNotices: footer.enabled === false is noted as disabled', () => {
+  const { notices } = describeConfigNotices({ footer: { enabled: false } });
+  assert.deepStrictEqual(notices, ['Footer disabled via .poetic-config.yaml (footer.enabled: false)']);
+});
+
+test('describeConfigNotices: a configured footer.source is noted when the footer is not disabled', () => {
+  const { notices } = describeConfigNotices({ footer: { source: 'public/custom-footer.html' } });
+  assert.deepStrictEqual(notices, ['Using footer.source from .poetic-config.yaml: public/custom-footer.html']);
+});
+
+test('describeConfigNotices: footer.enabled === false takes precedence over a footer.source also set', () => {
+  const { notices } = describeConfigNotices({ footer: { enabled: false, source: 'x.html' } });
+  assert.deepStrictEqual(notices, ['Footer disabled via .poetic-config.yaml (footer.enabled: false)']);
+});
+
+test('describeConfigNotices: combines every applicable notice, in the order main() used to print them', () => {
+  const { notices } = describeConfigNotices({
+    favicon: 'icon.svg',
+    subtitle: 'Sub',
+    title: 'Title',
+    footer: { source: 'footer.html' },
+  });
+  assert.deepStrictEqual(notices, [
+    'Using favicon from .poetic-config.yaml: icon.svg',
+    'Using subtitle from .poetic-config.yaml: Sub',
+    'Using title from .poetic-config.yaml: Title',
+    'Using footer.source from .poetic-config.yaml: footer.html',
+  ]);
+});
+
+// ── main() (TD-PPpoet, issue #237) ──────────────────────────────────────────
+//
+// main() accepts { poemsDir, publicDir } overrides (mirroring buildAllPoems()
+// in build-poems.js) precisely so these tests never touch the real
+// src/poems/yaml or public directories — see this file's own header comment
+// on why that isolation matters for a test/ synced verbatim to consumer repos.
+// The process.exit(1) branches are exercised as a subprocess, the same way
+// test/build-poems.test.js covers buildAllPoems()'s own exit paths, since a
+// live process.exit() here would tear down the whole test worker.
+
+// Run `fn`, capturing every console.log call instead of printing it; restores
+// console.log afterwards even if `fn` throws.
+function withCapturedLogs(fn) {
+  const originalLog = console.log;
+  const lines = [];
+  console.log = (...args) => lines.push(args.join(' '));
+  try {
+    fn();
+  } finally {
+    console.log = originalLog;
+  }
+  return lines;
+}
+
+test('main(): a fresh build logs both build steps and writes all-poems.html + index.html', (t) => {
+  const poemsDir = tmpPoemsDir(t);
+  const publicDir = tmpPublicDir(t);
+  writeFixturePoem(poemsDir, FIXTURE_FILE, { title: FIXTURE_TITLE });
+
+  const logs = withCapturedLogs(() => main({ poemsDir, publicDir }));
+
+  assert.ok(logs.some((l) => l.includes('Step 1: Building all-poems.html')));
+  assert.ok(logs.some((l) => l.includes('Successfully generated')));
+  assert.ok(logs.some((l) => l.includes('Step 2: Updating index.html')));
+  assert.ok(logs.some((l) => l.includes('Successfully updated')));
+  assert.ok(fs.existsSync(path.join(publicDir, 'all-poems.html')));
+  assert.ok(fs.existsSync(path.join(publicDir, 'index.html')));
+});
+
+test('main(): an unchanged corpus skips the rebuild and logs so', (t) => {
+  const poemsDir = tmpPoemsDir(t);
+  const publicDir = tmpPublicDir(t);
+  writeFixturePoem(poemsDir, FIXTURE_FILE, { title: FIXTURE_TITLE });
+
+  main({ poemsDir, publicDir }); // first build, not under test
+  const logs = withCapturedLogs(() => main({ poemsDir, publicDir }));
+
+  assert.ok(logs.some((l) => l.includes('up to date, skipping')));
+  assert.ok(!logs.some((l) => l.includes('Step 1')), 'a skipped build must not re-run Step 1');
+});
+
+test('main(): exits non-zero and reports the missing directory when publicDir does not exist', (t) => {
+  const poemsDir = tmpPoemsDir(t);
+  const missingPublicDir = path.join(poemsDir, 'no-such-public-dir');
+
+  const script = `
+    const { main } = require(${JSON.stringify(path.join(__dirname, '..', 'src', 'tools', 'build-all-poems.js'))});
+    main({ poemsDir: ${JSON.stringify(poemsDir)}, publicDir: ${JSON.stringify(missingPublicDir)} });
+  `;
+  const { spawnSync } = require('child_process');
+  const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
+
+  assert.strictEqual(result.status, 1);
+  assert.match(result.stderr, /Public directory not found/);
+});
+
+test('main(): a poem that fails to render is reported and the process exits non-zero', (t) => {
+  const poemsDir = tmpPoemsDir(t);
+  const publicDir = tmpPublicDir(t);
+  // A $ref to a target that does not exist fails only at render time (the
+  // per-poem try/catch inside concatenateAllHtmlFiles), not at YAML-parse
+  // time, so poemErrorCount ends up 1 without the whole build throwing.
+  fs.writeFileSync(
+    path.join(poemsDir, 'broken.yaml'),
+    'title: Broken Poem\ndate: 2020-01-01\nversions:\n  - segments:\n      - lines: {$ref: "/nonexistent/file.yaml#/x"}\n',
+    'utf8'
+  );
+
+  const script = `
+    const { main } = require(${JSON.stringify(path.join(__dirname, '..', 'src', 'tools', 'build-all-poems.js'))});
+    main({ poemsDir: ${JSON.stringify(poemsDir)}, publicDir: ${JSON.stringify(publicDir)} });
+  `;
+  const { spawnSync } = require('child_process');
+  const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
+
+  assert.strictEqual(result.status, 1);
+  assert.match(result.stderr, /poem\(s\) failed to render into all-poems\.html/);
+  assert.match(result.stderr, /Build failed: 1 error\(s\)/);
+});
+
+test('main(): an index.html update failure is reported and the process exits non-zero', (t) => {
+  const poemsDir = tmpPoemsDir(t);
+  const publicDir = tmpPublicDir(t);
+  writeFixturePoem(poemsDir, FIXTURE_FILE, { title: FIXTURE_TITLE });
+  // A directory where index.html should be makes fs.readFileSync(indexPath)
+  // throw inside generateIndexHtml's own catch, so it returns null without
+  // affecting concatenateAllHtmlFiles (a different code path entirely).
+  fs.mkdirSync(path.join(publicDir, 'index.html'));
+
+  const script = `
+    const { main } = require(${JSON.stringify(path.join(__dirname, '..', 'src', 'tools', 'build-all-poems.js'))});
+    main({ poemsDir: ${JSON.stringify(poemsDir)}, publicDir: ${JSON.stringify(publicDir)} });
+  `;
+  const { spawnSync } = require('child_process');
+  const result = spawnSync(process.execPath, ['-e', script], { encoding: 'utf8' });
+
+  assert.strictEqual(result.status, 1);
+  assert.match(result.stderr, /Skipped index\.html update due to errors/);
+  assert.match(result.stderr, /Build failed: 1 error\(s\)/);
 });

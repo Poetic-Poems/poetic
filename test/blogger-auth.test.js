@@ -20,6 +20,9 @@ const {
   promptHidden,
   escapeHtml,
   buildConsentUrl,
+  exchangeCodeForTokens,
+  lookupBlogId,
+  listMyBlogs,
 } = require('../src/tools/blogger-auth');
 
 function getFreePort() {
@@ -396,4 +399,161 @@ test('saveFileMode0600 leaves no temp file behind after a successful save', () =
     const entries = fs.readdirSync(dir);
     assert.deepStrictEqual(entries, ['.blogger-credentials.json']);
   });
+});
+
+// ── exchangeCodeForTokens / lookupBlogId / listMyBlogs (issue #237) ─────────
+//
+// The pure request-shaping logic main() delegates to for the OAuth token
+// exchange and the post-auth Blogger checks — already extracted out of
+// main() (mirroring sync-blogger.js's getAccessToken/listAccessibleBlogs),
+// just never unit tested. main()'s own body stays interactive I/O
+// (readline prompts, the real loopback server) and is intentionally left
+// untested.
+
+// Swaps global.fetch for the duration of `run`, mirroring
+// test/sync-blogger.test.js's withMockFetch.
+async function withMockFetch(mockFetch, run) {
+  const original = global.fetch;
+  global.fetch = mockFetch;
+  try {
+    return await run();
+  } finally {
+    global.fetch = original;
+  }
+}
+
+function jsonResponse(status, body = {}) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => body,
+    text: async () => JSON.stringify(body),
+  };
+}
+
+// ── exchangeCodeForTokens ────────────────────────────────────────────────────
+
+test('exchangeCodeForTokens: posts the authorization_code grant and resolves with the parsed tokens', async () => {
+  let capturedUrl, capturedInit;
+  const tokens = await withMockFetch(
+    async (url, init) => {
+      capturedUrl = url;
+      capturedInit = init;
+      return jsonResponse(200, { access_token: 'ACCESS', refresh_token: 'REFRESH' });
+    },
+    () => exchangeCodeForTokens({
+      clientId: 'cid', clientSecret: 'csec', code: 'CODE', redirectUri: 'http://localhost:4753', codeVerifier: 'VERIFIER',
+    })
+  );
+
+  assert.deepStrictEqual(tokens, { access_token: 'ACCESS', refresh_token: 'REFRESH' });
+  assert.strictEqual(capturedUrl, 'https://oauth2.googleapis.com/token');
+  assert.strictEqual(capturedInit.method, 'POST');
+  assert.strictEqual(capturedInit.headers['Content-Type'], 'application/x-www-form-urlencoded');
+  const body = new URLSearchParams(capturedInit.body);
+  assert.strictEqual(body.get('client_id'), 'cid');
+  assert.strictEqual(body.get('client_secret'), 'csec');
+  assert.strictEqual(body.get('code'), 'CODE');
+  assert.strictEqual(body.get('redirect_uri'), 'http://localhost:4753');
+  assert.strictEqual(body.get('grant_type'), 'authorization_code');
+  assert.strictEqual(body.get('code_verifier'), 'VERIFIER');
+});
+
+test('exchangeCodeForTokens: omits code_verifier from the body when none is given', async () => {
+  let capturedInit;
+  await withMockFetch(
+    async (url, init) => { capturedInit = init; return jsonResponse(200, {}); },
+    () => exchangeCodeForTokens({ clientId: 'cid', clientSecret: 'csec', code: 'CODE', redirectUri: 'http://localhost:4753' })
+  );
+  const body = new URLSearchParams(capturedInit.body);
+  assert.strictEqual(body.has('code_verifier'), false);
+});
+
+test('exchangeCodeForTokens: throws with the response body on a non-ok response', async () => {
+  await assert.rejects(
+    () => withMockFetch(
+      async () => jsonResponse(400, { error: 'invalid_grant' }),
+      () => exchangeCodeForTokens({ clientId: 'cid', clientSecret: 'csec', code: 'BAD', redirectUri: 'http://localhost:4753' })
+    ),
+    /Token exchange failed: HTTP 400/
+  );
+});
+
+// ── lookupBlogId ──────────────────────────────────────────────────────────────
+
+test('lookupBlogId: sends the blog URL as a query param and the token as a Bearer header', async () => {
+  let capturedUrl, capturedInit;
+  const data = await withMockFetch(
+    async (url, init) => {
+      capturedUrl = url;
+      capturedInit = init;
+      return jsonResponse(200, { id: '42', name: 'My Blog' });
+    },
+    () => lookupBlogId('https://myblog.blogspot.com', 'ACCESS-TOKEN')
+  );
+
+  assert.deepStrictEqual(data, { id: '42', name: 'My Blog' });
+  assert.strictEqual(
+    capturedUrl,
+    'https://www.googleapis.com/blogger/v3/blogs/byurl?url=https%3A%2F%2Fmyblog.blogspot.com'
+  );
+  assert.strictEqual(capturedInit.headers.Authorization, 'Bearer ACCESS-TOKEN');
+});
+
+test('lookupBlogId: throws with the response body on a non-ok response', async () => {
+  await assert.rejects(
+    () => withMockFetch(
+      async () => jsonResponse(404, { error: 'not found' }),
+      () => lookupBlogId('https://myblog.blogspot.com', 'ACCESS-TOKEN')
+    ),
+    /Blog lookup failed: HTTP 404/
+  );
+});
+
+// ── listMyBlogs ───────────────────────────────────────────────────────────────
+
+test('listMyBlogs: recognised=false on a 403 (Blogger not enabled for the account)', async () => {
+  const result = await withMockFetch(
+    async () => jsonResponse(403, {}),
+    () => listMyBlogs('ACCESS-TOKEN')
+  );
+  assert.deepStrictEqual(result, { recognised: false, blogs: [] });
+});
+
+test('listMyBlogs: maps items to { id, name, url }, coercing id to a string', async () => {
+  const result = await withMockFetch(
+    async () => jsonResponse(200, { items: [{ id: 999, name: 'Blog A', url: 'https://a.example/' }] }),
+    () => listMyBlogs('ACCESS-TOKEN')
+  );
+  assert.deepStrictEqual(result, {
+    recognised: true,
+    blogs: [{ id: '999', name: 'Blog A', url: 'https://a.example/' }],
+  });
+});
+
+test('listMyBlogs: recognised=true with no blogs when items is absent', async () => {
+  const result = await withMockFetch(
+    async () => jsonResponse(200, {}),
+    () => listMyBlogs('ACCESS-TOKEN')
+  );
+  assert.deepStrictEqual(result, { recognised: true, blogs: [] });
+});
+
+test('listMyBlogs: sends the token as a Bearer header', async () => {
+  let capturedInit;
+  await withMockFetch(
+    async (url, init) => { capturedInit = init; return jsonResponse(200, {}); },
+    () => listMyBlogs('MY-TOKEN')
+  );
+  assert.strictEqual(capturedInit.headers.Authorization, 'Bearer MY-TOKEN');
+});
+
+test('listMyBlogs: throws with the response body on a non-403 non-ok response', async () => {
+  await assert.rejects(
+    () => withMockFetch(
+      async () => jsonResponse(500, { error: 'server error' }),
+      () => listMyBlogs('ACCESS-TOKEN')
+    ),
+    /Blog list failed: HTTP 500/
+  );
 });
