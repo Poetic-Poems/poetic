@@ -37,6 +37,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Editing `src/templates/_poem-content.pug` alone now invalidates the
+  incremental-build cache**, matching what `docs/BUILD.md` already promises
+  authors under "Sources". `build-poems.js`'s `globalInputs` and
+  `build-all-poems.js`'s `extraInputs` staleness-check lists previously
+  named only the top-level `poem-page.pug`/`poem.pug` templates, missing the
+  shared partial both of those `include` and which holds essentially all
+  poem markup — so a local edit to the partial alone left every already-built
+  page looking up to date. Fixes #247.
+
 - **A `.poem` file missing its title or date now names the offending line
   and file, instead of a bare `Missing title`/`Missing date`/`Invalid or
   missing date`.** `poem-parser.js`'s `parseHeader()` throws now include the
