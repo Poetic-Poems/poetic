@@ -33,13 +33,15 @@ own CLAUDE.md says as much, and syncing would overwrite hand edits anyway.
    repo's own conventions (read its CLAUDE.md if present).
 2. **Test/build** inside the provider repo if it has a build/test step for the
    changed area.
-3. **Changelog and version.** Consider whether the change warrants an entry in
-   the provider's `CHANGELOG.md` (behaviour visible to poem authors or site
-   publishers — not routine docs/patch fixes, per the file's own header) under
-   `[Unreleased]`, and whether it's appropriate to bump the semver tag (per
-   `semver.org`: major/minor/patch based on the change's impact). Do not bump
-   or tag without confirming with the user first — versioning is a
-   provider-wide, externally-visible decision.
+3. **Changelog and version.** Consider whether the change warrants a
+   `## Changelog` section in the provider pull request's description
+   (behaviour visible to poem authors or site publishers — not routine
+   docs/patch fixes; `None.` otherwise) — the entry lives in the description,
+   not in `CHANGELOG.md` directly, since a release pull request assembles the
+   file from merged descriptions — and whether it's appropriate to bump the
+   semver tag (per `semver.org`: major/minor/patch based on the change's
+   impact). Do not bump or tag without confirming with the user first —
+   versioning is a provider-wide, externally-visible decision.
 4. **Commit** the change in the provider repo (do not push yet).
 5. **Confirm before pushing.** Pushing to `poetic`'s remote is a shared,
    externally-visible action — surface the commit and ask before running

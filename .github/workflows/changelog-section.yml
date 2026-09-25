@@ -1,0 +1,53 @@
+name: Changelog section check
+
+# Gates roadmap decision D27 (Pullwright/agent-ops#1804): a change's
+# changelog entry is a `## Changelog` section of its own pull-request
+# description, which the squash merge writes onto `main`
+# (`squash_merge_commit_message: PR_BODY`), and `CHANGELOG.md` is assembled
+# from those descriptions by the release pull request alone
+# (`scripts/assemble-changelog.sh`, see AGENTS.md's "Release process"). Two
+# pull requests can therefore no longer conflict over the file the way they
+# used to when both edited it directly.
+#
+# `scripts/check-changelog-section.sh` decides two things from the title and
+# the body: whether the title's Conventional Commits type (`feat`, `fix`,
+# `perf`, or any type with the `!` breaking marker) owes a section at all,
+# and whether a section that is present has the shape the assembler can read
+# — Keep a Changelog's six category sub-headings with `- ` bullets, or the
+# single line `None.`.
+#
+# Same trigger shape as commit-format.yml, for the same reasons: deliberately
+# `pull_request` (not `pull_request_target`), so a fork PR never runs with
+# write-scoped secrets; `edited` is in the trigger list because the body and
+# the title can change without touching any file; and the job reports
+# `skipped` (via `if:`) rather than running on `merge_group`, since a merge
+# group carries no pull-request payload to check and nothing here changes
+# between the `pull_request` run that already validated it and the queue
+# picking it up — a skipped conclusion still satisfies a required status
+# check under GitHub's branch-protection semantics.
+#
+# `changelog-section` is the job name and therefore the status-check
+# context; once it has reported on at least one pull request, add it to the
+# `default` ruleset's required status checks (owner action).
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  changelog-section:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check the changelog section
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: scripts/check-changelog-section.sh "$PR_BODY" "$PR_TITLE"
