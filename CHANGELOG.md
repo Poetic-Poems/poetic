@@ -140,17 +140,6 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   (`src/tools/cli-help.js`) ahead of its own argument parsing and prints its
   usage string with no side effects. Resolves TD-PPpoet-26080804.
 
-- **The tech-debt register's two new scripts now reach consumer repos.**
-  `scripts/check-tech-debt-open-rewrites.pl` and
-  `scripts/reserve-tech-debt-id.pl` were absent from `FRAMEWORK_PATHS` in
-  `scripts/sync-framework.sh`, so a sync carried down the tests
-  covering both scripts, but neither script itself — breaking the
-  consumer's `register` and `build` checks on the sync pull request itself.
-  The reservation commit's Conventional Commits test now also skips where
-  `.githooks/check-commit-format.sh` is absent, since `test/` is synced
-  verbatim but `.githooks/` is this repository's own contribution policy,
-  enforced here by `commit-format.yml` and carried by no consumer.
-
 - **README's YAML round-trip example.** The single-file `poem-to-yaml.js`
   command now passes an explicit output path, so it writes into
   `src/poems/yaml/` where `yaml-to-poem.js` expects to find it, instead of
@@ -167,18 +156,6 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `poem-to-yaml.js` but not to the matching `yaml-to-poem.js` call, so the
   converted `.poem` file landed back in `src/poems/yaml/` rather than
   `src/poems/poem/`. Each approach was verified end-to-end.
-
-- **The open-item rewrite guard no longer exempts wholesale replacement of
-  an empty body.** `check-tech-debt-open-rewrites.pl`'s strict-append
-  exemption checked only that the head body starts with the base body —
-  but every string has the empty string as a prefix, so an open item whose
-  body was empty at the merge base could be replaced with entirely
-  different prose and the guard would pass it as an append. `td-check.pl`
-  now requires a non-blank body (containing `\S`) for every open or
-  in-progress item — exempting `resolved`/`not-debt` items to grandfather
-  legacy data — and the append exemption additionally requires the base
-  body to already contain non-whitespace text before accepting a strict
-  append. Resolves TD-PPpoet-26081303.
 
 ### Changed
 
