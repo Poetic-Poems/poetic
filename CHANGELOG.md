@@ -17,6 +17,15 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   place `--help` detection can drift from the shared convention.
   **`poem-to-yaml.js --help`** now includes an `Options:` block, matching the
   format `build-poems.js`/`serve-static.js` already use. Fixes #236.
+- **The canonical tech-debt register tooling and manifest are gone.** Every
+  Poetic-Poems consumer has frozen its own register and retired its drift
+  workflow, so `scripts/get-tech-debt-record.pl`, `scripts/next-tech-debt-id.pl`,
+  `scripts/reserve-tech-debt-id.pl`, `scripts/td-check.pl`,
+  `scripts/check-tech-debt-open-rewrites.pl`, `scripts/td-tooling-manifest`,
+  their tests, `.github/workflows/tech-debt-register.yml` and the
+  `check:td-register` npm script are deleted. `tech-debt/`'s frozen archive
+  and `docs/TECH-DEBT-REGISTER.md`'s description of its format are
+  untouched. Fixes #200.
 
 ### Added
 
