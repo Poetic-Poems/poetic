@@ -90,9 +90,11 @@ the full description and the suggested fix, and instruct it to:
    `AGENTS.md` lists them (for the poetic framework: `npm test`,
    `npm run build`, `npm run check`, `npm run check:build`; on WSL/Linux via
    `./scripts/setup-linux.sh`).
-5. Add a `[Unreleased]` `CHANGELOG.md` entry if the change is notable under
-   that repo's documentation principles (skip it for routine/patch-level
-   fixes, per that file's own header).
+5. Add a `## Changelog` section to the pull request's description if the
+   change is notable under that repo's documentation principles (`None.` for
+   routine/patch-level fixes) — the entry lives in the description, not in
+   `CHANGELOG.md` directly; a release pull request assembles the file from
+   merged descriptions.
 6. On success, close the loop per `AGENTS.md`'s "Tech debt" section: the PR
    body carries a real GitHub closing keyword (e.g. `Fixes #<n>`) naming the
    resolved issue, plus a fenced `td-record` block —
