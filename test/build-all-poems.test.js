@@ -33,6 +33,7 @@ const {
 } = require('../src/tools/build-all-poems');
 const { recordManifest } = require('../src/tools/needs-rebuild');
 const { REPO_ROOT } = require('../src/tools/repo-root');
+const { PARTIAL_TEMPLATE } = require('../src/tools/poem-render');
 
 // A throwaway poems directory, cleaned up when the test ends.
 function tmpPoemsDir(t) {
@@ -715,6 +716,31 @@ test('main(): an unchanged corpus skips the rebuild and logs so', (t) => {
 
   assert.ok(logs.some((l) => l.includes('up to date, skipping')));
   assert.ok(!logs.some((l) => l.includes('Step 1')), 'a skipped build must not re-run Step 1');
+});
+
+test('main(): rebuilds all-poems.html/index.html when only the shared _poem-content.pug partial changes', (t) => {
+  const poemsDir = tmpPoemsDir(t);
+  const publicDir = tmpPublicDir(t);
+  writeFixturePoem(poemsDir, FIXTURE_FILE, { title: FIXTURE_TITLE });
+
+  main({ poemsDir, publicDir }); // first build, not under test
+
+  // Stub fs.statSync so PARTIAL_TEMPLATE alone reports a future mtime,
+  // without touching the real, shared template file on disk (other test
+  // files build against it concurrently in their own processes).
+  const realStatSync = fs.statSync;
+  const futureMtimeMs = Date.now() + 60_000;
+  t.mock.method(fs, 'statSync', (targetPath, ...rest) => {
+    const stat = realStatSync.call(fs, targetPath, ...rest);
+    if (targetPath === PARTIAL_TEMPLATE) return { ...stat, mtimeMs: futureMtimeMs };
+    return stat;
+  });
+
+  const logs = withCapturedLogs(() => main({ poemsDir, publicDir }));
+
+  assert.ok(logs.some((l) => l.includes('Step 1: Building all-poems.html')),
+    'editing the shared partial alone must trigger a rebuild, not a skip');
+  assert.ok(!logs.some((l) => l.includes('up to date, skipping')));
 });
 
 test('main(): exits non-zero and reports the missing directory when publicDir does not exist', (t) => {

@@ -20,6 +20,7 @@ const path = require('path');
 const os = require('os');
 
 const { buildAllPoems } = require('../src/tools/build-poems');
+const { PARTIAL_TEMPLATE } = require('../src/tools/poem-render');
 
 const FIXTURE_YAML = `title: TD Build Poems Test Poem
 author: Test Author
@@ -125,6 +126,41 @@ test('buildAllPoems regenerates a poem\'s output files once the source YAML chan
   assert.ok(
     fs.statSync(pagePath).mtimeMs > pageMtimeBefore,
     'index.html should be regenerated once its source YAML changes'
+  );
+});
+
+test('buildAllPoems rebuilds every poem page when only the shared _poem-content.pug partial changes', (t) => {
+  const { poemsDir, publicDir } = tmpDirs(t);
+  const yamlPath = path.join(poemsDir, 'test-poem.yaml');
+  fs.writeFileSync(yamlPath, FIXTURE_YAML, 'utf8');
+
+  buildAllPoems({ poemsDir, publicDir });
+
+  const pagePath = path.join(publicDir, 'test-poem', 'index.html');
+
+  // Rewind the output's mtime into the past, then read it back as the
+  // baseline, so a regenerated file's fresh mtime is unambiguously newer,
+  // regardless of filesystem mtime-resolution granularity.
+  const past = (Date.now() - 60_000) / 1000;
+  fs.utimesSync(pagePath, past, past);
+  const pageMtimeBefore = fs.statSync(pagePath).mtimeMs;
+
+  // Stub fs.statSync so PARTIAL_TEMPLATE alone reports a future mtime,
+  // without touching the real, shared template file on disk (other test
+  // files build against it concurrently in their own processes).
+  const realStatSync = fs.statSync;
+  const futureMtimeMs = Date.now() + 60_000;
+  t.mock.method(fs, 'statSync', (targetPath, ...rest) => {
+    const stat = realStatSync.call(fs, targetPath, ...rest);
+    if (targetPath === PARTIAL_TEMPLATE) return { ...stat, mtimeMs: futureMtimeMs };
+    return stat;
+  });
+
+  buildAllPoems({ poemsDir, publicDir });
+
+  assert.ok(
+    fs.statSync(pagePath).mtimeMs > pageMtimeBefore,
+    'index.html should be regenerated once the shared _poem-content.pug partial changes, even though the poem\'s own YAML did not'
   );
 });
 

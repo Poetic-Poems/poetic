@@ -26,6 +26,10 @@ const {
 const TEMPLATES_DIR = path.join(__dirname, '..', 'templates');
 const FRAGMENT_TEMPLATE = path.join(TEMPLATES_DIR, 'poem.pug');
 const PAGE_TEMPLATE = path.join(TEMPLATES_DIR, 'poem-page.pug');
+// Included by both FRAGMENT_TEMPLATE and PAGE_TEMPLATE and holds essentially
+// all poem markup, so it must be a framework-wide staleness input everywhere
+// they are (see globalInputs/extraInputs in build-poems.js/build-all-poems.js).
+const PARTIAL_TEMPLATE = path.join(TEMPLATES_DIR, '_poem-content.pug');
 
 const POEMS_DIR = path.join(REPO_ROOT, 'src', 'poems', 'yaml');
 
@@ -361,5 +365,5 @@ module.exports = {
   resolveRefs, readPoemFile, clearRefCache, loadPoemData, renderFragment, renderPage,
   substituteContextVars, resolveContextVars, CONTEXT_VAR_NAMES, listPoemYamlFiles,
   collectRefFiles, refFilesForPoem, readYamlCached,
-  FRAGMENT_TEMPLATE, PAGE_TEMPLATE,
+  FRAGMENT_TEMPLATE, PAGE_TEMPLATE, PARTIAL_TEMPLATE,
 };

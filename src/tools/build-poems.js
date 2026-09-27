@@ -12,7 +12,7 @@ const path = require('path');
 const { slugFromFile } = require('./slugify');
 const { formatDateForDisplay } = require('./date-utils');
 const { readPoeticConfig, CONFIG_FILENAME } = require('./poetic-config');
-const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles, refFilesForPoem, PAGE_TEMPLATE } = require('./poem-render');
+const { resolveRefs, readPoemFile, clearRefCache, renderPage, listPoemYamlFiles, refFilesForPoem, PAGE_TEMPLATE, PARTIAL_TEMPLATE } = require('./poem-render');
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require('./footer');
 const { BEAUTIFY_OPTIONS } = require('./render-core');
 const { REPO_ROOT } = require('./repo-root');
@@ -76,6 +76,7 @@ function buildAllPoems({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
   // and the config/footer when present.
   const globalInputs = [
     PAGE_TEMPLATE,
+    PARTIAL_TEMPLATE,
     BUILTIN_HANDLERS_PATH,
     ...(fs.existsSync(configPath) ? [configPath] : []),
     ...(fs.existsSync(footerSourcePath) ? [footerSourcePath] : []),

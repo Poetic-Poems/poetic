@@ -224,8 +224,10 @@ pin to a tag via `.poetic-version`.
 The same workflow's `changelog-check` job runs on every pull request and fails one that
 changes `package.json`'s `version` without `CHANGELOG.md` carrying a matching
 `## [<version>]` heading, so a release cannot land with the previous release's entries
-still sitting under `[Unreleased]`. A release PR therefore rolls `[Unreleased]` into a
-`## [X.Y.Z]` heading in the same PR that bumps the version.
+still sitting under `[Unreleased]`. A release pull request therefore first runs
+`scripts/assemble-changelog.sh` to fold every merged pull request's own `## Changelog`
+section into `[Unreleased]`, then renames `[Unreleased]` to a `## [X.Y.Z]` heading in the
+same pull request that bumps the version — `changelog-check` itself is unchanged.
 
 ## Exemplar config
 
@@ -237,20 +239,35 @@ renamed, or removed in `src/tools/poetic-config.js` or elsewhere, update this
 file in the same change — keep it aligned with the code and with
 `docs/BUILD.md` / `docs/BLOGGER.md`.
 
-<!-- agent-info:start fragment=documentation-principles source=Pullwright/.agent@b517d3d sha256=f39806bbbfb8 -->
+<!-- agent-info:start fragment=documentation-principles source=Pullwright/.agent@641d8b5 sha256=f1a51ab1ae6e -->
 <!-- Stamped by Poetic-Poems/.agent scripts/sync.sh from Pullwright/.agent:fragments/documentation-principles.md - a hand edit inside this region is overwritten at the next sync; edit the source instead. -->
 
 ## Documentation principles
 
-- **`CHANGELOG.md`** is the only place for recording what changed and when.
-  Add an entry under `[Unreleased]` for any notable change (one visible to poem authors or site publishers).
-  Patch-level fixes and routine doc updates do not need entries.
+- **The changelog entry lives in the pull request, not in a file the change
+  edits.** A notable change (one visible to poem authors or site publishers) records itself under a
+  `## Changelog` heading in the pull request's description: one or more of
+  the six Keep a Changelog category sub-headings — `### Added`,
+  `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`,
+  `### Security` — each followed by bullet points written for that audience.
+  A change that is not notable — a patch-level fix, a routine documentation
+  update — says so with the single line `None.` under the same heading, so
+  the omission is visibly deliberate rather than forgotten. A pull request
+  whose title's type is `feat`, `fix` or `perf`, or which carries the `!`
+  breaking-change marker, must carry the section, even if only to say
+  `None.`; other types may omit it. The squash merge carries the
+  description onto `main` as the commit message, and `CHANGELOG.md` (Keep a
+  Changelog format) is assembled from those commit messages by the release
+  pull request — or, in a repository that does not cut releases, by the
+  scheduled roll — which is the only pull request that edits the file. Two
+  pull requests therefore never conflict over the changelog.
 - **All other docs are as-built.** Write them to describe the current state
   only — no "previously", "used to be", "now uses", "migration completed", or
   "old format (deprecated)" phrasing. Git log already records history; docs
   that repeat it become misleading as the codebase evolves.
-- If you encounter historical language in an existing doc, remove it and move
-  the substance to `CHANGELOG.md` if it is significant.
+- If you encounter historical language in an existing doc, remove it and
+  move the substance into your pull request's `## Changelog` section if it
+  is significant.
 
 <!-- agent-info:end fragment=documentation-principles -->
 

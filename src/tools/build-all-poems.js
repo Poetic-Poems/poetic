@@ -14,7 +14,7 @@ const path = require('path');
 const { slugFromFile } = require('./slugify');
 const { parseDateForSorting } = require('./date-utils');
 const { readPoeticConfig, CONFIG_FILENAME } = require('./poetic-config');
-const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, readYamlCached, FRAGMENT_TEMPLATE } = require('./poem-render');
+const { loadPoemData, renderFragment, listPoemYamlFiles, refFilesForPoem, readYamlCached, FRAGMENT_TEMPLATE, PARTIAL_TEMPLATE } = require('./poem-render');
 const { BEAUTIFY_OPTIONS } = require('./render-core');
 const { renderFooter, upsertFooter, resolveFooterSourcePath } = require('./footer');
 const { REPO_ROOT } = require('./repo-root');
@@ -550,6 +550,7 @@ function main({ poemsDir = POEMS_DIR, publicDir = PUBLIC_DIR } = {}) {
   const yamlCache = new Map();
   const extraInputs = [
     FRAGMENT_TEMPLATE,
+    PARTIAL_TEMPLATE,
     BUILTIN_HANDLERS_PATH,
     ...(fs.existsSync(configPath) ? [configPath] : []),
     ...(fs.existsSync(footerSourcePath) ? [footerSourcePath] : []),
