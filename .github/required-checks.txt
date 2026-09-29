@@ -1,0 +1,25 @@
+# The record of *intent*: which status checks the `default` branch ruleset
+# (id 18226786) is meant to require. The live ruleset remains the authority
+# — this file exists so a hand edit that drops or changes a check is
+# detectable (scripts/check-required-checks-drift.sh,
+# .github/workflows/required-checks-drift.yml) rather than found only by
+# luck, as it was for issue #276. Whenever the ruleset is changed by hand
+# (always an owner act — this pipeline holds no credential that can write
+# it), mirror the change into this file in the same breath.
+#
+# One check per line: `context`, or `context @<integration_id>` when the
+# check is pinned to a specific GitHub App. A pinned and an unpinned context
+# are different entries — the pin is the security-relevant part, and
+# dropping it silently is exactly the kind of change this file is for.
+#
+# `register` is intentionally absent: it was required until PR #220 retired
+# the workflow that produced that context, and #256/#260 asked the owner to
+# drop it from the ruleset so the merge queue would not wedge on a check
+# that could never report again.
+
+build
+commit-format
+Analyze (javascript-typescript)
+Analyze (actions)
+changelog-check @15368
+changelog-section @15368

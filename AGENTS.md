@@ -196,6 +196,12 @@ re-run on every unrelated merge to `main`, which is wasteful churn in a multi-ag
 environment where several PRs are routinely in flight at once. Revisit this if a stale-base
 merge ever actually causes an integration bug that a textual merge would not have caught.
 
+The ruleset itself is the authority on which status checks are required; `.github/required-checks.txt`
+is only the in-repo record of that intent, kept in sync by hand whenever the ruleset changes (always
+an owner act — no credential in CI can write the ruleset). The scheduled workflow
+`.github/workflows/required-checks-drift.yml` compares the two daily and files a tracking issue on
+mismatch, since the ruleset's own `/history` endpoint is not readable by this pipeline's token.
+
 <!-- agent-info:start fragment=maintainer source=Pullwright/.agent@b517d3d sha256=55824e959da4 -->
 <!-- Stamped by Poetic-Poems/.agent scripts/sync.sh from Pullwright/.agent:fragments/maintainer.md - a hand edit inside this region is overwritten at the next sync; edit the source instead. -->
 
