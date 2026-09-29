@@ -9,25 +9,25 @@ warranting a recommendation at current project scale (F-CODE-03, F-PERF-01,
 F-PERF-02, F-CI-01, and the purely informational findings) — they remain
 recorded in `02-findings.md` as watch items.
 
-| ID | Recommendation | Severity | Effort | Addresses |
-|---|---|---|---|---|
-| R-01 | Document the `parts` mixed-segment shape in the YAML schema | Medium | Small | F-DOC-01 |
-| R-02 | Add line-number/filename context to poem parse errors | Medium | Small | F-UX-01 |
-| R-03 | Extract shared label-line/reserved-label helpers in `poem-parser.js` | Medium | Small | F-CODE-01 |
-| R-04 | Fix `docs/BUILD.md` step numbering and README doc-index gaps | Low | Small | F-DOC-02, F-DOC-03 |
-| R-05 | Reuse `summarizePoem()` in `build-all-poems.js`'s aggregate builders | Low | Small | F-ARCH-02 |
-| R-06 | Move Pug-embedded helper logic into `render-core.js` as locals | Low | Small | F-ARCH-01 |
-| R-07 | Share error-message constants between parser and browser renderer | Low | Small | F-CODE-02 |
-| R-08 | Broaden `a11y-check.js`'s sampled pages | Low | Medium | F-UX-03 |
-| R-09 | Verify and, if needed, fix the borderline secondary-text contrast | Low | Small | F-UX-02 |
-| R-10 | Add a thin `CONTRIBUTING.md` and a basic issue template | Low | Small | F-GOV-01 |
-| R-11 | Unify CLI `--help` handling across all tools | Low | Small | F-OPS-01, F-UX-04 |
-| R-12 | Close small test-coverage gaps in warning/logging branches | Low | Small | F-TEST-01, F-TEST-02 |
-| R-13 | Add CI badges for `commit-format` and CodeQL | Low | Small | F-TOOL-01 |
+| ID | Recommendation | Severity | Effort | Addresses | Issue |
+|---|---|---|---|---|---|
+| R-01 | Document the `parts` mixed-segment shape in the YAML schema | Medium | Small | F-DOC-01 | #226 (closed) |
+| R-02 | Add line-number/filename context to poem parse errors | Medium | Small | F-UX-01 | #227 (closed) |
+| R-03 | Extract shared label-line/reserved-label helpers in `poem-parser.js` | Medium | Small | F-CODE-01 | #228 (closed) |
+| R-04 | Fix `docs/BUILD.md` step numbering and README doc-index gaps | Low | Small | F-DOC-02, F-DOC-03 | #229 (closed) |
+| R-05 | Reuse `summarizePoem()` in `build-all-poems.js`'s aggregate builders | Low | Small | F-ARCH-02 | #230 (closed) |
+| R-06 | Move Pug-embedded helper logic into `render-core.js` as locals | Low | Small | F-ARCH-01 | #231 (closed) |
+| R-07 | Share error-message constants between parser and browser renderer | Low | Small | F-CODE-02 | #232 (closed) |
+| R-08 | Broaden `a11y-check.js`'s sampled pages | Low | Medium | F-UX-03 | #233 (closed) |
+| R-09 | Verify and, if needed, fix the borderline secondary-text contrast | Low | Small | F-UX-02 | #234 (closed) |
+| R-10 | Add a thin `CONTRIBUTING.md` and a basic issue template | Low | Small | F-GOV-01 | #235 (closed) |
+| R-11 | Unify CLI `--help` handling across all tools | Low | Small | F-OPS-01, F-UX-04 | #236 (closed) |
+| R-12 | Close small test-coverage gaps in warning/logging branches | Low | Small | F-TEST-01, F-TEST-02 | #237 (closed) |
+| R-13 | Add CI badges for `commit-format` and CodeQL | Low | Small | F-TOOL-01 | #238 (closed) |
 
 ## R-01 — Document the `parts` mixed-segment shape in the YAML schema
 
-**Severity:** Medium · **Effort:** Small · **Addresses:** F-DOC-01
+**Severity:** Medium · **Effort:** Small · **Addresses:** F-DOC-01 · **Issue:** #226 (closed)
 
 **Current state:** `docs/YAML-SCHEMA.md` documents every segment as a plain
 `lines:` scalar. `poem-parser.js` actually emits a `parts:` array (alternating
@@ -47,7 +47,7 @@ a hand-typed guess.
 
 ## R-02 — Add line-number/filename context to poem parse errors
 
-**Severity:** Medium · **Effort:** Small · **Addresses:** F-UX-01
+**Severity:** Medium · **Effort:** Small · **Addresses:** F-UX-01 · **Issue:** #227 (closed)
 
 **Current state:** `PoemParser` throws bare messages (`'Missing title'`,
 `'Missing date'`, `'Invalid or missing date'` at `poem-parser.js:739,749,769`)
@@ -70,7 +70,7 @@ mirroring `poem-to-yaml.js:107-109`'s existing batch-path pattern.
 
 ## R-03 — Extract shared label-line/reserved-label helpers in `poem-parser.js`
 
-**Severity:** Medium · **Effort:** Small · **Addresses:** F-CODE-01
+**Severity:** Medium · **Effort:** Small · **Addresses:** F-CODE-01 · **Issue:** #228 (closed)
 
 **Current state:** the label-line detection pattern
 (`line.trim().startsWith('{') && line.trim().includes('}') && ...`) is
@@ -93,7 +93,7 @@ behavior-preserving refactor.
 
 ## R-04 — Fix `docs/BUILD.md` step numbering and README doc-index gaps
 
-**Severity:** Low · **Effort:** Small · **Addresses:** F-DOC-02, F-DOC-03
+**Severity:** Low · **Effort:** Small · **Addresses:** F-DOC-02, F-DOC-03 · **Issue:** #229 (closed)
 
 **Current state:** `docs/BUILD.md`'s Quick Start presents `npm run
 poem-to-raw` as an extra "step 2.5," redundant with the first step of `npm
@@ -110,7 +110,7 @@ against `package.json`'s actual `build` script composition before editing.
 
 ## R-05 — Reuse `summarizePoem()` in `build-all-poems.js`'s aggregate builders
 
-**Severity:** Low · **Effort:** Small · **Addresses:** F-ARCH-02
+**Severity:** Low · **Effort:** Small · **Addresses:** F-ARCH-02 · **Issue:** #230 (closed)
 
 **Current state:** `concatenateAllHtmlFiles()` and `generateIndexHtml()`
 (`src/tools/build-all-poems.js:64-143`, `:250-407`) each independently loop
@@ -134,7 +134,7 @@ after.
 
 ## R-06 — Move Pug-embedded helper logic into `render-core.js` as locals
 
-**Severity:** Low · **Effort:** Small · **Addresses:** F-ARCH-01
+**Severity:** Low · **Effort:** Small · **Addresses:** F-ARCH-01 · **Issue:** #231 (closed)
 
 **Current state:** `src/templates/_poem-content.pug` defines its own
 `slugify(text)` (duplicating `src/tools/slugify.js` byte-for-byte),
@@ -159,7 +159,7 @@ pre-change build) and the full test suite passes.
 
 ## R-07 — Share error-message constants between parser and browser renderer
 
-**Severity:** Low · **Effort:** Small · **Addresses:** F-CODE-02
+**Severity:** Low · **Effort:** Small · **Addresses:** F-CODE-02 · **Issue:** #232 (closed)
 
 **Current state:** `src/browser/render-errors.js:25-29`'s `KNOWN_MESSAGES`
 hard-codes the exact strings `'Missing title'`, `'Missing date'`, `'Invalid
@@ -178,7 +178,7 @@ equivalent) afterward to confirm error classification still matches.
 
 ## R-08 — Broaden `a11y-check.js`'s sampled pages
 
-**Severity:** Low · **Effort:** Medium · **Addresses:** F-UX-03
+**Severity:** Low · **Effort:** Medium · **Addresses:** F-UX-03 · **Issue:** #233 (closed)
 
 **Current state:** `discoverCheckTargets()` (`src/tools/a11y-check.js:36-58`)
 checks `index.html` plus only the alphabetically-first individual poem
@@ -207,7 +207,7 @@ implementing agent's own environment also lacks one, and rely on
 
 ## R-09 — Verify and, if needed, fix the borderline secondary-text contrast
 
-**Severity:** Low · **Effort:** Small · **Addresses:** F-UX-02
+**Severity:** Low · **Effort:** Small · **Addresses:** F-UX-02 · **Issue:** #234 (closed)
 
 **Current state:** `#707070` (secondary/meta text, `public/poetic.css:28,82,
 478,533,551,563`) against the page background `#f5f5f5` (`:33`) computes to
@@ -229,7 +229,7 @@ if verification passes.
 
 ## R-10 — Add a thin `CONTRIBUTING.md` and a basic issue template
 
-**Severity:** Low · **Effort:** Small · **Addresses:** F-GOV-01
+**Severity:** Low · **Effort:** Small · **Addresses:** F-GOV-01 · **Issue:** #235 (closed)
 
 **Current state:** no `CONTRIBUTING.md` or `.github/ISSUE_TEMPLATE/` exists.
 README.md's own "Contributing" section (lines 345-390) already covers PR
@@ -248,7 +248,7 @@ single-maintainer repo, and the goal is discoverability, not process weight.
 
 ## R-11 — Unify CLI `--help` handling across all tools
 
-**Severity:** Low · **Effort:** Small · **Addresses:** F-OPS-01, F-UX-04
+**Severity:** Low · **Effort:** Small · **Addresses:** F-OPS-01, F-UX-04 · **Issue:** #236 (closed)
 
 **Bundling reason:** both findings are about the same small inconsistency —
 one or two CLI entry points not matching the shared `cli-help.js` pattern
@@ -274,7 +274,7 @@ in `test/blogger-auth.test.js` or `test/cli-help.test.js` to extend).
 
 ## R-12 — Close small test-coverage gaps in warning/logging branches
 
-**Severity:** Low · **Effort:** Small · **Addresses:** F-TEST-01, F-TEST-02
+**Severity:** Low · **Effort:** Small · **Addresses:** F-TEST-01, F-TEST-02 · **Issue:** #237 (closed)
 
 **Bundling reason:** both are small, additive coverage gaps in low-risk
 logging/warning code paths, addressed by the same kind of small,
@@ -303,7 +303,7 @@ and low-value to force.
 
 ## R-13 — Add CI badges for `commit-format` and CodeQL
 
-**Severity:** Low · **Effort:** Small · **Addresses:** F-TOOL-01
+**Severity:** Low · **Effort:** Small · **Addresses:** F-TOOL-01 · **Issue:** #238 (closed)
 
 **Current state:** `README.md:3` shows only a `build-poems.yml` badge; no
 badge exists for the `commit-format` check or CodeQL scanning, both of which
