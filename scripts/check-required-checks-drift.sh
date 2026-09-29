@@ -114,11 +114,11 @@ live_checks=$(printf '%s' "$ruleset_json" | jq -r '
     ] | sort[]
 ') || { echo "error: failed to parse ruleset $ruleset_id" >&2; exit 2; }
 
-manifest_checks=$(sed -E 's/#.*$//' "$MANIFEST" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | grep -v '^$' | sort) \
+manifest_checks=$(sed -E 's/#.*$//' "$MANIFEST" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g' | grep -v '^$' | LC_ALL=C sort) \
     || { echo "error: failed to parse manifest $MANIFEST" >&2; exit 2; }
 
-live_only=$(comm -23 <(printf '%s\n' "$live_checks") <(printf '%s\n' "$manifest_checks"))
-manifest_only=$(comm -13 <(printf '%s\n' "$live_checks") <(printf '%s\n' "$manifest_checks"))
+live_only=$(LC_ALL=C comm -23 <(printf '%s\n' "$live_checks") <(printf '%s\n' "$manifest_checks"))
+manifest_only=$(LC_ALL=C comm -13 <(printf '%s\n' "$live_checks") <(printf '%s\n' "$manifest_checks"))
 
 if [ -z "$live_only" ] && [ -z "$manifest_only" ]; then
     echo "OK: required_status_checks matches $MANIFEST_DISPLAY"
