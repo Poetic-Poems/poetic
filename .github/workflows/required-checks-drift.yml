@@ -72,10 +72,14 @@ jobs:
         run: |
           set -euo pipefail
 
+          # `gh --jq` takes one expression and nothing else — it has no
+          # `--arg`, so the title has to reach jq through a separate `jq`
+          # invocation. `--limit` is raised past the default 30 so a repo
+          # with a long open-issue list cannot hide the tracking issue.
           existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
-            --json number,title \
-            --jq --arg title "$ISSUE_TITLE" '.[] | select(.title == $title) | .number' \
-            | head -1)
+            --limit 200 --json number,title \
+            | jq -r --arg title "$ISSUE_TITLE" \
+              'map(select(.title == $title)) | .[0].number // empty')
 
           if [ "$DRIFT_STATUS" -eq 0 ]; then
             if [ -n "$existing" ]; then

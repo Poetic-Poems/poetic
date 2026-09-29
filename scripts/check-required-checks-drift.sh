@@ -37,8 +37,12 @@
 set -euo pipefail
 
 REPO="Poetic-Poems/poetic"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MANIFEST="$SCRIPT_DIR/../.github/required-checks.txt"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Reported as the repo-relative path, so the drift report reads the same
+# wherever the script is run from — the runner's checkout path has no place
+# in the issue this workflow files.
+MANIFEST_DISPLAY=".github/required-checks.txt"
+MANIFEST="$REPO_ROOT/$MANIFEST_DISPLAY"
 
 # Prints the JSON body of a GET to the given API path on stdout. Tries
 # `gh api` first when a token is available; falls back to an unauthenticated
@@ -50,15 +54,23 @@ api_get() {
     local body status
 
     if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-        if body=$(gh api "$path" 2>/tmp/check-required-checks-drift.gh-err); then
+        # mktemp rather than a fixed name: two runs of this script (or two
+        # users on one machine) must not share, or race over, the file
+        # `gh`'s stderr is captured into.
+        local err
+        err=$(mktemp) || return 2
+        if body=$(gh api "$path" 2>"$err"); then
+            rm -f "$err"
             printf '%s' "$body"
             return 0
         fi
-        if ! grep -qE 'HTTP (403|404)' /tmp/check-required-checks-drift.gh-err; then
+        if ! grep -qE 'HTTP (403|404)' "$err"; then
             echo "error: gh api $path failed:" >&2
-            cat /tmp/check-required-checks-drift.gh-err >&2
+            cat "$err" >&2
+            rm -f "$err"
             return 2
         fi
+        rm -f "$err"
     fi
 
     local response
@@ -109,23 +121,25 @@ live_only=$(comm -23 <(printf '%s\n' "$live_checks") <(printf '%s\n' "$manifest_
 manifest_only=$(comm -13 <(printf '%s\n' "$live_checks") <(printf '%s\n' "$manifest_checks"))
 
 if [ -z "$live_only" ] && [ -z "$manifest_only" ]; then
-    echo "OK: required_status_checks matches $MANIFEST"
+    echo "OK: required_status_checks matches $MANIFEST_DISPLAY"
     exit 0
 fi
 
-echo "Required status checks have drifted from $MANIFEST:"
+# Each group is a single multi-line string, so it has to be indented a line
+# at a time — `printf '  %s\n' "$group"` would indent only the first line.
+indent() {
+    if [ -n "$1" ]; then
+        printf '%s\n' "$1" | sed 's/^/  /'
+    else
+        echo "  (none)"
+    fi
+}
+
+echo "Required status checks have drifted from $MANIFEST_DISPLAY:"
 echo
 echo "Required live but not in the manifest:"
-if [ -n "$live_only" ]; then
-    printf '  %s\n' "$live_only"
-else
-    echo "  (none)"
-fi
+indent "$live_only"
 echo
 echo "In the manifest but not required live:"
-if [ -n "$manifest_only" ]; then
-    printf '  %s\n' "$manifest_only"
-else
-    echo "  (none)"
-fi
+indent "$manifest_only"
 exit 1
