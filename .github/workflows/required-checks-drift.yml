@@ -1,0 +1,103 @@
+name: Required status checks drift
+
+# Detects when the `default` branch ruleset's live `required_status_checks`
+# stops matching `.github/required-checks.txt`, the in-repo record of which
+# checks are *meant* to be required (issue #276). The ruleset's own
+# `/history` endpoint returns 403 to this pipeline's token, so there is no
+# audit trail to read after the fact — this schedule is the only thing that
+# would have caught a real drift, as opposed to the #256/#260 owner-directed
+# drop of `register` that prompted #276 and turned out not to be drift at
+# all.
+#
+# Runs `scripts/check-required-checks-drift.sh`, which resolves the ruleset
+# by name (`default`/`branch`) via `GET /repos/<owner>/<repo>/rulesets`. That
+# endpoint returns 200 with no credential at all on this public repository,
+# and the script falls back to an unauthenticated call whenever `gh api`
+# isn't usable — so this workflow needs no secret beyond the default
+# `GITHUB_TOKEN`, which it uses only for `issues: write`, never for reading
+# the ruleset.
+#
+# Report only: this workflow never writes the ruleset or the manifest, and
+# never opens a pull request. `workflow_dispatch` is here so the acceptance
+# criteria for #276 can be checked by hand; the schedule is what does the
+# ongoing job. Deliberately not `pull_request` or `merge_group` — this is
+# not a required status check, and never becomes a merge gate.
+
+on:
+  schedule:
+    - cron: "15 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  ISSUE_TITLE: "Required status checks have drifted from .github/required-checks.txt"
+
+jobs:
+  check-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Compare the live ruleset against the manifest
+        id: drift
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set +e
+          output=$(bash scripts/check-required-checks-drift.sh)
+          status=$?
+          set -e
+          echo "$output"
+          {
+            echo "output<<DRIFT_EOF"
+            echo "$output"
+            echo "DRIFT_EOF"
+          } >> "$GITHUB_OUTPUT"
+          if [ "$status" -eq 2 ]; then
+            echo "::error::check-required-checks-drift.sh could not compare the ruleset (exit 2); see log above"
+            exit 1
+          fi
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: File, update, or close the tracking issue
+        if: always() && steps.drift.outputs.status != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRIFT_STATUS: ${{ steps.drift.outputs.status }}
+          DRIFT_OUTPUT: ${{ steps.drift.outputs.output }}
+        run: |
+          set -euo pipefail
+
+          # `gh --jq` takes one expression and nothing else — it has no
+          # `--arg`, so the title has to reach jq through a separate `jq`
+          # invocation. `--limit` is raised past the default 30 so a repo
+          # with a long open-issue list cannot hide the tracking issue.
+          existing=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open \
+            --limit 200 --json number,title \
+            | jq -r --arg title "$ISSUE_TITLE" \
+              'map(select(.title == $title)) | .[0].number // empty')
+
+          if [ "$DRIFT_STATUS" -eq 0 ]; then
+            if [ -n "$existing" ]; then
+              gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body \
+                "Resolved: \`scripts/check-required-checks-drift.sh\` now reports the live ruleset matches \`.github/required-checks.txt\`."
+              gh issue close "$existing" --repo "$GITHUB_REPOSITORY"
+            fi
+            exit 0
+          fi
+
+          # DRIFT_STATUS == 1: drift found.
+          if [ -z "$existing" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$ISSUE_TITLE" --body "$DRIFT_OUTPUT"
+            exit 0
+          fi
+
+          last_text=$(gh issue view "$existing" --repo "$GITHUB_REPOSITORY" \
+            --json body,comments --jq '(.comments[-1].body // .body)')
+          if [ "$last_text" != "$DRIFT_OUTPUT" ]; then
+            gh issue comment "$existing" --repo "$GITHUB_REPOSITORY" --body "$DRIFT_OUTPUT"
+          fi
