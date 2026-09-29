@@ -57,8 +57,8 @@ jobs:
             echo "$output"
             echo "DRIFT_EOF"
           } >> "$GITHUB_OUTPUT"
-          if [ "$status" -eq 2 ]; then
-            echo "::error::check-required-checks-drift.sh could not compare the ruleset (exit 2); see log above"
+          if [ "$status" -ne 0 ] && [ "$status" -ne 1 ]; then
+            echo "::error::check-required-checks-drift.sh could not compare the ruleset (exit $status); see log above"
             exit 1
           fi
           echo "status=$status" >> "$GITHUB_OUTPUT"
