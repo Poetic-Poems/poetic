@@ -7,7 +7,11 @@ affect behaviour visible to poem authors or site publishers.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+<!-- changelog:assembled-through sha=92b3925487538e6b74b3b15749f9291272ee635a -->
+
 ## [Unreleased]
+
+## [6.5.0] — 2026-09-29
 
 ### Changed
 
