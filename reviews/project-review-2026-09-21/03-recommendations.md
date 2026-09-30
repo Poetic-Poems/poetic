@@ -112,6 +112,8 @@ against `package.json`'s actual `build` script composition before editing.
 
 **Severity:** Low · **Effort:** Small · **Addresses:** F-ARCH-02 · **Issue:** #230 (closed)
 
+**Status:** Done — issue #230, PR #245 (merged 2c83f8427)
+
 **Current state:** `concatenateAllHtmlFiles()` and `generateIndexHtml()`
 (`src/tools/build-all-poems.js:64-143`, `:250-407`) each independently loop
 over every poem's YAML and hand-extract overlapping metadata (title, slug,
@@ -135,6 +137,8 @@ after.
 ## R-06 — Move Pug-embedded helper logic into `render-core.js` as locals
 
 **Severity:** Low · **Effort:** Small · **Addresses:** F-ARCH-01 · **Issue:** #231 (closed)
+
+**Status:** Done — issue #231, PR #246 (merged 318beeed7)
 
 **Current state:** `src/templates/_poem-content.pug` defines its own
 `slugify(text)` (duplicating `src/tools/slugify.js` byte-for-byte),
@@ -161,6 +165,8 @@ pre-change build) and the full test suite passes.
 
 **Severity:** Low · **Effort:** Small · **Addresses:** F-CODE-02 · **Issue:** #232 (closed)
 
+**Status:** Done — issue #232, PR #248 (merged 94ef097d8)
+
 **Current state:** `src/browser/render-errors.js:25-29`'s `KNOWN_MESSAGES`
 hard-codes the exact strings `'Missing title'`, `'Missing date'`, `'Invalid
 or missing date'`, which are independently authored as thrown-error text in
@@ -179,6 +185,8 @@ equivalent) afterward to confirm error classification still matches.
 ## R-08 — Broaden `a11y-check.js`'s sampled pages
 
 **Severity:** Low · **Effort:** Medium · **Addresses:** F-UX-03 · **Issue:** #233 (closed)
+
+**Status:** Done — issue #233, PR #250 (merged 55ee4eb57)
 
 **Current state:** `discoverCheckTargets()` (`src/tools/a11y-check.js:36-58`)
 checks `index.html` plus only the alphabetically-first individual poem
@@ -208,6 +216,8 @@ implementing agent's own environment also lacks one, and rely on
 ## R-09 — Verify and, if needed, fix the borderline secondary-text contrast
 
 **Severity:** Low · **Effort:** Small · **Addresses:** F-UX-02 · **Issue:** #234 (closed)
+
+**Status:** Done — issue #234, PR #254 (merged 66760a7ea)
 
 **Current state:** `#707070` (secondary/meta text, `public/poetic.css:28,82,
 478,533,551,563`) against the page background `#f5f5f5` (`:33`) computes to
