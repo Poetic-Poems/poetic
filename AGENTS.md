@@ -277,7 +277,7 @@ file in the same change — keep it aligned with the code and with
 
 <!-- agent-info:end fragment=documentation-principles -->
 
-<!-- agent-info:start fragment=tech-debt-issues source=Pullwright/.agent@b517d3d sha256=aa282c7c4cd3 -->
+<!-- agent-info:start fragment=tech-debt-issues source=Pullwright/.agent@e1a3f3e sha256=b44cca20721e -->
 <!-- Stamped by Poetic-Poems/.agent scripts/sync.sh from Pullwright/.agent:fragments/tech-debt-issues.md - a hand edit inside this region is overwritten at the next sync; edit the source instead. -->
 
 ## Tech debt
@@ -289,7 +289,11 @@ repository: dedup-search first (`gh issue list --label pw::type:tech-debt
 --search "<working title>"`), and cite an existing hit instead of filing a
 second one. File the issue with the shortcut and its provenance in the
 body (e.g. "Noticed while working #631"), then add a `Defers: #<n>` line
-to the pull request that noticed it — never a closing keyword, since
+to the pull request that noticed it, placed above that pull request's
+`## Changelog` heading, alongside its closing keyword if it has one (e.g.
+next to `Fixes #123`) — it is a trailer about the pull request, not a
+changelog entry, and the `## Changelog` grammar faults a trailer-shaped
+line appended after that heading. Never a closing keyword itself, since
 deferring is not resolving.
 
 Resolve a tech-debt issue by closing it with a real closing keyword (e.g.
