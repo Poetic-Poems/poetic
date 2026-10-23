@@ -34,6 +34,11 @@ const ALLOWED_LICENSES = new Set([
   'Apache-2.0',
   'BlueOak-1.0.0',
   'Python-2.0',
+  // argparse >=3.0.3 declares PSF-2.0 rather than Python-2.0: its LICENSE
+  // file now carries only the PSF LICENSE AGREEMENT section of the same
+  // composite Python 2.0 stack Python-2.0 denotes, so PSF-2.0 grants
+  // strictly less than Python-2.0 already allowed above.
+  'PSF-2.0',
   '0BSD',
   'CC0-1.0',
 ]);
