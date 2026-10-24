@@ -80,6 +80,10 @@ test('isAllowedLicense accepts plain allow-listed identifiers and rejects others
   assert.strictEqual(isAllowedLicense('GPL-3.0-only'), false);
 });
 
+test('isAllowedLicense accepts PSF-2.0 (argparse 3.0.3+)', () => {
+  assert.strictEqual(isAllowedLicense('PSF-2.0'), true);
+});
+
 test('isAllowedLicense accepts an OR disjunction with an allowed alternative', () => {
   assert.strictEqual(isAllowedLicense('(MIT OR Apache-2.0)'), true);
   assert.strictEqual(isAllowedLicense('(GPL-3.0-only OR MIT)'), true);
