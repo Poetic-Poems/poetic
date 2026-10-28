@@ -31,3 +31,10 @@ by a second person. There is currently no succession plan.
 this repo's JavaScript and GitHub Actions workflows on every pull request and
 push to `main`, plus a weekly schedule. Results appear under the repository's
 **Security** &rarr; **Code scanning** tab.
+
+[Gitleaks](https://github.com/gitleaks/gitleaks)
+(`.github/workflows/secret-scan.yml`) scans the full commit history for
+hardcoded secrets — API keys, tokens, credentials — on every pull request and
+push to `main`. The job fails if it finds one. It is not among the `main`
+ruleset's required status checks (`.github/required-checks.txt`), so a finding
+shows up as a failed check on the pull request rather than blocking the merge.
