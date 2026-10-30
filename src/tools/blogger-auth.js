@@ -53,6 +53,12 @@ const CREDENTIALS_FILE = path.join(process.cwd(), '.blogger-credentials.json');
 // flow, so the timeout alone is enough to bound a hang.
 const FETCH_TIMEOUT_MS = 30_000;
 
+// Bounds waitForCode()'s wait for the browser's OAuth redirect — a human
+// completing a consent screen, not a machine-to-machine call, so it needs a
+// far more generous bound than FETCH_TIMEOUT_MS. Kept as a distinct constant
+// so the two are never conflated.
+const AUTH_WAIT_TIMEOUT_MS = 5 * 60_000;
+
 // Write `contents` to `filePath` with mode 0600, tolerating a pre-existing
 // read-only file at that path. `fs.writeFileSync`'s `mode` option only takes
 // effect when a file is *created*; against an existing file it's ignored and
@@ -341,8 +347,17 @@ function describeBlogAccess(access, configuredBlogId) {
 
 // ── Loopback server ───────────────────────────────────────────────────────────
 
-function waitForCode(port, expectedState) {
+function waitForCode(port, expectedState, timeoutMs = AUTH_WAIT_TIMEOUT_MS) {
   return new Promise((resolve, reject) => {
+    let timeoutId;
+    // Routes every settlement path through here so the pending timeout is
+    // always cleared first — an abandoned flow that times out just after a
+    // genuine callback already settled the promise must never also fire.
+    const settle = (fn, value) => {
+      clearTimeout(timeoutId);
+      fn(value);
+    };
+
     const server = http.createServer((req, res) => {
       try {
         const requestUrl = new URL(req.url, `http://localhost:${port}`);
@@ -356,7 +371,7 @@ function waitForCode(port, expectedState) {
           res.writeHead(400, { 'Content-Type': 'text/html' });
           res.end('<html><body><h1>Authorization failed</h1><p>State mismatch — possible CSRF. You may close this window.</p></body></html>');
           server.close();
-          reject(new Error('State parameter mismatch — aborting (possible CSRF).'));
+          settle(reject, new Error('State parameter mismatch — aborting (possible CSRF).'));
           return;
         }
 
@@ -364,7 +379,7 @@ function waitForCode(port, expectedState) {
           res.writeHead(400, { 'Content-Type': 'text/html' });
           res.end(`<html><body><h1>Authorization failed</h1><p>${escapeHtml(error)}</p><p>You may close this window.</p></body></html>`);
           server.close();
-          reject(new Error(`OAuth error: ${error}`));
+          settle(reject, new Error(`OAuth error: ${error}`));
           return;
         }
 
@@ -372,7 +387,7 @@ function waitForCode(port, expectedState) {
           res.writeHead(200, { 'Content-Type': 'text/html' });
           res.end('<html><body><h1>Authorization successful!</h1><p>You may close this window and return to the terminal.</p></body></html>');
           server.close();
-          resolve(code);
+          settle(resolve, code);
           return;
         }
 
@@ -383,14 +398,22 @@ function waitForCode(port, expectedState) {
         res.writeHead(500);
         res.end();
         server.close();
-        reject(err);
+        settle(reject, err);
       }
     });
 
-    server.on('error', reject);
+    server.on('error', (err) => settle(reject, err));
     server.listen(port, '127.0.0.1', () => {
       // Server is ready
     });
+
+    timeoutId = setTimeout(() => {
+      server.close();
+      settle(reject, new Error(
+        `Timed out after ${Math.round(timeoutMs / 1000)}s waiting for the OAuth redirect. ` +
+        'Rerun the command and complete the browser sign-in flow before it expires.'
+      ));
+    }, timeoutMs);
   });
 }
 

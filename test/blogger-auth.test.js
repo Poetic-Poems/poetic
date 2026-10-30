@@ -123,6 +123,32 @@ test('waitForCode rejects a callback whose state does not match', async () => {
   await rejection;
 });
 
+test('waitForCode rejects with a clear message once the timeout elapses, and closes the server', async () => {
+  const port = await getFreePort();
+  const pending = waitForCode(port, 'expected-state', 20);
+  await assert.rejects(pending, /Timed out after .*waiting for the OAuth redirect.*[Rr]erun the command/);
+  // The loopback listener was closed on expiry, so a fresh server can bind
+  // the same port immediately rather than getting EADDRINUSE.
+  const probe = http.createServer();
+  await new Promise((resolve, reject) => {
+    probe.on('error', reject);
+    probe.listen(port, '127.0.0.1', resolve);
+  });
+  await new Promise((resolve) => probe.close(resolve));
+});
+
+test('waitForCode does not time out once a genuine callback has already settled it', async () => {
+  const port = await getFreePort();
+  const pending = waitForCode(port, 'expected-state', 20);
+  const status = await hitCallback(port, '?code=auth-code&state=expected-state');
+  assert.strictEqual(status, 200);
+  assert.strictEqual(await pending, 'auth-code');
+  // Give the (cleared) timeout a chance to fire if it were still pending —
+  // if settle() failed to clear it, this would surface as an unhandled
+  // rejection rather than a second settlement of `pending`.
+  await new Promise((resolve) => setTimeout(resolve, 50));
+});
+
 test('waitForCode ignores a callback carrying neither code nor error, whatever its state', async () => {
   const port = await getFreePort();
   const pending = waitForCode(port, 'expected-state');
