@@ -148,5 +148,5 @@ especially during development when only a few poems have changed between builds.
 - `poem-syntax.ebnf` - Formal EBNF grammar specification
 - `docs/POEM-SYNTAX.md` - Human-readable syntax documentation
 - `src/poems/poem/_example.poem` - Complete example demonstrating all features
-- `src/poems/yaml/_example.yaml` - Expected YAML output for the example
+- `test/golden/_example.yaml` - Expected YAML output for the example (also used as the golden-comparison fixture by `poem-to-yaml.test.js`)
 
