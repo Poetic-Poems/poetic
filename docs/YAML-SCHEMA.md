@@ -165,6 +165,34 @@ postscript:
       <p>Long note content...</p>
 ```
 
+#### Reference Entries ($ref)
+
+In addition to the `{ label?, params?, content }` shape above, postscript list entries can also reference external YAML content using a `$ref` shape — created from a bare `<<<...>>>` literal block whose content is a YAML `$ref:` payload.
+
+Each `$ref` entry is one of:
+
+- `{ $ref: "<file>#<jsonPath>" }` — a reference to a YAML value in an external file at a specific JSON path
+
+Example: A postscript list mixing both shapes:
+```yaml
+postscript:
+  - label: "Postscript"
+    content: |
+      <p>A postscript may use <strong>bold</strong>, <em>italic</em>, a <code>code span</code>, a
+      <a href="https://example.com">Markdown link</a>, and a bullet list:</p>
+      <ul>
+      <li>first point</li>
+      <li>second point</li>
+      </ul>
+  - $ref: _shared.yaml#/disclaimer
+```
+
+In this example:
+- The first postscript entry is a regular note with `label` and `content`
+- The second is a reference entry, pointing to `/disclaimer` in `_shared.yaml`
+
+A postscript list may contain any number of either shape, in any order, as siblings.
+
 ### Analysis (3 scenarios)
 
 #### No Analysis
