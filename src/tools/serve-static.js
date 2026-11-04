@@ -428,6 +428,17 @@ if (require.main === module) {
     process.exit(1);
   }
 
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(
+        `Port ${PORT} is already in use on ${HOST} — pass --port <n> or stop the other process.`
+      );
+    } else {
+      console.error(err.message);
+    }
+    process.exit(1);
+  });
+
   server.listen(PORT, HOST, () => {
     const isLoopback = HOST === '127.0.0.1' || HOST === '::1';
     const displayHost = isLoopback || HOST === '0.0.0.0' ? 'localhost' : HOST;
