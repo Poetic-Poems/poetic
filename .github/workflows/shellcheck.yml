@@ -1,0 +1,50 @@
+name: Shellcheck
+
+# Several scripts under scripts/ already carry `# shellcheck source=`/
+# `# shellcheck disable=` directive comments, implying the author runs
+# shellcheck locally or in-editor, but nothing enforced that for anyone else
+# touching these scripts (issue #304). This job runs the same check in CI.
+#
+# Scope is exactly `scripts/*.sh` and `.githooks/*` — the shell scripts this
+# repository owns, including `.githooks/commit-msg` and
+# `.githooks/post-checkout`, which are shell scripts by shebang despite
+# having no `.sh` suffix. `-x` follows local `source`d files (e.g.
+# assemble-changelog.sh's `lib/changelog-grammar.sh`) so sourcing one script
+# from another doesn't spuriously warn.
+#
+# Deliberately not a required status check (see AGENTS.md's "Branch
+# protection in this repository" — the ruleset is an owner-only edit);
+# landing this job non-required first lets the owner decide separately
+# whether to require it. It does run on `merge_group` so that promoting it
+# to a required check stays a one-line ruleset edit: a required context that
+# never reports on a merge-group run wedges every queued pull request, which
+# is how the retired `register` check had to be dropped from the ruleset
+# (see .github/required-checks.txt, issues #256/#260). Unlike
+# changelog-section.yml and commit-format.yml — which gate on
+# `github.event_name == 'pull_request'` because they inspect the
+# pull-request payload, and a merge group carries none — this job checks the
+# code itself, so it runs on the merge group's merged result too, the same
+# shape secret-scan.yml and codeql.yml use.
+#
+# Uses ubuntu-latest's preinstalled shellcheck rather than a third-party
+# action, so the job pulls in no external dependency of its own.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run shellcheck
+        run: shellcheck -x scripts/*.sh .githooks/*
