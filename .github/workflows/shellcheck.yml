@@ -15,15 +15,26 @@ name: Shellcheck
 # Deliberately not a required status check (see AGENTS.md's "Branch
 # protection in this repository" — the ruleset is an owner-only edit);
 # landing this job non-required first lets the owner decide separately
-# whether to require it. Same trigger shape as the other single-purpose
-# workflows (changelog-section.yml, commit-format.yml): push/PR to main,
-# ubuntu-latest's preinstalled shellcheck rather than a third-party action.
+# whether to require it. It does run on `merge_group` so that promoting it
+# to a required check stays a one-line ruleset edit: a required context that
+# never reports on a merge-group run wedges every queued pull request, which
+# is how the retired `register` check had to be dropped from the ruleset
+# (see .github/required-checks.txt, issues #256/#260). Unlike
+# changelog-section.yml and commit-format.yml — which gate on
+# `github.event_name == 'pull_request'` because they inspect the
+# pull-request payload, and a merge group carries none — this job checks the
+# code itself, so it runs on the merge group's merged result too, the same
+# shape secret-scan.yml and codeql.yml use.
+#
+# Uses ubuntu-latest's preinstalled shellcheck rather than a third-party
+# action, so the job pulls in no external dependency of its own.
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  merge_group:
 
 permissions:
   contents: read
