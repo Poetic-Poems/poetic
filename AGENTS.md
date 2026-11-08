@@ -33,7 +33,8 @@ docs/             ← documentation
 examples/         ← example poem files
 .github/workflows/← CI: build-poems.yml, changelog-section.yml, codeql.yml,
                     commit-format.yml, release.yml, required-checks-drift.yml,
-                    secret-scan.yml, sync-blogger.yml, sync-framework.yml
+                    secret-scan.yml, shellcheck.yml, sync-blogger.yml,
+                    sync-framework.yml
 ```
 
 ## Build commands
