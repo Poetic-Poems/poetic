@@ -27,9 +27,13 @@ Closes #(issue number)
 ## Checklist
 
 - [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) format
+- [ ] `npm test` passes
+- [ ] `npm run coverage` passes (test coverage thresholds)
+- [ ] `npm run lint` passes
+- [ ] `npm run check:licenses` passes (dependency licenses)
 - [ ] `npm run check` passes (trailing whitespace check)
 - [ ] `npm run build` completes successfully
-- [ ] `npm test` passes
+- [ ] `npm run check:build` passes (expected build artifacts)
 - [ ] Documentation updated (if applicable)
 
 ## Notes

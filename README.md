@@ -387,10 +387,12 @@ Before pushing, run these commands locally to catch problems CI will gate on:
 
 ```bash
 npm test                 # run the test suite
-npm run lint             # lint source code
 npm run coverage         # check test coverage thresholds
-npm run check            # verify no trailing whitespace
+npm run lint             # lint source code
 npm run check:licenses   # verify dependency licenses
+npm run check            # verify no trailing whitespace
+npm run build            # build poems to HTML
+npm run check:build      # verify expected build artifacts exist
 ```
 
 These are the same checks your pull request will run against in CI — running them before you push saves a round trip and keeps iteration fast. See [`CLAUDE.md`](CLAUDE.md) for the full list of build commands.
