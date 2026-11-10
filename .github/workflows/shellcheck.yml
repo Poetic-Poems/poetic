@@ -27,11 +27,12 @@ name: Shellcheck
 # shape secret-scan.yml and codeql.yml use.
 #
 # Uses a pinned, checksum-verified shellcheck release binary rather than a
-# third-party action (issue #326) — a third-party *action* runs arbitrary
-# code with access to the job, which this avoids, but the unpinned
-# preinstalled binary it replaced left the version ubuntu-latest happened to
-# ship that week as the thing the gate enforced, with no record of which
-# version that was. Same pattern secret-scan.yml uses for gitleaks, except
+# third-party action (issue #326): a third-party *action* runs arbitrary
+# code with access to the job, which this avoids, while pinning keeps the
+# version the gate enforces a recorded property of this repository rather
+# than of whatever ubuntu-latest happens to preinstall that week — a runner
+# image bump must not turn this job red on a pull request that changed no
+# shell script. Same pattern secret-scan.yml uses for gitleaks, except
 # shellcheck's GitHub releases don't publish a checksums.txt asset, so the
 # expected digest is hardcoded here instead of downloaded alongside the
 # tarball.
