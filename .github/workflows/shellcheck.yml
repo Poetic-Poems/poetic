@@ -5,10 +5,11 @@ name: Shellcheck
 # shellcheck locally or in-editor, but nothing enforced that for anyone else
 # touching these scripts (issue #304). This job runs the same check in CI.
 #
-# Scope is exactly `scripts/*.sh` and `.githooks/*` — the shell scripts this
-# repository owns, including `.githooks/commit-msg` and
-# `.githooks/post-checkout`, which are shell scripts by shebang despite
-# having no `.sh` suffix. `-x` follows local `source`d files (e.g.
+# Scope is `scripts/*.sh`, `.githooks/*`, and `scripts/edit-poem` /
+# `scripts/new-poem` — the shell scripts this repository owns, including
+# `.githooks/commit-msg` and `.githooks/post-checkout`, and `edit-poem` /
+# `new-poem`, all of which are shell scripts by shebang despite having no
+# `.sh` suffix. `-x` follows local `source`d files (e.g.
 # assemble-changelog.sh's `lib/changelog-grammar.sh`) so sourcing one script
 # from another doesn't spuriously warn.
 #
@@ -47,4 +48,4 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Run shellcheck
-        run: shellcheck -x scripts/*.sh .githooks/*
+        run: shellcheck -x scripts/*.sh scripts/edit-poem scripts/new-poem .githooks/*
