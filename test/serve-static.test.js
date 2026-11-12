@@ -573,3 +573,56 @@ test('EADDRINUSE on startup prints a clean one-line message and exits 1, not a r
     }
   });
 });
+
+// Regression test for issue #322: an invalid --port value used to reach
+// server.listen() and crash with Node's raw synchronous RangeError instead
+// of a clean message, bypassing the EADDRINUSE handler added for #300.
+test('an invalid --port value prints a clean one-line message and exits 1, not a raw RangeError', async () => {
+  await withTempDirAsync(async (dir) => {
+    fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
+
+    const child = spawn(
+      process.execPath,
+      [SERVE_STATIC_PATH, '--port', 'abc', '--dir', dir, '--host', '127.0.0.1'],
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+
+    let stderr = '';
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+
+    const { code, signal } = await waitForExit(child);
+
+    assert.strictEqual(code, 1);
+    assert.strictEqual(signal, null);
+    assert.match(stderr, /--port abc is not a valid port/);
+    assert.ok(!stderr.includes('RangeError'), 'should not print a raw RangeError');
+    assert.ok(!stderr.includes('at Server.listen'), 'should not print a raw Node internals stack trace');
+  });
+});
+
+test('an out-of-range --port value prints a clean one-line message and exits 1, not a raw RangeError', async () => {
+  await withTempDirAsync(async (dir) => {
+    fs.writeFileSync(path.join(dir, 'hello.txt'), 'hello world');
+
+    const child = spawn(
+      process.execPath,
+      [SERVE_STATIC_PATH, '--port', '99999', '--dir', dir, '--host', '127.0.0.1'],
+      { stdio: ['ignore', 'pipe', 'pipe'] }
+    );
+
+    let stderr = '';
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+
+    const { code, signal } = await waitForExit(child);
+
+    assert.strictEqual(code, 1);
+    assert.strictEqual(signal, null);
+    assert.match(stderr, /--port 99999 is not a valid port/);
+    assert.ok(!stderr.includes('RangeError'), 'should not print a raw RangeError');
+    assert.ok(!stderr.includes('at Server.listen'), 'should not print a raw Node internals stack trace');
+  });
+});
