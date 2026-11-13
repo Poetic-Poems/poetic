@@ -27,10 +27,10 @@ function parseArgs(argv) {
   for (let i = 2; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--port' || arg === '-p') {
-      args.port = Number(argv[i + 1]);
+      args.port = argv[i + 1];
       i += 1;
     } else if (arg.startsWith('--port=')) {
-      args.port = Number(arg.split('=')[1]);
+      args.port = arg.split('=')[1];
     } else if (arg === '--dir' || arg === '-d') {
       args.dir = argv[i + 1];
       i += 1;
@@ -412,9 +412,14 @@ if (require.main === module) {
   }
 
   const { port: cliPort, dir: cliDir, host: cliHost } = parseArgs(process.argv);
-  const PORT = Number(
-    cliPort || process.env.PORT || process.env.npm_config_port || 8080
-  );
+  const rawPort = cliPort || process.env.PORT || process.env.npm_config_port || 8080;
+  const PORT = Number(rawPort);
+  if (!Number.isInteger(PORT) || PORT < 0 || PORT > 65535) {
+    console.error(
+      `--port ${rawPort} is not a valid port (expected an integer from 0 to 65535)`
+    );
+    process.exit(1);
+  }
   // Bind to loopback by default so the dev server is not exposed to the LAN.
   // Pass --host 0.0.0.0 (or HOST=0.0.0.0) for the rare LAN-testing case.
   const HOST = cliHost || process.env.HOST || '127.0.0.1';
