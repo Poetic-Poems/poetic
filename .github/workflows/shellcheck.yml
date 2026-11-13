@@ -5,13 +5,19 @@ name: Shellcheck
 # shellcheck locally or in-editor, but nothing enforced that for anyone else
 # touching these scripts (issue #304). This job runs the same check in CI.
 #
-# Scope is `scripts/*.sh`, `.githooks/*`, and `scripts/edit-poem` /
-# `scripts/new-poem` — the shell scripts this repository owns, including
-# `.githooks/commit-msg` and `.githooks/post-checkout`, and `edit-poem` /
-# `new-poem`, all of which are shell scripts by shebang despite having no
-# `.sh` suffix. `-x` follows local `source`d files (e.g.
-# assemble-changelog.sh's `lib/changelog-grammar.sh`) so sourcing one script
-# from another doesn't spuriously warn.
+# Targets are discovered by shebang (`git grep -lE '^#!.*\b(ba)?sh\b' --
+# scripts .githooks`) rather than a hand-maintained list, so a shell script
+# added under either directory is covered the moment it is committed, even
+# without a `.sh` suffix: `scripts/edit-poem` and `scripts/new-poem` are
+# shell scripts by shebang alone, which an extension-based glob misses
+# (issue #324). Discovery is by shebang rather than by extension for that
+# reason, and it also keeps a non-shell file added under `.githooks/` from
+# being handed to shellcheck. The step logs the set it discovered, so a
+# script that escapes the pattern is visible in the job log rather than
+# silently unlinted (issue #333), and refuses an empty set, which shellcheck
+# would otherwise treat as "read stdin". `-x` follows local `source`d files
+# (e.g. assemble-changelog.sh's `lib/changelog-grammar.sh`) so sourcing one
+# script from another doesn't spuriously warn.
 #
 # Deliberately not a required status check (see AGENTS.md's "Branch
 # protection in this repository" — the ruleset is an owner-only edit);
@@ -48,4 +54,12 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Run shellcheck
-        run: shellcheck -x scripts/*.sh scripts/edit-poem scripts/new-poem .githooks/*
+        run: |
+          mapfile -t targets < <(git grep -lE '^#!.*\b(ba)?sh\b' -- scripts .githooks)
+          printf 'Discovered %s shellcheck target(s):\n' "${#targets[@]}"
+          printf '  %s\n' "${targets[@]}"
+          if [ "${#targets[@]}" -eq 0 ]; then
+            echo "::error::Shebang discovery matched nothing under scripts/ or .githooks/." >&2
+            exit 1
+          fi
+          shellcheck -x "${targets[@]}"
