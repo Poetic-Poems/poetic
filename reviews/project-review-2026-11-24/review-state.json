@@ -1,0 +1,27 @@
+{
+  "skill": "project-review",
+  "status": "in-progress",
+  "project_root": "/home/agent/.cache/poetic-agents/workspaces/20261124T034101Z-poetic-1-1710272-Poetic-Poems_poetic",
+  "revision": "9918545cd3ffe91db3cf555ccd578f59c2080064",
+  "tech_debt_file": "tech-debt/ (frozen per-item register, scope PPpoet)",
+  "started": "2026-11-24T00:00:00Z",
+  "updated": "2026-11-24T00:00:00Z",
+  "sampling": "exhaustive on security/build/seam-critical paths; representative sampling elsewhere",
+  "steps": {
+    "orient": "complete",
+    "reconnaissance": "complete",
+    "dimensions": {
+      "ARCH": "pending", "CODE": "pending", "SEC": "pending",
+      "TEST": "pending", "DEPS": "pending", "TOOL": "pending",
+      "CI": "pending", "PERF": "pending", "UX": "pending",
+      "DOC": "pending", "GOV": "pending", "OPS": "pending", "DATA": "pending"
+    },
+    "consolidation": "pending",
+    "documents": {
+      "01-summary.md": "pending", "02-findings.md": "pending",
+      "03-recommendations.md": "pending", "04-improvement-prompts.md": "pending",
+      "README.md": "pending"
+    },
+    "tech_debt_update": "pending"
+  }
+}
